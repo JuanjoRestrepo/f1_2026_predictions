@@ -182,8 +182,8 @@ def add_tyre_degradation_slope(
     def _slope_for_group(group: pd.DataFrame) -> pd.Series:
         """Return the pre-computed slope broadcast to all rows in the group."""
         key = (
-            tuple(group[groups].iloc[0]) 
-            if len(groups) > 1 
+            tuple(group[groups].iloc[0])
+            if len(groups) > 1
             else group[groups[0]].iloc[0]
         )
         s = slopes.get(key, float("nan"))
@@ -198,8 +198,8 @@ def add_tyre_degradation_slope(
         def _intercept_for_group(group: pd.DataFrame) -> pd.Series:
             """Return the pre-computed intercept broadcast to all rows."""
             key = (
-                tuple(group[groups].iloc[0]) 
-                if len(groups) > 1 
+                tuple(group[groups].iloc[0])
+                if len(groups) > 1
                 else group[groups[0]].iloc[0]
             )
             ic = intercepts.get(key, float("nan"))

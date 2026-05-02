@@ -24,6 +24,7 @@ import pandas as pd
 
 from f1_predictions.cleaning.pipeline import load_clean_laps
 from f1_predictions.features.encoding import CategoricalFeatureEncoder
+from f1_predictions.features.historical_performance import add_historical_points
 from f1_predictions.features.rolling_pace import (
     add_lap_delta_to_fastest,
     add_rolling_pace_features,
@@ -32,6 +33,7 @@ from f1_predictions.features.tyre_degradation import (
     add_normalised_tyre_life,
     add_tyre_degradation_slope,
 )
+from f1_predictions.features.weather import add_weather_features
 from f1_predictions.ingestion.fastf1_client import SessionKey
 from f1_predictions.ingestion.parquet_writer import (
     DataType,
@@ -155,20 +157,46 @@ def run_feature_pipeline(
     df = add_tyre_degradation_slope(df)
     df = add_normalised_tyre_life(df)
 
-    # ── Step 4: Grid position ─────────────────────────────────────────────
+    # ── Step 4: Weather features ──────────────────────────────────────────
+    logger.info("Step 4/8 — Weather features")
+    try:
+        weather_df = read_parquet(key, DataType.WEATHER, base_dir=processed_dir)
+        df = add_weather_features(df, weather_df)
+    except FileNotFoundError:
+        logger.warning(
+            "Weather Parquet not found in processed dir. Skipping weather features."
+        )
+
+    # ── Step 5: Historical Performance ────────────────────────────────────
+    logger.info("Step 5/8 — Historical performance features")
+    # Load all previous rounds' results for the current season
+    history_dfs = []
+    for r in range(1, key.round_number):
+        hist_key = SessionKey(key.year, r, "R")
+        try:
+            r_df = read_parquet(hist_key, DataType.RESULTS, base_dir=processed_dir)
+            history_dfs.append(r_df)
+        except FileNotFoundError:
+            # It's possible a round was cancelled or not ingested yet
+            pass
+
+    history_results = pd.concat(history_dfs, ignore_index=True) if history_dfs else None
+    df = add_historical_points(df, history_results)
+
+    # ── Step 6: Grid position ─────────────────────────────────────────────
     # GridPosition is on results, not laps. Apply only if column is present.
     if "GridPosition" in df.columns:
-        logger.info("Step 4/6 — Grid position features")
+        logger.info("Step 6/8 — Grid position features")
         from f1_predictions.features.encoding import add_grid_position_features
         df = add_grid_position_features(df)
     else:
         logger.info(
-            "Step 4/6 — GridPosition not found in laps DataFrame "
+            "Step 6/8 — GridPosition not found in laps DataFrame "
             "(join results before feature pipeline if needed). Skipping."
         )
 
-    # ── Step 5: OHE encoding ──────────────────────────────────────────────
-    logger.info("Step 5/6 — Categorical OHE encoding")
+    # ── Step 7: OHE encoding ──────────────────────────────────────────────
+    logger.info("Step 7/8 — Categorical OHE encoding")
     # Only encode columns that are actually present in this session's data.
     from f1_predictions.features.encoding import DEFAULT_OHE_COLUMNS
     available_ohe_cols = [c for c in DEFAULT_OHE_COLUMNS if c in df.columns]
@@ -183,8 +211,8 @@ def run_feature_pipeline(
     else:
         logger.warning("No OHE columns found in DataFrame — encoding step skipped.")
 
-    # ── Step 6: Write Gold Parquet ────────────────────────────────────────
-    logger.info("Step 6/6 — Writing Gold Parquet")
+    # ── Step 8: Write Gold Parquet ────────────────────────────────────────
+    logger.info("Step 8/8 — Writing Gold Parquet")
     output_path = write_parquet(
         df=df,
         key=key,
