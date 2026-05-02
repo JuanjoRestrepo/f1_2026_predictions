@@ -1,0 +1,298 @@
+# =============================================================================
+# pyproject.toml — f1_2026_predictions
+# Single source of truth for all project metadata, dependencies, and tooling.
+# Never generate requirements.txt or setup.py alongside this file.
+#
+# Python target: 3.12.x (satisfies: full stable release, active maintenance,
+# full DS/ML ecosystem compatibility, available in uv toolchain).
+#
+# Dependency resolution note:
+#   ydata-profiling<=4.18.4 pins numpy<2.2 and matplotlib<=3.10, conflicting
+#   with the project's resolved numpy>=2.4.4 and matplotlib>=3.10.9.
+#   Replacement strategy:
+#     - sweetviz  → full DataFrame profiling, numpy 2.x compatible
+#     - missingno → telemetry missing-value heatmaps (~50KB, no ceiling deps)
+#     - pandas    → native .describe(), .info(), .isnull() for inline profiling
+# =============================================================================
+
+[project]
+name            = "f1-2026-predictions"
+version         = "0.1.0"
+description     = "F1 2026 race prediction pipeline: FastF1 telemetry ingestion, cleaning, EDA, and XGBoost modeling."
+readme          = "README.md"
+license         = { text = "MIT" }
+requires-python = ">=3.12"
+
+authors = [
+    { name = "Your Name", email = "you@example.com" },
+]
+
+keywords = [
+    "formula-1",
+    "machine-learning",
+    "telemetry",
+    "xgboost",
+    "fastf1",
+    "data-science",
+]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# ---------------------------------------------------------------------------
+# Production dependencies
+# Rationale per group:
+#   FastF1     : Official F1 telemetry API; only stable source for lap/sector data.
+#   pandas     : DataFrame backbone. polars would be faster, but FastF1 returns
+#                pandas DataFrames natively — wrapping adds complexity with no gain
+#                at this data volume (~100k rows per season).
+#   numpy      : >=2.0 required; resolves break with ydata-profiling (replaced).
+#   scipy      : Statistical utilities — ADF stationarity test, distribution fits.
+#   pandera    : Schema-level validation for idempotent pipeline contracts.
+#                Chosen over Great Expectations for lightweight API and pandas-native integration.
+#   pydantic   : Settings management and typed config objects (BaseSettings).
+#   xgboost    : Primary model. Tree ensembles dominate tabular regression
+#                (Grinsztajn et al. 2022). GPU-ready via device="cuda" param.
+#   lightgbm   : Benchmark against XGBoost; faster on low-cardinality datasets.
+#   scikit-learn: Pipeline abstractions, TimeSeriesSplit, Linear Regression baseline,
+#                 GridSearchCV, preprocessing (StandardScaler, OrdinalEncoder).
+#   seaborn    : Static distributions (lap time histograms, correlation matrices).
+#                Chosen for publication-quality defaults with minimal config.
+#   matplotlib : Backend for Seaborn and standalone custom plots.
+#   plotly     : Interactive heatmaps, telemetry traces, and race-by-race comparisons.
+#                Chosen over Bokeh: better Jupyter integration, richer hover data.
+#   sweetviz   : Full-featured DataFrame profiling; numpy 2.x compatible.
+#                Replaces ydata-profiling which pins numpy<2.2.
+#   missingno  : Missing-value pattern visualization for telemetry heatmaps.
+#                ~50KB, no upper-bound dependency constraints.
+#   httpx      : Async HTTP client with retry support for API calls.
+#                Preferred over requests: native async, better timeout control.
+#   tenacity   : Retry decorator for FastF1 session downloads (network instability).
+#   python-dotenv: .env loading for API keys, local data paths, and secrets.
+#   pyyaml     : Config file parsing (configs/config.yaml).
+#   jinja2     : Post-race report HTML template rendering.
+#   openpyxl   : Excel export for stakeholder-facing comparison tables.
+# ---------------------------------------------------------------------------
+
+dependencies = [
+    # --- F1 data source ---
+    "fastf1>=3.4.0",
+
+    # --- Core data stack ---
+    "pandas>=2.2.0",
+    "numpy>=2.0.0",
+    "scipy>=1.14.0",
+
+    # --- Schema validation & config ---
+    "pandera>=0.20.0",
+    "pydantic>=2.7.0",
+    "pydantic-settings>=2.3.0",
+
+    # --- ML: modeling ---
+    "xgboost>=2.1.0",
+    "lightgbm>=4.5.0",
+    "scikit-learn>=1.5.0",
+
+    # --- Visualization ---
+    "seaborn>=0.13.0",
+    "matplotlib>=3.9.0",
+    "plotly>=5.22.0",
+
+    # --- EDA profiling ---
+    # sweetviz: replaces ydata-profiling (incompatible with numpy>=2.x)
+    "sweetviz>=2.3.0",
+    # missingno: telemetry missing-value heatmaps; ~50KB, no ceiling constraints
+    "missingno>=0.5.2",
+
+    # --- HTTP & retry ---
+    "httpx>=0.27.0",
+    "tenacity>=9.0.0",
+
+    # --- Config & secrets ---
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0.0",
+
+    # --- Reporting ---
+    "jinja2>=3.1.0",
+    "openpyxl>=3.1.0",
+]
+
+# ---------------------------------------------------------------------------
+# Development dependencies (uv dev group — never installed in production)
+# ---------------------------------------------------------------------------
+
+[tool.uv]
+dev-dependencies = [
+    # Linter + formatter: replaces black, flake8, isort, pydocstyle in one tool.
+    "ruff>=0.5.0",
+    # Strict static type checker. Mandatory; Pylance is additive, not a replacement.
+    "mypy>=1.11.0",
+    # Type stubs — required for mypy strict on pandas, yaml, and requests.
+    "pandas-stubs>=2.2.0",
+    "types-PyYAML>=6.0.0",
+    "types-requests>=2.32.0",
+    # Testing
+    "pytest>=8.3.0",
+    "pytest-cov>=5.0.0",
+    "pytest-mock>=3.14.0",
+    # Jupyter kernel registered to the project .venv
+    "ipykernel>=6.29.0",
+    "jupyter>=1.0.0",
+    "nbformat>=5.10.0",
+    # SHAP: model explainability post-training (dev only; not required in pipeline)
+    "shap>=0.45.0",
+]
+
+# ---------------------------------------------------------------------------
+# Ruff — linter and formatter
+# Replaces: black (formatting), flake8 (linting), isort (imports),
+#           pydocstyle (docstrings), pyupgrade (syntax modernisation).
+# All rules documented at: https://docs.astral.sh/ruff/rules/
+# ---------------------------------------------------------------------------
+
+[tool.ruff]
+target-version = "py312"
+line-length    = 88
+exclude = [
+    ".venv",
+    ".git",
+    "__pycache__",
+    "notebooks",   # Notebooks exempt: ruff formatting breaks ipynb cell structure
+    "data",
+    "models",
+    "reports",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes (unused imports, undefined names)
+    "I",    # isort (import ordering)
+    "B",    # flake8-bugbear (likely bugs, performance antipatterns)
+    "C4",   # flake8-comprehensions (unnecessary list/dict comprehensions)
+    "UP",   # pyupgrade (use modern Python 3.12 syntax)
+    "D",    # pydocstyle (Google/NumPy docstring enforcement)
+    "N",    # pep8-naming (snake_case, PascalCase, UPPER_SNAKE_CASE)
+    "ANN",  # flake8-annotations (type hint enforcement on all functions)
+    "S",    # flake8-bandit (security: no hardcoded secrets, no shell injection)
+    "PTH",  # use pathlib.Path over os.path (enforced across all modules)
+    "RUF",  # Ruff-native rules (no unnecessary type: ignore, etc.)
+    "TRY",  # flake8-tryceratops (no bare except, no broad exception catching)
+    "LOG",  # flake8-logging (logging anti-pattern detection)
+    "G",    # flake8-logging-format (f-string logging enforcement)
+]
+ignore = [
+    "D203",  # one-blank-line-before-class: conflicts with D211
+    "D213",  # multi-line-summary-second-line: conflicts with D212
+    "ANN101","ANN102",  # self/cls type annotation: redundant in Python 3.12
+    "S101",  # assert in tests: standard pytest pattern
+    "TRY003", # long exception messages in raise: acceptable for pipeline errors
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["ANN", "D"]  # Tests: relax annotations and docstrings
+"notebooks/**/*.py" = ["ALL"]   # Generated .py from notebooks: no enforcement
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"  # Enforce Google-style docstrings across all modules
+
+[tool.ruff.format]
+quote-style              = "double"
+indent-style             = "space"
+skip-magic-trailing-comma = false
+
+# ---------------------------------------------------------------------------
+# mypy — strict static type checking
+# Configured for maximum correctness. Any loosening must be commented and justified.
+# ---------------------------------------------------------------------------
+
+[tool.mypy]
+python_version         = "3.12"
+strict                 = true
+warn_return_any        = true
+warn_unused_configs    = true
+warn_unused_ignores    = true
+disallow_untyped_defs  = true
+disallow_any_generics  = true
+check_untyped_defs     = true
+no_implicit_optional   = true
+show_error_codes       = true
+show_column_numbers    = true
+pretty                 = true
+ignore_missing_imports = false  # Strict: all imports must have stubs or py.typed
+
+[[tool.mypy.overrides]]
+# Libraries without py.typed markers or complete stubs — whitelist explicitly.
+# Document the reason; do not add libraries here without justification.
+module = [
+    "fastf1",        # No py.typed; upstream stubs not yet published
+    "fastf1.*",
+    "sweetviz",      # No py.typed
+    "missingno",     # No py.typed; small utility library
+    "lightgbm",      # Partial stubs; mypy cannot resolve all generics
+    "plotly.*",      # Stubs incomplete for graph_objects submodules
+    "shap",          # No py.typed
+    "tenacity",      # Partial stubs
+]
+ignore_missing_imports = true
+
+# ---------------------------------------------------------------------------
+# pytest — test runner
+# ---------------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+testpaths    = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--tb=short",         # Concise tracebacks
+    "--strict-markers",   # Fail on unknown markers
+    "-v",
+]
+markers = [
+    "unit: Pure unit tests (no I/O, no network)",
+    "integration: Tests that call FastF1 API or read from disk",
+    "slow: Tests that take >5s (excluded from default CI run)",
+]
+
+# ---------------------------------------------------------------------------
+# pytest-cov — coverage thresholds
+# Target: >=80% on src/ modules. Notebooks and data directories are excluded.
+# ---------------------------------------------------------------------------
+
+[tool.coverage.run]
+source   = ["src"]
+omit     = [
+    "tests/*",
+    "notebooks/*",
+    "src/f1_predictions/__init__.py",  # Boundary file — no logic to test
+]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing  = true
+skip_covered  = false
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+    "@overload",
+]
+
+# ---------------------------------------------------------------------------
+# Build system — required by PEP 518 even for non-packaged projects.
+# hatchling is the default backend for uv-initialized projects.
+# ---------------------------------------------------------------------------
+
+[build-system]
+requires      = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/f1_predictions"]
