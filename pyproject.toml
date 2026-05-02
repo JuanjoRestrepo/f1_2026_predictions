@@ -81,44 +81,37 @@ classifiers = [
 dependencies = [
     # --- F1 data source ---
     "fastf1>=3.4.0",
-
     # --- Core data stack ---
     "pandas>=2.2.0",
     "numpy>=2.0.0",
     "scipy>=1.14.0",
-
     # --- Schema validation & config ---
     "pandera>=0.20.0",
     "pydantic>=2.7.0",
     "pydantic-settings>=2.3.0",
-
     # --- ML: modeling ---
     "xgboost>=2.1.0",
     "lightgbm>=4.5.0",
     "scikit-learn>=1.5.0",
-
     # --- Visualization ---
     "seaborn>=0.13.0",
     "matplotlib>=3.9.0",
     "plotly>=5.22.0",
-
     # --- EDA profiling ---
     # sweetviz: replaces ydata-profiling (incompatible with numpy>=2.x)
     "sweetviz>=2.3.0",
     # missingno: telemetry missing-value heatmaps; ~50KB, no ceiling constraints
     "missingno>=0.5.2",
-
     # --- HTTP & retry ---
     "httpx>=0.27.0",
     "tenacity>=9.0.0",
-
     # --- Config & secrets ---
     "python-dotenv>=1.0.0",
     "pyyaml>=6.0.0",
-
     # --- Reporting ---
     "jinja2>=3.1.0",
     "openpyxl>=3.1.0",
+    "pyarrow>=24.0.0",
 ]
 
 # ---------------------------------------------------------------------------

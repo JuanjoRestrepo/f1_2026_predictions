@@ -71,8 +71,8 @@ class LapsSchema(pa.DataFrameModel):
     Sector1Time: Optional[Series[pd.Timedelta]]   # type: ignore[type-arg]
     Sector2Time: Optional[Series[pd.Timedelta]]   # type: ignore[type-arg]
     Sector3Time: Optional[Series[pd.Timedelta]]   # type: ignore[type-arg]
-    PitOutTime: Optional[Series[pd.Timedelta]]    # type: ignore[type-arg]
-    PitInTime: Optional[Series[pd.Timedelta]]     # type: ignore[type-arg]
+    PitOutTime: Optional[Series[pd.Timestamp]] = pa.Field(nullable=True)  # type: ignore[type-arg]
+    PitInTime: Optional[Series[pd.Timestamp]] = pa.Field(nullable=True)   # type: ignore[type-arg]
 
     Driver: Series[str] = pa.Field(str_length={"min_value": 2, "max_value": 3})
     DriverNumber: Series[str]
@@ -133,10 +133,10 @@ class ResultsSchema(pa.DataFrameModel):
     TeamName: Series[str]
     GridPosition: Optional[Series[pa.typing.Float64]] = pa.Field(nullable=True, ge=0, le=25)   # type: ignore[type-arg]
     Position: Optional[Series[pa.typing.Float64]] = pa.Field(nullable=True, ge=1, le=25)       # type: ignore[type-arg]
-    Q1: Optional[Series[pd.Timedelta]]    # type: ignore[type-arg]
-    Q2: Optional[Series[pd.Timedelta]]    # type: ignore[type-arg]
-    Q3: Optional[Series[pd.Timedelta]]    # type: ignore[type-arg]
-    Time: Optional[Series[pd.Timedelta]]  # type: ignore[type-arg]
+    Q1: Optional[Series[pd.Timestamp]] = pa.Field(nullable=True)    # type: ignore[type-arg]
+    Q2: Optional[Series[pd.Timestamp]] = pa.Field(nullable=True)    # type: ignore[type-arg]
+    Q3: Optional[Series[pd.Timestamp]] = pa.Field(nullable=True)    # type: ignore[type-arg]
+    Time: Optional[Series[pd.Timedelta]] = pa.Field(nullable=True)  # type: ignore[type-arg]
     Status: Series[str]
     Points: Optional[Series[pa.typing.Float64]] = pa.Field(nullable=True, ge=0, le=30)         # type: ignore[type-arg]
 

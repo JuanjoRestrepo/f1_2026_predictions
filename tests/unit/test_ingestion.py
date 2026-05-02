@@ -232,13 +232,13 @@ class TestExtractWeatherSummary:
     def test_rainfall_aggregated_as_bool(self, mock_session: MagicMock) -> None:
         """Rainfall_any is True only if any row has rainfall=True."""
         result = _extract_weather_summary(mock_session)
-        assert result["Rainfall_any"].iloc[0] is False
+        assert result["Rainfall_any"].iloc[0] == False
 
     def test_rainfall_true_when_any_row_wet(self, mock_session: MagicMock) -> None:
         """Rainfall_any=True when at least one weather row has rainfall."""
         mock_session.weather_data["Rainfall"] = [False, True, False]
         result = _extract_weather_summary(mock_session)
-        assert result["Rainfall_any"].iloc[0] is True
+        assert result["Rainfall_any"].iloc[0] == True
 
     def test_empty_weather_data_returns_empty_df(self, mock_session: MagicMock) -> None:
         """Empty weather_data returns an empty DataFrame (not an error)."""

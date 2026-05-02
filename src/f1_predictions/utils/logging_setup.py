@@ -162,7 +162,7 @@ def configure_root_pipeline_logger(
         msg = (
             f"Invalid log level: '{level}'. Must be DEBUG/INFO/WARNING/ERROR/CRITICAL."
         )
-        raise TypeError(msg)
+        raise ValueError(msg)
 
     root_logger = logging.getLogger(_ROOT_LOGGER_NAME)
     root_logger.setLevel(numeric_level)
