@@ -12,7 +12,7 @@ Why tenacity over a manual retry loop:
     tenacity provides exponential backoff, jitter, configurable stop
     conditions, and before/after hooks for logging — all with a clean
     decorator API. A hand-rolled loop would replicate this poorly.
-    The specific strategy chosen (exponential backoff, 3 retries, 2–30s
+    The specific strategy chosen (exponential backoff, 3 retries, 2-30s
     wait) reflects FastF1's CDN rate-limiting behaviour: bursts of
     requests are throttled; short waits resolve most transient failures.
 
@@ -119,11 +119,11 @@ class SessionKey:
 
         Returns:
             A string in the format ``"2025_R01_Q"`` or
-            ``"2025_R01_R – Bahrain Grand Prix"`` when event_name is set.
+            ``"2025_R01_R - Bahrain Grand Prix"`` when event_name is set.
         """
         base = f"{self.year}_R{self.round_number:02d}_{self.identifier}"
         if self.event_name:
-            return f"{base} – {self.event_name}"
+            return f"{base} - {self.event_name}"
         return base
 
 
@@ -238,7 +238,7 @@ def load_session(
         from f1_predictions.ingestion.fastf1_client import load_session
 
         session, key = load_session(2025, 1, "Q")
-        print(key)            # "2025_R01_Q – Bahrain Grand Prix"
+        print(key)            # "2025_R01_Q - Bahrain Grand Prix"
         print(session.laps.shape)
     """
     if year < 2018:
@@ -257,8 +257,8 @@ def load_session(
 
     try:
         session = _load_session_with_retry(year, round_number, identifier)
-    except RetryError as exc:
-        logger.error(
+    except RetryError:
+        logger.exception(
             "All %d retry attempts exhausted for session %d/%d/%s. "
             "Check network connectivity and FastF1 service status.",
             _MAX_ATTEMPTS, year, round_number, identifier,

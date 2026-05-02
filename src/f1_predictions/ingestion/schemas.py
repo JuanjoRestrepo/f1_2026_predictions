@@ -24,10 +24,8 @@ Column selection rationale:
     decide whether to incorporate the new columns.
 """
 
-from typing import Optional
-
 import pandas as pd
-import pandera as pa
+import pandera.pandas as pa
 from pandera.typing import Series
 
 LAPS_SCHEMA_VERSION: str = "1.0.0"
@@ -66,33 +64,33 @@ class LapsSchema(pa.DataFrameModel):
     """
 
     Time: Series[pd.Timedelta]
-    LapTime: Optional[Series[pd.Timedelta]]       # type: ignore[type-arg]
-    LapNumber: Series[pa.typing.Int64] = pa.Field(ge=1, le=100)
-    Sector1Time: Optional[Series[pd.Timedelta]]   # type: ignore[type-arg]
-    Sector2Time: Optional[Series[pd.Timedelta]]   # type: ignore[type-arg]
-    Sector3Time: Optional[Series[pd.Timedelta]]   # type: ignore[type-arg]
-    PitOutTime: Optional[Series[pd.Timestamp]] = pa.Field(nullable=True)  # type: ignore[type-arg]
-    PitInTime: Optional[Series[pd.Timestamp]] = pa.Field(nullable=True)   # type: ignore[type-arg]
+    LapTime: Series[pd.Timedelta] | None
+    LapNumber: Series[pa.Int64] = pa.Field(ge=1, le=100)
+    Sector1Time: Series[pd.Timedelta] | None
+    Sector2Time: Series[pd.Timedelta] | None
+    Sector3Time: Series[pd.Timedelta] | None
+    PitOutTime: Series[pd.Timestamp] | None = pa.Field(nullable=True)
+    PitInTime: Series[pd.Timestamp] | None = pa.Field(nullable=True)
 
     Driver: Series[str] = pa.Field(str_length={"min_value": 2, "max_value": 3})
     DriverNumber: Series[str]
     Team: Series[str]
 
-    Compound: Optional[Series[str]] = pa.Field(      # type: ignore[type-arg]
+    Compound: Series[str] | None = pa.Field(
         nullable=True,
         isin=["SOFT", "MEDIUM", "HARD", "INTERMEDIATE", "WET", "UNKNOWN"],
     )
-    TyreLife: Optional[Series[pa.typing.Float64]]    # type: ignore[type-arg]
-    FreshTyre: Optional[Series[bool]]                # type: ignore[type-arg]
-    Stint: Optional[Series[pa.typing.Int64]] = pa.Field(nullable=True, ge=1)
+    TyreLife: Series[pa.Float64] | None
+    FreshTyre: Series[bool] | None
+    Stint: Series[pa.Int64] | None = pa.Field(nullable=True, ge=1)
 
-    SpeedI1: Optional[Series[pa.typing.Float64]] = pa.Field(nullable=True, ge=0, le=450)  # type: ignore[type-arg]
-    SpeedI2: Optional[Series[pa.typing.Float64]] = pa.Field(nullable=True, ge=0, le=450)  # type: ignore[type-arg]
-    SpeedFL: Optional[Series[pa.typing.Float64]] = pa.Field(nullable=True, ge=0, le=450)  # type: ignore[type-arg]
-    SpeedST: Optional[Series[pa.typing.Float64]] = pa.Field(nullable=True, ge=0, le=450)  # type: ignore[type-arg]
+    SpeedI1: Series[pa.Float64] | None = pa.Field(nullable=True, ge=0, le=450)
+    SpeedI2: Series[pa.Float64] | None = pa.Field(nullable=True, ge=0, le=450)
+    SpeedFL: Series[pa.Float64] | None = pa.Field(nullable=True, ge=0, le=450)
+    SpeedST: Series[pa.Float64] | None = pa.Field(nullable=True, ge=0, le=450)
 
-    IsPersonalBest: Optional[Series[bool]]           # type: ignore[type-arg]
-    TrackStatus: Optional[Series[str]]               # type: ignore[type-arg]
+    IsPersonalBest: Series[bool] | None
+    TrackStatus: Series[str] | None
 
     class Config:
         """Pandera DataFrameModel configuration."""
@@ -131,14 +129,16 @@ class ResultsSchema(pa.DataFrameModel):
     BroadcastName: Series[str]
     Abbreviation: Series[str] = pa.Field(str_length={"min_value": 2, "max_value": 3})
     TeamName: Series[str]
-    GridPosition: Optional[Series[pa.typing.Float64]] = pa.Field(nullable=True, ge=0, le=25)   # type: ignore[type-arg]
-    Position: Optional[Series[pa.typing.Float64]] = pa.Field(nullable=True, ge=1, le=25)       # type: ignore[type-arg]
-    Q1: Optional[Series[pd.Timestamp]] = pa.Field(nullable=True)    # type: ignore[type-arg]
-    Q2: Optional[Series[pd.Timestamp]] = pa.Field(nullable=True)    # type: ignore[type-arg]
-    Q3: Optional[Series[pd.Timestamp]] = pa.Field(nullable=True)    # type: ignore[type-arg]
-    Time: Optional[Series[pd.Timedelta]] = pa.Field(nullable=True)  # type: ignore[type-arg]
+    GridPosition: Series[pa.Float64] | None = pa.Field(
+        nullable=True, ge=0, le=25
+    )
+    Position: Series[pa.Float64] | None = pa.Field(nullable=True, ge=1, le=25)
+    Q1: Series[pd.Timestamp] | None = pa.Field(nullable=True)
+    Q2: Series[pd.Timestamp] | None = pa.Field(nullable=True)
+    Q3: Series[pd.Timestamp] | None = pa.Field(nullable=True)
+    Time: Series[pd.Timedelta] | None = pa.Field(nullable=True)
     Status: Series[str]
-    Points: Optional[Series[pa.typing.Float64]] = pa.Field(nullable=True, ge=0, le=30)         # type: ignore[type-arg]
+    Points: Series[pa.Float64] | None = pa.Field(nullable=True, ge=0, le=30)
 
     class Config:
         """Pandera DataFrameModel configuration."""

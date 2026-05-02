@@ -23,7 +23,7 @@ from dataclasses import dataclass
 
 import fastf1.core
 import pandas as pd
-import pandera as pa
+import pandera.pandas as pa
 
 from f1_predictions.ingestion.fastf1_client import SessionKey
 from f1_predictions.ingestion.schemas import LapsSchema, ResultsSchema
@@ -85,7 +85,7 @@ def _add_metadata_columns(df: pd.DataFrame, key: SessionKey) -> pd.DataFrame:
     Parquet files can be filtered by season, round, or session type
     without relying on file path conventions.
 
-    The metadata columns are inserted at position 0–3 so they appear
+    The metadata columns are inserted at position 0-3 so they appear
     first in exploratory previews (``df.head()``).
 
     Args:
@@ -125,8 +125,8 @@ def _validate_laps(df: pd.DataFrame, key: SessionKey) -> pd.DataFrame:
         LapsSchema.validate(df, lazy=True)
         logger.debug("LapsSchema validation passed for session: %s", key)
     except pa.errors.SchemaErrors as exc:
-        logger.error(
-            "LapsSchema validation FAILED for session %s — %d error(s):\n%s",
+        logger.exception(
+            "LapsSchema validation FAILED for session %s - %d error(s):\n%s",
             key,
             len(exc.failure_cases),
             exc.failure_cases.to_string(),
@@ -152,8 +152,8 @@ def _validate_results(df: pd.DataFrame, key: SessionKey) -> pd.DataFrame:
         ResultsSchema.validate(df, lazy=True)
         logger.debug("ResultsSchema validation passed for session: %s", key)
     except pa.errors.SchemaErrors as exc:
-        logger.error(
-            "ResultsSchema validation FAILED for session %s — %d error(s):\n%s",
+        logger.exception(
+            "ResultsSchema validation FAILED for session %s - %d error(s):\n%s",
             key,
             len(exc.failure_cases),
             exc.failure_cases.to_string(),
@@ -208,14 +208,14 @@ def _extract_weather_summary(session: fastf1.core.Session) -> pd.DataFrame:
             "Rainfall_any":    bool(w["Rainfall"].any()),
         }])
         logger.debug("Weather summary extracted: %s", summary.to_dict("records"))
-        return summary
-
     except (KeyError, AttributeError) as exc:
         logger.warning(
             "Weather extraction failed (%s: %s). Returning empty summary.",
             type(exc).__name__, exc,
         )
         return pd.DataFrame(columns=expected_cols)
+    else:
+        return summary
 
 
 # ── Public API ────────────────────────────────────────────────────────────────

@@ -31,8 +31,9 @@ Partitioning strategy:
         data/raw/weather/season=2025/round=01/race_weather.parquet
 """
 
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
+from typing import Literal
 
 import pandas as pd
 
@@ -47,16 +48,16 @@ logger = get_logger(__name__)
 # Parquet engine: pyarrow is chosen over fastparquet for two reasons:
 #   1. pyarrow preserves pandas Timedelta columns natively.
 #   2. pyarrow is the de-facto standard, widely supported in the ecosystem.
-_PARQUET_ENGINE: str = "pyarrow"
+_PARQUET_ENGINE: Literal["auto", "pyarrow", "fastparquet"] = "pyarrow"
 
 # Snappy compression: best balance of speed and ratio for F1 telemetry data.
 # zstd would give better compression but adds a C dependency; not worth it here.
-_PARQUET_COMPRESSION: str = "snappy"
+_PARQUET_COMPRESSION: Literal["snappy", "gzip", "brotli", "lz4", "zstd"] = "snappy"
 
 
 # ── Data type enum ────────────────────────────────────────────────────────────
 
-class DataType(str, Enum):
+class DataType(StrEnum):
     """Enumeration of the data types written by the ingestion stage.
 
     Using an Enum instead of raw strings prevents silent typos in directory
@@ -98,9 +99,13 @@ def resolve_parquet_path(
     Example::
 
         from f1_predictions.ingestion.fastf1_client import SessionKey
-        from f1_predictions.ingestion.parquet_writer import resolve_parquet_path, DataType
+        from f1_predictions.ingestion.parquet_writer import (
+            resolve_parquet_path, DataType
+        )
 
-        key = SessionKey(year=2025, round_number=1, identifier="Q", event_name="Bahrain GP")
+        key = SessionKey(
+            year=2025, round_number=1, identifier="Q", event_name="Bahrain GP"
+        )
         path = resolve_parquet_path(key, DataType.LAPS)
         # → data/raw/laps/season=2025/round=01/qualifying_laps.parquet
     """
@@ -118,7 +123,9 @@ def resolve_parquet_path(
 
     # File name: <session_type_lower>_<data_type>.parquet
     # e.g., qualifying_laps.parquet, race_results.parquet
-    session_label = key.identifier.lower().replace("q", "qualifying").replace("r", "race")
+    session_label = (
+        key.identifier.lower().replace("q", "qualifying").replace("r", "race")
+    )
     filename = f"{session_label}_{data_type.value}.parquet"
 
     return partition_dir / filename
@@ -188,11 +195,12 @@ def write_parquet(
             compression=_PARQUET_COMPRESSION,
             index=False,  # Pandas RangeIndex carries no information — drop it.
         )
-    except OSError as exc:
-        logger.error(
-            "Failed to write Parquet file %s: %s",
-            target_path, exc,
+    except OSError:
+        logger.exception(
+            "Failed to write Parquet file %s",
+            target_path,
         )
+
         raise
 
     file_size_kb = target_path.stat().st_size / 1024
@@ -234,7 +242,9 @@ def read_parquet(
 
         from f1_predictions.ingestion.parquet_writer import read_parquet, DataType
 
-        laps = read_parquet(key, DataType.LAPS, columns=["Driver", "LapTime", "Compound"])
+        laps = read_parquet(
+            key, DataType.LAPS, columns=["Driver", "LapTime", "Compound"]
+        )
     """
     target_path = resolve_parquet_path(key, data_type, base_dir)
 

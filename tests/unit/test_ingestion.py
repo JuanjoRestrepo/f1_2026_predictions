@@ -14,8 +14,7 @@ Coverage targets (≥80%):
 """
 
 from pathlib import Path
-from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
@@ -38,7 +37,6 @@ from f1_predictions.ingestion.session_loader import (
     load_race,
 )
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================
@@ -46,13 +44,17 @@ from f1_predictions.ingestion.session_loader import (
 @pytest.fixture()
 def sample_key() -> SessionKey:
     """Return a canonical SessionKey for Bahrain 2025 Race."""
-    return SessionKey(year=2025, round_number=1, identifier="R", event_name="Bahrain Grand Prix")
+    return SessionKey(
+        year=2025, round_number=1, identifier="R", event_name="Bahrain Grand Prix"
+    )
 
 
 @pytest.fixture()
 def sample_quali_key() -> SessionKey:
     """Return a canonical SessionKey for Bahrain 2025 Qualifying."""
-    return SessionKey(year=2025, round_number=1, identifier="Q", event_name="Bahrain Grand Prix")
+    return SessionKey(
+        year=2025, round_number=1, identifier="Q", event_name="Bahrain Grand Prix"
+    )
 
 
 @pytest.fixture()
@@ -80,7 +82,6 @@ def minimal_laps_df() -> pd.DataFrame:
         "Sector3Time":   pd.to_timedelta(["0:00:31", "0:00:31", "0:00:32"]),
         "PitOutTime":    [pd.NaT, pd.NaT, pd.NaT],
         "PitInTime":     [pd.NaT, pd.NaT, pd.NaT],
-        "TrackStatus":   ["1", "1", "1"],
     })
 
 
@@ -104,7 +105,9 @@ def minimal_results_df() -> pd.DataFrame:
 
 
 @pytest.fixture()
-def mock_session(minimal_laps_df: pd.DataFrame, minimal_results_df: pd.DataFrame) -> MagicMock:
+def mock_session(
+    minimal_laps_df: pd.DataFrame, minimal_results_df: pd.DataFrame
+) -> MagicMock:
     """Mock fastf1.core.Session with realistic laps, results, and weather_data."""
     session = MagicMock()
     session.laps = minimal_laps_df
@@ -145,7 +148,8 @@ class TestSessionKey:
 
     def test_frozen_key_is_immutable(self, sample_key: SessionKey) -> None:
         """SessionKey is frozen — mutation raises FrozenInstanceError."""
-        with pytest.raises(Exception):  # dataclasses.FrozenInstanceError
+        from dataclasses import FrozenInstanceError
+        with pytest.raises(FrozenInstanceError):
             sample_key.year = 2026  # type: ignore[misc]
 
 
@@ -208,7 +212,7 @@ class TestAddMetadataColumns:
     def test_metadata_columns_at_start(
         self, minimal_laps_df: pd.DataFrame, sample_key: SessionKey
     ) -> None:
-        """Metadata columns appear at positions 0–3 for easy preview."""
+        """Metadata columns appear at positions 0-3 for easy preview."""
         result = _add_metadata_columns(minimal_laps_df, sample_key)
         assert result.columns[0] == COL_SEASON
         assert result.columns[1] == COL_ROUND
@@ -232,13 +236,13 @@ class TestExtractWeatherSummary:
     def test_rainfall_aggregated_as_bool(self, mock_session: MagicMock) -> None:
         """Rainfall_any is True only if any row has rainfall=True."""
         result = _extract_weather_summary(mock_session)
-        assert result["Rainfall_any"].iloc[0] == False
+        assert not result["Rainfall_any"].iloc[0]
 
     def test_rainfall_true_when_any_row_wet(self, mock_session: MagicMock) -> None:
         """Rainfall_any=True when at least one weather row has rainfall."""
         mock_session.weather_data["Rainfall"] = [False, True, False]
         result = _extract_weather_summary(mock_session)
-        assert result["Rainfall_any"].iloc[0] == True
+        assert result["Rainfall_any"].iloc[0]
 
     def test_empty_weather_data_returns_empty_df(self, mock_session: MagicMock) -> None:
         """Empty weather_data returns an empty DataFrame (not an error)."""
@@ -325,7 +329,9 @@ class TestResolveParquetPath:
     ) -> None:
         """DataType is reflected in the path."""
         laps_path = resolve_parquet_path(sample_key, DataType.LAPS, base_dir=tmp_path)
-        results_path = resolve_parquet_path(sample_key, DataType.RESULTS, base_dir=tmp_path)
+        results_path = resolve_parquet_path(
+            sample_key, DataType.RESULTS, base_dir=tmp_path
+        )
         assert "laps" in str(laps_path)
         assert "results" in str(results_path)
 
@@ -344,7 +350,9 @@ class TestWriteAndReadParquet:
         self, sample_key: SessionKey, minimal_laps_df: pd.DataFrame, tmp_path: Path
     ) -> None:
         """write_parquet creates a file at the expected path."""
-        path = write_parquet(minimal_laps_df, sample_key, DataType.LAPS, base_dir=tmp_path)
+        path = write_parquet(
+            minimal_laps_df, sample_key, DataType.LAPS, base_dir=tmp_path
+        )
         assert path.exists()
         assert path.suffix == ".parquet"
 
@@ -352,9 +360,17 @@ class TestWriteAndReadParquet:
         self, sample_key: SessionKey, minimal_laps_df: pd.DataFrame, tmp_path: Path
     ) -> None:
         """Second write with overwrite=False does not modify the file."""
-        path1 = write_parquet(minimal_laps_df, sample_key, DataType.LAPS, base_dir=tmp_path)
+        path1 = write_parquet(
+            minimal_laps_df, sample_key, DataType.LAPS, base_dir=tmp_path
+        )
         mtime_before = path1.stat().st_mtime
-        path2 = write_parquet(minimal_laps_df, sample_key, DataType.LAPS, base_dir=tmp_path, overwrite=False)
+        path2 = write_parquet(
+            minimal_laps_df,
+            sample_key,
+            DataType.LAPS,
+            base_dir=tmp_path,
+            overwrite=False,
+        )
         assert path1 == path2
         assert path2.stat().st_mtime == mtime_before  # File not touched
 
@@ -363,7 +379,13 @@ class TestWriteAndReadParquet:
     ) -> None:
         """overwrite=True replaces an existing file."""
         write_parquet(minimal_laps_df, sample_key, DataType.LAPS, base_dir=tmp_path)
-        path = write_parquet(minimal_laps_df, sample_key, DataType.LAPS, base_dir=tmp_path, overwrite=True)
+        path = write_parquet(
+            minimal_laps_df,
+            sample_key,
+            DataType.LAPS,
+            base_dir=tmp_path,
+            overwrite=True,
+        )
         assert path.exists()
 
     def test_read_round_trip(

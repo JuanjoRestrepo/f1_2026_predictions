@@ -12,6 +12,7 @@ Markers:
 
 import logging
 import sys
+from collections.abc import Generator
 from pathlib import Path
 
 import pandas as pd
@@ -48,7 +49,7 @@ def sample_laps_df() -> pd.DataFrame:
 
 
 @pytest.fixture(autouse=True)
-def reset_pipeline_logger() -> None:  # type: ignore[return]
+def reset_pipeline_logger() -> Generator[None, None, None]:
     """Remove all handlers from the root pipeline logger between tests.
 
     Without this fixture, handlers accumulate across test functions because
@@ -203,8 +204,8 @@ class TestConfigureRootLogger:
         assert (tmp_path / "test_pipeline.log").exists()
 
     def test_invalid_level_raises(self) -> None:
-        """An invalid level string raises ValueError."""
-        with pytest.raises(ValueError, match="Invalid log level"):
+        """An invalid level string raises TypeError."""
+        with pytest.raises(TypeError, match="Invalid log level"):
             configure_root_pipeline_logger(level="TRACE", enable_file_logging=False)
 
 
