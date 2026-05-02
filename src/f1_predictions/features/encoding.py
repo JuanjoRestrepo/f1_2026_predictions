@@ -63,6 +63,7 @@ COL_GRID_GAP: str = "grid_position_gap"
 
 # ── Grid position features ────────────────────────────────────────────────────
 
+
 def add_grid_position_features(
     df: pd.DataFrame,
     grid_col: str = "GridPosition",
@@ -104,12 +105,15 @@ def add_grid_position_features(
 
     logger.info(
         "Grid position features added: %s, %s, %s",
-        COL_GRID_FRONT_ROW, COL_GRID_TOP10, COL_GRID_GAP,
+        COL_GRID_FRONT_ROW,
+        COL_GRID_TOP10,
+        COL_GRID_GAP,
     )
     return result
 
 
 # ── OneHotEncoder wrapper ─────────────────────────────────────────────────────
+
 
 class CategoricalFeatureEncoder:
     """Fit-transform wrapper for OHE of F1 categorical columns.
@@ -144,8 +148,8 @@ class CategoricalFeatureEncoder:
         )
         self._encoder: OneHotEncoder = OneHotEncoder(
             handle_unknown="ignore",
-            sparse_output=False,   # Return dense array; no scipy sparse dependency
-            dtype="float32",       # float32 saves memory vs float64 for OHE features
+            sparse_output=False,  # Return dense array; no scipy sparse dependency
+            dtype="float32",  # float32 saves memory vs float64 for OHE features
         )
         self._feature_names: list[str] = []
         self._is_fitted: bool = False
@@ -175,7 +179,9 @@ class CategoricalFeatureEncoder:
         logger.info(
             "CategoricalFeatureEncoder fitted on %d column(s) → %d OHE features. "
             "Columns: %s",
-            len(self.columns), total_features, self.columns,
+            len(self.columns),
+            total_features,
+            self.columns,
         )
         return self
 
@@ -220,9 +226,10 @@ class CategoricalFeatureEncoder:
         result = pd.concat([df.drop(columns=self.columns), ohe_df], axis=1)
 
         logger.info(
-            "CategoricalFeatureEncoder transform complete: "
-            "%d rows x %d → %d columns.",
-            len(df), len(df.columns), len(result.columns),
+            "CategoricalFeatureEncoder transform complete: %d rows x %d → %d columns.",
+            len(df),
+            len(df.columns),
+            len(result.columns),
         )
         return result
 

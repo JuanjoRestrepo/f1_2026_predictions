@@ -5,8 +5,10 @@ from pathlib import Path
 
 NOTEBOOK_PATH = Path("notebooks/01_eda_and_modeling_v1.ipynb")
 
+
 def md(text: str) -> dict:
     return {"cell_type": "markdown", "metadata": {}, "source": [text]}
+
 
 def code(text: str) -> dict:
     return {
@@ -16,6 +18,7 @@ def code(text: str) -> dict:
         "outputs": [],
         "source": [text],
     }
+
 
 cells = [
     # ─── 1. Title ──────────────────────────────────────────────────────────────
@@ -35,7 +38,6 @@ cells = [
 9. Evaluation & Interpretation  
 10. Conclusions & Next Steps  
 """),
-
     # ─── 2. Environment ────────────────────────────────────────────────────────
     md("## 2. Environment Setup & Imports"),
     code("""\
@@ -78,7 +80,6 @@ print(f"  pandas   {pd.__version__}")
 print(f"  numpy    {np.__version__}")
 print(f"  xgboost  {xgb.__version__}")
 """),
-
     # ─── 3. Data Ingestion ────────────────────────────────────────────────────
     md("""## 3. Data Ingestion (Gold Layer)
 
@@ -134,7 +135,6 @@ else:
     print(f"Synthetic dataset created: {df_all.shape}")
     df_all.head()
 """),
-
     # ─── 4. Profiling ─────────────────────────────────────────────────────────
     md("## 4. Data Inspection & Profiling"),
     code("""\
@@ -155,7 +155,6 @@ numeric_cols = df_all.select_dtypes(include=[np.number]).columns.tolist()
 print("=== DESCRIPTIVE STATISTICS ===")
 df_all[numeric_cols].describe().T.round(3)
 """),
-
     # ─── 5. EDA ───────────────────────────────────────────────────────────────
     md("""## 5. Exploratory Data Analysis (EDA)
 
@@ -183,7 +182,6 @@ plt.tight_layout()
 plt.savefig(REPORTS_DIR / "fig_01_laptime_distribution.png", bbox_inches="tight")
 plt.show()
 """),
-
     md("### 5.2 Tyre Degradation Analysis"),
     code("""\
 # Mean lap time by normalised tyre life — quantised into decile bins
@@ -200,7 +198,6 @@ plt.tight_layout()
 plt.savefig(REPORTS_DIR / "fig_02_tyre_degradation.png", bbox_inches="tight")
 plt.show()
 """),
-
     md("### 5.3 Correlation Matrix"),
     code("""\
 # Select numeric features relevant for modeling
@@ -227,7 +224,6 @@ plt.tight_layout()
 plt.savefig(REPORTS_DIR / "fig_03_correlation_matrix.png", bbox_inches="tight")
 plt.show()
 """),
-
     md("""### 5.4 Historical Points vs Lap Time
 
 Historical championship points (pre-race) serve as a proxy for driver/team quality.
@@ -251,7 +247,6 @@ plt.tight_layout()
 plt.savefig(REPORTS_DIR / "fig_04_points_vs_laptime.png", bbox_inches="tight")
 plt.show()
 """),
-
     # ─── 6. Feature Summary ───────────────────────────────────────────────────
     md("## 6. Feature Engineering Summary"),
     code("""\
@@ -276,7 +271,6 @@ X_full, y_full = build_feature_matrix(df_all)
 print(f"Feature matrix: {X_full.shape[0]:,} rows × {X_full.shape[1]} features")
 print("Features:", list(X_full.columns))
 """),
-
     # ─── 7. Baseline ──────────────────────────────────────────────────────────
     md("""## 7. Baseline Model — Linear Regression
 
@@ -336,7 +330,6 @@ print(f"  MAE : {mae_bl:.3f} s")
 print(f"  RMSE: {rmse_bl:.3f} s")
 print(f"{'='*40}")
 """),
-
     # ─── 8. XGBoost + Grid Search ─────────────────────────────────────────────
     md("""## 8. XGBoost Regressor + Grid Search
 
@@ -398,7 +391,6 @@ print(f"  XGBoost      — MAE: {mae_xgb:.3f} s  RMSE: {rmse_xgb:.3f} s")
 print(f"  Improvement  : {improvement:.1f}% reduction in MAE")
 print(f"{'='*45}")
 """),
-
     # ─── 9. Evaluation & Interpretation ───────────────────────────────────────
     md("## 9. Evaluation & Interpretation"),
     md("### 9.1 Predicted vs Actual Lap Times"),
@@ -430,7 +422,6 @@ fig.update_layout(
 fig.write_html(str(REPORTS_DIR / "fig_05_predicted_vs_actual.html"))
 fig.show()
 """),
-
     md("### 9.2 Feature Importance"),
     code("""\
 # Gain-based importance (default in XGBoost) measures how much each feature
@@ -457,7 +448,6 @@ fig_imp.show()
 print("\\nTop-5 most predictive features:")
 print(importance.sort_values(ascending=False).head(5).to_string())
 """),
-
     md("### 9.3 Residual Analysis"),
     code("""\
 residuals = y_test.values - y_pred_xgb
@@ -482,7 +472,6 @@ plt.show()
 print(f"\\nMean residual : {residuals.mean():.4f} s (bias)")
 print(f"Std  residual : {residuals.std():.4f} s")
 """),
-
     # ─── 10. Conclusions ──────────────────────────────────────────────────────
     md("""## 10. Conclusions & Next Steps
 
@@ -535,5 +524,7 @@ notebook = {
 }
 
 NOTEBOOK_PATH.parent.mkdir(parents=True, exist_ok=True)
-NOTEBOOK_PATH.write_text(json.dumps(notebook, indent=1, ensure_ascii=False), encoding="utf-8")
+NOTEBOOK_PATH.write_text(
+    json.dumps(notebook, indent=1, ensure_ascii=False), encoding="utf-8"
+)
 print(f"Notebook written → {NOTEBOOK_PATH}")

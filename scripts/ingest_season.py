@@ -18,8 +18,6 @@ import logging
 import sys
 import time
 
-import fastf1
-
 from f1_predictions.cleaning.pipeline import run_cleaning_pipeline
 from f1_predictions.features.pipeline import run_feature_pipeline
 from f1_predictions.ingestion.fastf1_client import load_session
@@ -31,8 +29,16 @@ logger = get_logger(__name__)
 
 # F1 points system (2010 onwards)
 POINTS_MAP: dict[int, float] = {
-    1: 25, 2: 18, 3: 15, 4: 12, 5: 10,
-    6: 8,  7: 6,  8: 4,  9: 2,  10: 1,
+    1: 25,
+    2: 18,
+    3: 15,
+    4: 12,
+    5: 10,
+    6: 8,
+    7: 6,
+    8: 4,
+    9: 2,
+    10: 1,
 }
 
 
@@ -80,7 +86,9 @@ def ingest_round(
 
     # ── Stage 2: Cleaning (Silver) ─────────────────────────────────────────
     try:
-        cleaning_report = run_cleaning_pipeline(key, session_type="race", overwrite=overwrite)
+        cleaning_report = run_cleaning_pipeline(
+            key, session_type="race", overwrite=overwrite
+        )
         logger.info(
             "Silver written: %d rows retained (%.1f%%)",
             cleaning_report.clean_row_count,
@@ -137,7 +145,9 @@ def ingest_season(
     logger.info("=" * 60)
     logger.info(
         "Season %d ingestion complete: %d OK, %d failed",
-        year, len(successes), len(failures),
+        year,
+        len(successes),
+        len(failures),
     )
     if failures:
         logger.warning("Failed rounds: %s", failures)
@@ -149,17 +159,32 @@ def parse_args() -> argparse.Namespace:
         description="Ingest a full F1 season: Bronze -> Silver -> Gold.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("--year", type=int, required=True,
-                        help="Championship season year (e.g. 2024).")
-    parser.add_argument("--max-rounds", type=int, default=24,
-                        help="Maximum rounds to process (use season round count).")
-    parser.add_argument("--overwrite", action="store_true",
-                        help="Re-process rounds even if Parquets exist.")
-    parser.add_argument("--delay", type=float, default=2.0,
-                        help="Seconds to wait between rounds (CDN rate limiting).")
-    parser.add_argument("--log-level", default="INFO",
-                        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-                        help="Logging verbosity.")
+    parser.add_argument(
+        "--year", type=int, required=True, help="Championship season year (e.g. 2024)."
+    )
+    parser.add_argument(
+        "--max-rounds",
+        type=int,
+        default=24,
+        help="Maximum rounds to process (use season round count).",
+    )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Re-process rounds even if Parquets exist.",
+    )
+    parser.add_argument(
+        "--delay",
+        type=float,
+        default=2.0,
+        help="Seconds to wait between rounds (CDN rate limiting).",
+    )
+    parser.add_argument(
+        "--log-level",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        help="Logging verbosity.",
+    )
     return parser.parse_args()
 
 
@@ -171,7 +196,9 @@ if __name__ == "__main__":
 
     logger.info(
         "Starting ingestion: year=%d  max_rounds=%d  overwrite=%s",
-        args.year, args.max_rounds, args.overwrite,
+        args.year,
+        args.max_rounds,
+        args.overwrite,
     )
 
     ingest_season(

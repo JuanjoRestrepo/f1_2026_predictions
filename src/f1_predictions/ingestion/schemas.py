@@ -79,7 +79,8 @@ class LapsSchema(pa.DataFrameModel):
     Team: Series[str]
 
     # Compound is None for in-laps/out-laps and can be UNKNOWN for unmatched stints.
-    # The isin check is relaxed to allow None; downstream cleaning drops invalid compounds.
+    # The isin check is relaxed to allow None; downstream cleaning drops
+    # invalid compounds.
     Compound: Series[str] = pa.Field(nullable=True)
     TyreLife: Series[pa.Float64] = pa.Field(nullable=True)
     FreshTyre: Series[bool] = pa.Field(nullable=True)

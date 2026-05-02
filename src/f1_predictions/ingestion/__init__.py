@@ -77,4 +77,3 @@ __all__ = [
     "resolve_parquet_path",
     "write_parquet",
 ]
-

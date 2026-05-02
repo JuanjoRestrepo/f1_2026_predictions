@@ -53,6 +53,7 @@ DEFAULT_SORT_KEYS: list[str] = ["Driver", "Stint", "LapNumber"]
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
+
 def add_rolling_pace_features(
     df: pd.DataFrame,
     lap_time_col: str = "LapTime_s",
@@ -120,17 +121,14 @@ def add_rolling_pace_features(
     long_col = f"roll_laptime_{window_long}"
     std_col = f"roll_std_{window_short}"
 
-    result[short_col] = (
-        result.groupby(groups, group_keys=False)[lap_time_col]
-        .transform(lambda s: _rolling_mean(s, window_short))
+    result[short_col] = result.groupby(groups, group_keys=False)[
+        lap_time_col
+    ].transform(lambda s: _rolling_mean(s, window_short))
+    result[long_col] = result.groupby(groups, group_keys=False)[lap_time_col].transform(
+        lambda s: _rolling_mean(s, window_long)
     )
-    result[long_col] = (
-        result.groupby(groups, group_keys=False)[lap_time_col]
-        .transform(lambda s: _rolling_mean(s, window_long))
-    )
-    result[std_col] = (
-        result.groupby(groups, group_keys=False)[lap_time_col]
-        .transform(lambda s: _rolling_std(s, window_short))
+    result[std_col] = result.groupby(groups, group_keys=False)[lap_time_col].transform(
+        lambda s: _rolling_std(s, window_short)
     )
 
     # Delta: positive = slowing down (tyre cliff signal).
@@ -140,7 +138,11 @@ def add_rolling_pace_features(
     logger.info(
         "Rolling pace features added: %s | %d new columns "
         "(%s, %s, %s, delta_roll_pace)",
-        short_col, n_new_cols, short_col, long_col, std_col,
+        short_col,
+        n_new_cols,
+        short_col,
+        long_col,
+        std_col,
     )
     return result
 
@@ -178,15 +180,15 @@ def add_lap_delta_to_fastest(
     )
 
     result = df.copy()
-    result["delta_to_fastest_s"] = (
-        result.groupby(groups, group_keys=False)[lap_time_col]
-        .transform(lambda s: s - s.min())
-    )
+    result["delta_to_fastest_s"] = result.groupby(groups, group_keys=False)[
+        lap_time_col
+    ].transform(lambda s: s - s.min())
     logger.info("delta_to_fastest_s feature added.")
     return result
 
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
+
 
 def _assert_columns_present(
     df: pd.DataFrame,

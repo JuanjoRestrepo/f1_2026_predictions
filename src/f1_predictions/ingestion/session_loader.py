@@ -44,6 +44,7 @@ COL_EVENT_NAME: str = "EventName"
 
 # ── Result dataclasses ────────────────────────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class QualifyingData:
     """Validated data extracted from a qualifying session.
@@ -77,6 +78,7 @@ class RaceData:
 
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
+
 
 def _add_metadata_columns(df: pd.DataFrame, key: SessionKey) -> pd.DataFrame:
     """Append pipeline metadata columns to a DataFrame.
@@ -181,11 +183,14 @@ def _extract_weather_summary(session: fastf1.core.Session) -> pd.DataFrame:
         A single-row DataFrame with aggregated weather statistics.
     """
     expected_cols = [
-        "AirTemp_mean", "AirTemp_max",
-        "TrackTemp_mean", "TrackTemp_max",
+        "AirTemp_mean",
+        "AirTemp_max",
+        "TrackTemp_mean",
+        "TrackTemp_max",
         "Humidity_mean",
         "Pressure_mean",
-        "WindSpeed_mean", "WindSpeed_max",
+        "WindSpeed_mean",
+        "WindSpeed_max",
         "Rainfall_any",
     ]
 
@@ -195,23 +200,28 @@ def _extract_weather_summary(session: fastf1.core.Session) -> pd.DataFrame:
             logger.warning("No weather data available for session.")
             return pd.DataFrame(columns=expected_cols)
 
-        summary = pd.DataFrame([{
-            "AirTemp_mean":    w["AirTemp"].mean(),
-            "AirTemp_max":     w["AirTemp"].max(),
-            "TrackTemp_mean":  w["TrackTemp"].mean(),
-            "TrackTemp_max":   w["TrackTemp"].max(),
-            "Humidity_mean":   w["Humidity"].mean(),
-            "Pressure_mean":   w["Pressure"].mean(),
-            "WindSpeed_mean":  w["WindSpeed"].mean(),
-            "WindSpeed_max":   w["WindSpeed"].max(),
-            # Rainfall is boolean — any True in the session = True
-            "Rainfall_any":    bool(w["Rainfall"].any()),
-        }])
+        summary = pd.DataFrame(
+            [
+                {
+                    "AirTemp_mean": w["AirTemp"].mean(),
+                    "AirTemp_max": w["AirTemp"].max(),
+                    "TrackTemp_mean": w["TrackTemp"].mean(),
+                    "TrackTemp_max": w["TrackTemp"].max(),
+                    "Humidity_mean": w["Humidity"].mean(),
+                    "Pressure_mean": w["Pressure"].mean(),
+                    "WindSpeed_mean": w["WindSpeed"].mean(),
+                    "WindSpeed_max": w["WindSpeed"].max(),
+                    # Rainfall is boolean — any True in the session = True
+                    "Rainfall_any": bool(w["Rainfall"].any()),
+                }
+            ]
+        )
         logger.debug("Weather summary extracted: %s", summary.to_dict("records"))
     except (KeyError, AttributeError) as exc:
         logger.warning(
             "Weather extraction failed (%s: %s). Returning empty summary.",
-            type(exc).__name__, exc,
+            type(exc).__name__,
+            exc,
         )
         return pd.DataFrame(columns=expected_cols)
     else:
@@ -219,6 +229,7 @@ def _extract_weather_summary(session: fastf1.core.Session) -> pd.DataFrame:
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
+
 
 def load_qualifying(
     session: fastf1.core.Session,
@@ -264,7 +275,8 @@ def load_qualifying(
 
     logger.debug(
         "Raw laps shape: %s | Raw results shape: %s",
-        raw_laps.shape, raw_results.shape,
+        raw_laps.shape,
+        raw_results.shape,
     )
 
     laps = _add_metadata_columns(raw_laps, key)
@@ -275,7 +287,9 @@ def load_qualifying(
 
     logger.info(
         "Qualifying extraction complete: %s | laps=%d  drivers=%d",
-        key, len(laps), len(results),
+        key,
+        len(laps),
+        len(results),
     )
     return QualifyingData(key=key, laps=laps, results=results)
 
@@ -318,7 +332,8 @@ def load_race(
 
     logger.debug(
         "Raw laps shape: %s | Raw results shape: %s",
-        raw_laps.shape, raw_results.shape,
+        raw_laps.shape,
+        raw_results.shape,
     )
 
     laps = _add_metadata_columns(raw_laps, key)

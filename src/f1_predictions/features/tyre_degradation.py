@@ -54,6 +54,7 @@ DEFAULT_STINT_GROUPS: list[str] = ["Driver", "Stint"]
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
+
 def _ols_slope(
     x: NDArray[np.float64],
     y: NDArray[np.float64],
@@ -90,6 +91,7 @@ def _ols_slope(
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
+
 
 def add_tyre_degradation_slope(
     df: pd.DataFrame,
@@ -174,8 +176,10 @@ def add_tyre_degradation_slope(
         intercepts[group_key] = intercept
 
     # Broadcast slope back to every row in each group.
-    result[COL_DEG_SLOPE] = result.groupby(groups, group_keys=False).ngroup().map(
-        {i: slopes.get(k, float("nan")) for i, k in enumerate(slopes)}
+    result[COL_DEG_SLOPE] = (
+        result.groupby(groups, group_keys=False)
+        .ngroup()
+        .map({i: slopes.get(k, float("nan")) for i, k in enumerate(slopes)})
     )
 
     # Use direct groupby transform for clean broadcast.
@@ -189,12 +193,12 @@ def add_tyre_degradation_slope(
         s = slopes.get(key, float("nan"))
         return pd.Series([s] * len(group), index=group.index)
 
-    result[COL_DEG_SLOPE] = (
-        result.groupby(groups, group_keys=False)
-        .apply(_slope_for_group)
+    result[COL_DEG_SLOPE] = result.groupby(groups, group_keys=False).apply(
+        _slope_for_group
     )
 
     if include_intercept:
+
         def _intercept_for_group(group: pd.DataFrame) -> pd.Series:
             """Return the pre-computed intercept broadcast to all rows."""
             key = (
@@ -205,16 +209,17 @@ def add_tyre_degradation_slope(
             ic = intercepts.get(key, float("nan"))
             return pd.Series([ic] * len(group), index=group.index)
 
-        result[COL_DEG_INTERCEPT] = (
-            result.groupby(groups, group_keys=False)
-            .apply(_intercept_for_group)
+        result[COL_DEG_INTERCEPT] = result.groupby(groups, group_keys=False).apply(
+            _intercept_for_group
         )
 
     logger.info(
         "Tyre degradation slope computed: %d group(s), %d skipped "
         "(<min_laps or collinear). "
         "Column: %s",
-        len(slopes), n_skipped, COL_DEG_SLOPE,
+        len(slopes),
+        n_skipped,
+        COL_DEG_SLOPE,
     )
     return result
 
@@ -260,9 +265,8 @@ def add_normalised_tyre_life(
             return pd.Series(0.0, index=series.index)
         return pd.Series((series - series.min()) / rng, index=series.index)
 
-    result[COL_TYRE_LIFE_NORM] = (
-        result.groupby(groups, group_keys=False)[tyre_life_col]
-        .transform(_minmax_norm)
-    )
+    result[COL_TYRE_LIFE_NORM] = result.groupby(groups, group_keys=False)[
+        tyre_life_col
+    ].transform(_minmax_norm)
     logger.info("tyre_life_norm feature added (min-max per Driver/Stint).")
     return result

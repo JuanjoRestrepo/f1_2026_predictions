@@ -55,10 +55,13 @@ logger = get_logger(__name__)
 # FastF1 session identifier literals — all valid values accepted by
 # fastf1.get_session(). Using a Literal type prevents silent typos.
 SessionIdentifier = Literal[
-    "FP1", "FP2", "FP3",
-    "Q", "SQ",        # Qualifying and Sprint Qualifying
-    "S",              # Sprint
-    "R",              # Race
+    "FP1",
+    "FP2",
+    "FP3",
+    "Q",
+    "SQ",  # Qualifying and Sprint Qualifying
+    "S",  # Sprint
+    "R",  # Race
 ]
 
 # ── Retry configuration constants ─────────────────────────────────────────────
@@ -74,6 +77,7 @@ _WAIT_MAX_SECONDS: int = 30
 _WAIT_MULTIPLIER: int = 2
 
 # ── Cache initialisation ──────────────────────────────────────────────────────
+
 
 @functools.lru_cache(maxsize=1)
 def _configure_fastf1_cache() -> None:
@@ -93,6 +97,7 @@ def _configure_fastf1_cache() -> None:
 
 
 # ── Session dataclass ─────────────────────────────────────────────────────────
+
 
 @dataclass(frozen=True)
 class SessionKey:
@@ -128,6 +133,7 @@ class SessionKey:
 
 
 # ── Retry-decorated loader ────────────────────────────────────────────────────
+
 
 def _log_retry_attempt(retry_state: RetryCallState) -> None:
     """Log each retry attempt with context before sleeping.
@@ -196,12 +202,13 @@ def _load_session_with_retry(
         laps=True,
         telemetry=False,  # Load via load_telemetry() in features stage
         weather=True,
-        messages=False,   # Race control messages not needed for prediction
+        messages=False,  # Race control messages not needed for prediction
     )
     return session
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
+
 
 def load_session(
     year: int,
@@ -252,7 +259,9 @@ def load_session(
 
     logger.info(
         "Loading session: year=%d  round=%d  type=%s",
-        year, round_number, identifier,
+        year,
+        round_number,
+        identifier,
     )
 
     try:
@@ -261,7 +270,10 @@ def load_session(
         logger.exception(
             "All %d retry attempts exhausted for session %d/%d/%s. "
             "Check network connectivity and FastF1 service status.",
-            _MAX_ATTEMPTS, year, round_number, identifier,
+            _MAX_ATTEMPTS,
+            year,
+            round_number,
+            identifier,
         )
         raise
 
@@ -271,7 +283,9 @@ def load_session(
     except (KeyError, AttributeError):
         logger.warning(
             "Could not resolve event name for session %d/%d/%s.",
-            year, round_number, identifier,
+            year,
+            round_number,
+            identifier,
         )
 
     key = SessionKey(

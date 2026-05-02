@@ -159,6 +159,8 @@ exclude = [
     "data",
     "models",
     "reports",
+    "scripts",    # Support scripts: relax rules
+    "scratch",    # Temp scripts: relax rules
 ]
 
 [tool.ruff.lint]
@@ -190,6 +192,8 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["ANN", "D"]  # Tests: relax annotations and docstrings
 "notebooks/**/*.py" = ["ALL"]   # Generated .py from notebooks: no enforcement
+"scripts/**/*.py" = ["D", "ANN", "E501", "W291"] # Support: relax docstrings, types, lines
+"scratch/**/*.py" = ["D", "ANN", "E501", "W291"] # Scratch: relax docstrings, types, lines
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"  # Enforce Google-style docstrings across all modules

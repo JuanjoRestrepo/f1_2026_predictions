@@ -48,6 +48,7 @@ logger = get_logger(__name__)
 
 # ── Report dataclass ──────────────────────────────────────────────────────────
 
+
 @dataclass
 class FeatureReport:
     """Summary of the feature engineering run for one session.
@@ -74,6 +75,7 @@ class FeatureReport:
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
+
 
 def run_feature_pipeline(
     key: SessionKey,
@@ -188,6 +190,7 @@ def run_feature_pipeline(
     if "GridPosition" in df.columns:
         logger.info("Step 6/8 — Grid position features")
         from f1_predictions.features.encoding import add_grid_position_features
+
         df = add_grid_position_features(df)
     else:
         logger.info(
@@ -199,6 +202,7 @@ def run_feature_pipeline(
     logger.info("Step 7/8 — Categorical OHE encoding")
     # Only encode columns that are actually present in this session's data.
     from f1_predictions.features.encoding import DEFAULT_OHE_COLUMNS
+
     available_ohe_cols = [c for c in DEFAULT_OHE_COLUMNS if c in df.columns]
 
     if available_ohe_cols:
@@ -228,8 +232,10 @@ def run_feature_pipeline(
     logger.info(
         "Feature pipeline complete: %s | %d x %d → %d x %d | OHE cols: %d | %s",
         key,
-        report.input_row_count, report.input_col_count,
-        report.output_row_count, report.output_col_count,
+        report.input_row_count,
+        report.input_col_count,
+        report.output_row_count,
+        report.output_col_count,
         report.ohe_feature_count,
         output_path,
     )
@@ -264,6 +270,7 @@ def load_feature_matrix(
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
+
 def _resolve_gold_path(key: SessionKey, outputs_dir: Path) -> Path:
     """Compute the Gold-layer Parquet path without creating directories.
 
@@ -275,4 +282,5 @@ def _resolve_gold_path(key: SessionKey, outputs_dir: Path) -> Path:
         Resolved Path (may or may not exist).
     """
     from f1_predictions.ingestion.parquet_writer import resolve_parquet_path
+
     return resolve_parquet_path(key, DataType.LAPS, base_dir=outputs_dir)

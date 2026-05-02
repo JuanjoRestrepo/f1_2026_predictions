@@ -57,6 +57,7 @@ _PARQUET_COMPRESSION: Literal["snappy", "gzip", "brotli", "lz4", "zstd"] = "snap
 
 # ── Data type enum ────────────────────────────────────────────────────────────
 
+
 class DataType(StrEnum):
     """Enumeration of the data types written by the ingestion stage.
 
@@ -75,6 +76,7 @@ class DataType(StrEnum):
 
 
 # ── Path resolution ───────────────────────────────────────────────────────────
+
 
 def resolve_parquet_path(
     key: SessionKey,
@@ -132,6 +134,7 @@ def resolve_parquet_path(
 
 
 # ── Writer ────────────────────────────────────────────────────────────────────
+
 
 def write_parquet(
     df: pd.DataFrame,
@@ -206,7 +209,10 @@ def write_parquet(
     file_size_kb = target_path.stat().st_size / 1024
     logger.info(
         "Parquet written: %s | rows=%d  cols=%d  size=%.1fKB",
-        target_path, len(df), len(df.columns), file_size_kb,
+        target_path,
+        len(df),
+        len(df.columns),
+        file_size_kb,
     )
     return target_path
 
@@ -258,6 +264,8 @@ def read_parquet(
     df = pd.read_parquet(target_path, engine=_PARQUET_ENGINE, columns=columns)
     logger.debug(
         "Parquet read: %s | rows=%d  cols=%d",
-        target_path, len(df), len(df.columns),
+        target_path,
+        len(df),
+        len(df.columns),
     )
     return df
