@@ -64,33 +64,34 @@ class LapsSchema(pa.DataFrameModel):
     """
 
     Time: Series[pd.Timedelta]
-    LapTime: Series[pd.Timedelta] | None
+    LapTime: Series[pd.Timedelta] = pa.Field(nullable=True)
     LapNumber: Series[pa.Int64] = pa.Field(ge=1, le=100)
-    Sector1Time: Series[pd.Timedelta] | None
-    Sector2Time: Series[pd.Timedelta] | None
-    Sector3Time: Series[pd.Timedelta] | None
-    PitOutTime: Series[pd.Timestamp] | None = pa.Field(nullable=True)
-    PitInTime: Series[pd.Timestamp] | None = pa.Field(nullable=True)
+    Sector1Time: Series[pd.Timedelta] = pa.Field(nullable=True)
+    Sector2Time: Series[pd.Timedelta] = pa.Field(nullable=True)
+    Sector3Time: Series[pd.Timedelta] = pa.Field(nullable=True)
+    # FastF1 returns PitOutTime/PitInTime as Timedelta (offset from session start),
+    # NOT as Timestamp. Declaring them as Timedelta matches the actual dtype.
+    PitOutTime: Series[pd.Timedelta] = pa.Field(nullable=True)
+    PitInTime: Series[pd.Timedelta] = pa.Field(nullable=True)
 
     Driver: Series[str] = pa.Field(str_length={"min_value": 2, "max_value": 3})
     DriverNumber: Series[str]
     Team: Series[str]
 
-    Compound: Series[str] | None = pa.Field(
-        nullable=True,
-        isin=["SOFT", "MEDIUM", "HARD", "INTERMEDIATE", "WET", "UNKNOWN"],
-    )
-    TyreLife: Series[pa.Float64] | None
-    FreshTyre: Series[bool] | None
-    Stint: Series[pa.Int64] | None = pa.Field(nullable=True, ge=1)
+    # Compound is None for in-laps/out-laps and can be UNKNOWN for unmatched stints.
+    # The isin check is relaxed to allow None; downstream cleaning drops invalid compounds.
+    Compound: Series[str] = pa.Field(nullable=True)
+    TyreLife: Series[pa.Float64] = pa.Field(nullable=True)
+    FreshTyre: Series[bool] = pa.Field(nullable=True)
+    Stint: Series[pa.Int64] = pa.Field(nullable=True, ge=1)
 
-    SpeedI1: Series[pa.Float64] | None = pa.Field(nullable=True, ge=0, le=450)
-    SpeedI2: Series[pa.Float64] | None = pa.Field(nullable=True, ge=0, le=450)
-    SpeedFL: Series[pa.Float64] | None = pa.Field(nullable=True, ge=0, le=450)
-    SpeedST: Series[pa.Float64] | None = pa.Field(nullable=True, ge=0, le=450)
+    SpeedI1: Series[pa.Float64] = pa.Field(nullable=True, ge=0, le=450)
+    SpeedI2: Series[pa.Float64] = pa.Field(nullable=True, ge=0, le=450)
+    SpeedFL: Series[pa.Float64] = pa.Field(nullable=True, ge=0, le=450)
+    SpeedST: Series[pa.Float64] = pa.Field(nullable=True, ge=0, le=450)
 
-    IsPersonalBest: Series[bool] | None
-    TrackStatus: Series[str] | None
+    IsPersonalBest: Series[bool] = pa.Field(nullable=True)
+    TrackStatus: Series[str] = pa.Field(nullable=True)
 
     class Config:
         """Pandera DataFrameModel configuration."""
@@ -129,16 +130,15 @@ class ResultsSchema(pa.DataFrameModel):
     BroadcastName: Series[str]
     Abbreviation: Series[str] = pa.Field(str_length={"min_value": 2, "max_value": 3})
     TeamName: Series[str]
-    GridPosition: Series[pa.Float64] | None = pa.Field(
-        nullable=True, ge=0, le=25
-    )
-    Position: Series[pa.Float64] | None = pa.Field(nullable=True, ge=1, le=25)
-    Q1: Series[pd.Timestamp] | None = pa.Field(nullable=True)
-    Q2: Series[pd.Timestamp] | None = pa.Field(nullable=True)
-    Q3: Series[pd.Timestamp] | None = pa.Field(nullable=True)
-    Time: Series[pd.Timedelta] | None = pa.Field(nullable=True)
+    GridPosition: Series[pa.Float64] = pa.Field(nullable=True, ge=0, le=25)
+    Position: Series[pa.Float64] = pa.Field(nullable=True, ge=1, le=25)
+    # FastF1 stores Q1/Q2/Q3 as Timedelta (lap duration), not as wall-clock Timestamp.
+    Q1: Series[pd.Timedelta] = pa.Field(nullable=True)
+    Q2: Series[pd.Timedelta] = pa.Field(nullable=True)
+    Q3: Series[pd.Timedelta] = pa.Field(nullable=True)
+    Time: Series[pd.Timedelta] = pa.Field(nullable=True)
     Status: Series[str]
-    Points: Series[pa.Float64] | None = pa.Field(nullable=True, ge=0, le=30)
+    Points: Series[pa.Float64] = pa.Field(nullable=True, ge=0, le=30)
 
     class Config:
         """Pandera DataFrameModel configuration."""

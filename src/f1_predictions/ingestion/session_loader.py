@@ -256,8 +256,11 @@ def load_qualifying(
     """
     logger.info("Extracting qualifying data: %s", key)
 
-    raw_laps: pd.DataFrame = session.laps
-    raw_results: pd.DataFrame = session.results
+    # Cast FastF1.Laps/Results (pd.DataFrame subclasses) to plain DataFrame.
+    # Pandera's backend resolver does not recognise subclass types and raises
+    # BackendNotFoundError. pd.DataFrame() constructor preserves all columns/dtypes.
+    raw_laps: pd.DataFrame = pd.DataFrame(session.laps)
+    raw_results: pd.DataFrame = pd.DataFrame(session.results)
 
     logger.debug(
         "Raw laps shape: %s | Raw results shape: %s",
@@ -309,8 +312,9 @@ def load_race(
     """
     logger.info("Extracting race data: %s", key)
 
-    raw_laps: pd.DataFrame = session.laps
-    raw_results: pd.DataFrame = session.results
+    # Same cast as load_qualifying — Pandera requires plain pd.DataFrame.
+    raw_laps: pd.DataFrame = pd.DataFrame(session.laps)
+    raw_results: pd.DataFrame = pd.DataFrame(session.results)
 
     logger.debug(
         "Raw laps shape: %s | Raw results shape: %s",
