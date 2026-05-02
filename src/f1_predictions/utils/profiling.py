@@ -65,11 +65,10 @@ def quick_profile(df: pd.DataFrame, name: str = "DataFrame") -> None:
         raise ValueError(msg)
 
     separator = "=" * 64
-    section = "-" * 64
 
     print(f"\n{separator}")
     print(f"  PROFILE: {name}")
-    print(f"  Shape  : {df.shape[0]:,} rows × {df.shape[1]} columns")
+    print(f"  Shape  : {df.shape[0]:,} rows x {df.shape[1]} columns")
     print(f"{separator}")
 
     # ── Null summary ─────────────────────────────────────────────────────

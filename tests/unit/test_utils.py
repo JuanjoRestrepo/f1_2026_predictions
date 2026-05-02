@@ -244,7 +244,8 @@ class TestQuickProfile:
 
     def test_raises_on_non_dataframe(self) -> None:
         """Passing a non-DataFrame raises TypeError."""
-        with pytest.raises(TypeError, match="Expected pd.DataFrame"):
+        with pytest.raises(TypeError, match=r"Expected pd.DataFrame"):
+
             quick_profile([1, 2, 3], name="Not a DF")  # type: ignore[arg-type]
 
     def test_raises_on_empty_dataframe(self) -> None:

@@ -76,7 +76,8 @@ class Settings(BaseSettings):
     # ── Data paths ────────────────────────────────────────────────────────
     fastf1_cache_dir: Path = Field(
         default=Path("fastf1_cache"),
-        description="FastF1 telemetry cache directory. Set to an absolute path outside the repo.",
+        description="FastF1 telemetry cache directory. "
+        "Set to an absolute path outside the repo.",
     )
     data_raw_dir: Path = Field(
         default=Path("data/raw"),
@@ -102,7 +103,8 @@ class Settings(BaseSettings):
     # ── Logging ───────────────────────────────────────────────────────────
     log_level: str = Field(
         default="INFO",
-        description="Python logging level. One of: DEBUG, INFO, WARNING, ERROR, CRITICAL.",
+        description="Python logging level. "
+        "One of: DEBUG, INFO, WARNING, ERROR, CRITICAL.",
     )
 
     # ── Pipeline parameters ───────────────────────────────────────────────

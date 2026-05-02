@@ -125,8 +125,8 @@ dependencies = [
 # Development dependencies (uv dev group — never installed in production)
 # ---------------------------------------------------------------------------
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     # Linter + formatter: replaces black, flake8, isort, pydocstyle in one tool.
     "ruff>=0.5.0",
     # Strict static type checker. Mandatory; Pylance is additive, not a replacement.
@@ -144,6 +144,7 @@ dev-dependencies = [
     "jupyter>=1.0.0",
     "nbformat>=5.10.0",
     # SHAP: model explainability post-training (dev only; not required in pipeline)
+    "numba>=0.60.0",
     "shap>=0.45.0",
 ]
 
@@ -189,7 +190,6 @@ select = [
 ignore = [
     "D203",  # one-blank-line-before-class: conflicts with D211
     "D213",  # multi-line-summary-second-line: conflicts with D212
-    "ANN101","ANN102",  # self/cls type annotation: redundant in Python 3.12
     "S101",  # assert in tests: standard pytest pattern
     "TRY003", # long exception messages in raise: acceptable for pipeline errors
 ]
