@@ -39,6 +39,7 @@ for three reasons:
 
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder  # type: ignore[import-untyped]
 
@@ -99,8 +100,16 @@ def add_grid_position_features(
     result = df.copy()
     gp = result[grid_col]
 
-    result[COL_GRID_FRONT_ROW] = (gp <= FRONT_ROW_THRESHOLD).astype("Int8")
-    result[COL_GRID_TOP10] = (gp <= TOP_10_THRESHOLD).astype("Int8")
+    result[COL_GRID_FRONT_ROW] = pd.Series(np.nan, index=result.index, dtype="Int8")
+    result.loc[gp.notna(), COL_GRID_FRONT_ROW] = (
+        gp[gp.notna()] <= FRONT_ROW_THRESHOLD
+    ).astype(int)
+
+    result[COL_GRID_TOP10] = pd.Series(np.nan, index=result.index, dtype="Int8")
+    result.loc[gp.notna(), COL_GRID_TOP10] = (
+        gp[gp.notna()] <= TOP_10_THRESHOLD
+    ).astype(int)
+
     result[COL_GRID_GAP] = gp - 1.0
 
     logger.info(

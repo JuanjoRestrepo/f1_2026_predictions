@@ -175,43 +175,24 @@ def add_tyre_degradation_slope(
         slopes[group_key] = slope
         intercepts[group_key] = intercept
 
-    # Broadcast slope back to every row in each group.
-    result[COL_DEG_SLOPE] = (
-        result.groupby(groups, group_keys=False)
-        .ngroup()
-        .map({i: slopes.get(k, float("nan")) for i, k in enumerate(slopes)})
-    )
-
-    # Use direct groupby transform for clean broadcast.
-    def _slope_for_group(group: pd.DataFrame) -> pd.Series:
-        """Return the pre-computed slope broadcast to all rows in the group."""
-        key = (
-            tuple(group[groups].iloc[0])
-            if len(groups) > 1
-            else group[groups[0]].iloc[0]
+    # Map slopes back to the original DataFrame using the group keys.
+    # This is much faster and more robust than apply() for broadcasting.
+    if len(groups) == 1:
+        # Single-column group (e.g. just Driver)
+        result[COL_DEG_SLOPE] = result[groups[0]].map(slopes)
+        if include_intercept:
+            result[COL_DEG_INTERCEPT] = result[groups[0]].map(intercepts)
+    else:
+        # Multi-column group (Driver, Stint)
+        # Create a temporary index to facilitate the mapping
+        group_keys = list(result[groups].itertuples(index=False, name=None))
+        result[COL_DEG_SLOPE] = pd.Series(
+            [slopes.get(k, float("nan")) for k in group_keys], index=result.index
         )
-        s = slopes.get(key, float("nan"))
-        return pd.Series([s] * len(group), index=group.index)
-
-    result[COL_DEG_SLOPE] = result.groupby(groups, group_keys=False).apply(
-        _slope_for_group
-    )
-
-    if include_intercept:
-
-        def _intercept_for_group(group: pd.DataFrame) -> pd.Series:
-            """Return the pre-computed intercept broadcast to all rows."""
-            key = (
-                tuple(group[groups].iloc[0])
-                if len(groups) > 1
-                else group[groups[0]].iloc[0]
+        if include_intercept:
+            result[COL_DEG_INTERCEPT] = pd.Series(
+                [intercepts.get(k, float("nan")) for k in group_keys], index=result.index
             )
-            ic = intercepts.get(key, float("nan"))
-            return pd.Series([ic] * len(group), index=group.index)
-
-        result[COL_DEG_INTERCEPT] = result.groupby(groups, group_keys=False).apply(
-            _intercept_for_group
-        )
 
     logger.info(
         "Tyre degradation slope computed: %d group(s), %d skipped "
