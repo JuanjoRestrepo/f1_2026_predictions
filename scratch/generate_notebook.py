@@ -115,7 +115,9 @@ else:
         "Season": rng.choice([2023, 2024], n),
         "RoundNumber": rng.integers(1, 23, n),
         "Driver": rng.choice(["VER","HAM","LEC","NOR","SAI","ALO","RUS","PER","OCO","GAS"], n),
-        "Team": rng.choice(["Red Bull","Mercedes","Ferrari","McLaren","Aston Martin"], n),
+        "Team": rng.choice(["Red Bull", "Mercedes", "Ferrari", "McLaren", "Aston Martin"], n),
+        "EventName": rng.choice(["Bahrain GP", "Saudi GP", "Monaco GP"], n),
+        "Compound": rng.choice(["SOFT", "MEDIUM", "HARD"], n),
         "LapNumber": rng.integers(1, 60, n),
         "TyreLife": rng.integers(1, 40, n),
         "Stint": rng.integers(1, 4, n),
@@ -123,12 +125,15 @@ else:
         "roll_laptime_3": rng.normal(90.2, 2.5, n),
         "roll_laptime_5": rng.normal(90.3, 2.2, n),
         "roll_std_3": rng.uniform(0, 1, n),
-        "degradation_slope": rng.uniform(-0.5, 0.5, n),
+        "tyre_deg_slope": rng.uniform(0, 0.2, n),
         "tyre_life_norm": rng.uniform(0, 1, n),
         "delta_to_fastest_s": rng.uniform(0, 5, n),
-        "AirTemp_mean": rng.uniform(20, 40, n),
-        "TrackTemp_mean": rng.uniform(30, 55, n),
-        "Rainfall_any": rng.choice([0, 1], n, p=[0.9, 0.1]),
+        "grid_front_row": rng.choice([0, 1], n),
+        "grid_top10": rng.choice([0, 1], n),
+        "grid_position_gap": rng.integers(0, 20, n),
+        "AirTemp": rng.uniform(20, 40, n),
+        "TrackTemp": rng.uniform(30, 55, n),
+        "Humidity": rng.uniform(10, 80, n),
         "DriverPointsPreRace": rng.uniform(0, 400, n),
         "TeamPointsPreRace": rng.uniform(0, 700, n),
     })
@@ -149,10 +154,11 @@ null_pct = (df_all.isnull().sum() / len(df_all) * 100).sort_values(ascending=Fal
 print(null_pct[null_pct > 0].to_string() if null_pct[null_pct > 0].any() else "No missing values ✓")
 """),
     code("""\
-# Descriptive statistics — numeric feature columns only
+# Descriptive statistics — strictly numeric columns (exclude Timedeltas)
 TARGET = "LapTime_s"
-numeric_cols = df_all.select_dtypes(include=[np.number]).columns.tolist()
-print("=== DESCRIPTIVE STATISTICS ===")
+# We exclude objects and datetimes/timedeltas to avoid DTypePromotionErrors
+numeric_cols = df_all.select_dtypes(include=["number"]).columns.tolist()
+print(f"Analyzing {len(numeric_cols)} numeric columns...")
 df_all[numeric_cols].describe().T.round(3)
 """),
     # ─── 5. EDA ───────────────────────────────────────────────────────────────
@@ -200,16 +206,18 @@ plt.show()
 """),
     md("### 5.3 Correlation Matrix"),
     code("""\
-# Select numeric features relevant for modeling
-FEATURE_COLS = [
+# Select numeric features relevant for modeling (ensure they exist and are numeric)
+POTENTIAL_FEATURES = [
     "LapNumber", "TyreLife", "tyre_life_norm",
     "roll_laptime_3", "roll_laptime_5", "roll_std_3",
-    "degradation_slope", "delta_to_fastest_s",
-    "AirTemp_mean", "TrackTemp_mean", "Rainfall_any",
+    "tyre_deg_slope", "delta_to_fastest_s",
+    "AirTemp", "TrackTemp", "Humidity",
     "DriverPointsPreRace", "TeamPointsPreRace",
     TARGET,
 ]
-available = [c for c in FEATURE_COLS if c in df_all.columns]
+available = [c for c in POTENTIAL_FEATURES if c in df_all.columns]
+# Extra safety: filter out non-numeric columns from available list
+available = df_all[available].select_dtypes(include=["number"]).columns.tolist()
 corr = df_all[available].dropna().corr()
 
 fig, ax = plt.subplots(figsize=(13, 10))
@@ -252,9 +260,10 @@ plt.show()
     code("""\
 # Columns to exclude from modeling (identifiers, target, Timedeltas, raw strings)
 DROP_FROM_FEATURES = [
-    "Driver", "Team", "EventName", "SessionType", "Compound",
-    "Time", "LapTime", "PitOutTime", "PitInTime",
+    "Driver", "Team", "EventName", "SessionType", "Compound", "Season", "RoundNumber",
+    "Time", "LapTime", "PitOutTime", "PitInTime", "LapStartTime", "LapStartDate",
     "Sector1Time", "Sector2Time", "Sector3Time",
+    "Sector1SessionTime", "Sector2SessionTime", "Sector3SessionTime",
     TARGET,
 ]
 
@@ -263,7 +272,8 @@ def build_feature_matrix(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
     df_clean = df.loc[y.index].copy()
     cols_to_drop = [c for c in DROP_FROM_FEATURES if c in df_clean.columns]
     X = df_clean.drop(columns=cols_to_drop)
-    X = X.select_dtypes(include=[np.number])
+    # Exclude any remaining non-numeric columns
+    X = X.select_dtypes(exclude=["timedelta", "datetime", "object", "category"])
     return X, y
 
 # Dry run on full dataset
@@ -448,6 +458,35 @@ fig_imp.show()
 print("\\nTop-5 most predictive features:")
 print(importance.sort_values(ascending=False).head(5).to_string())
 """),
+    md("### 9.2 SHAP Explainability"),
+    md("""
+While Gain-based importance tells us which features are used most, **SHAP (SHapley Additive exPlanations)** 
+tells us the *direction* and *magnitude* of each feature's impact on individual predictions.
+"""),
+    code("""\
+import shap
+
+# Initialise SHAP explainer for the XGBoost model
+# TreeExplainer is highly optimised for gradient boosted trees
+explainer = shap.TreeExplainer(best_xgb)
+shap_values = explainer.shap_values(X_test)
+
+# 1. SHAP Summary Plot (Beeswarm)
+# This plot ranks features by total impact and shows how high/low values of 
+# each feature affect the predicted lap time.
+plt.figure(figsize=(10, 8))
+shap.summary_plot(shap_values, X_test, show=False)
+plt.title("SHAP Summary Plot — Feature Impact Directionality", fontsize=14, pad=20)
+plt.savefig(REPORTS_DIR / "fig_07_shap_summary.png", bbox_inches="tight")
+plt.show()
+
+# 2. SHAP Bar Plot (Global Importance)
+plt.figure(figsize=(10, 6))
+shap.plots.bar(explainer(X_test), show=False)
+plt.title("Mean |SHAP Value| (Average Impact)", fontsize=14)
+plt.savefig(REPORTS_DIR / "fig_08_shap_bar.png", bbox_inches="tight")
+plt.show()
+"""),
     md("### 9.3 Residual Analysis"),
     code("""\
 residuals = y_test.values - y_pred_xgb
@@ -527,4 +566,4 @@ NOTEBOOK_PATH.parent.mkdir(parents=True, exist_ok=True)
 NOTEBOOK_PATH.write_text(
     json.dumps(notebook, indent=1, ensure_ascii=False), encoding="utf-8"
 )
-print(f"Notebook written → {NOTEBOOK_PATH}")
+print(f"Notebook written -> {NOTEBOOK_PATH}")

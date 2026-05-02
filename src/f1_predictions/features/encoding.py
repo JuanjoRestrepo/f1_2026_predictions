@@ -231,8 +231,9 @@ class CategoricalFeatureEncoder:
             index=df.index,
         )
 
-        # Drop original categorical columns and concatenate OHE output.
-        result = pd.concat([df.drop(columns=self.columns), ohe_df], axis=1)
+        # Concatenate OHE output. Original categorical columns are preserved
+        # for EDA and reporting. They must be dropped before model.fit().
+        result = pd.concat([df, ohe_df], axis=1)
 
         logger.info(
             "CategoricalFeatureEncoder transform complete: %d rows x %d → %d columns.",
