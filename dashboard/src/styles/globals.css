@@ -1,6 +1,12 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --color-f1red: #e10600;
+  --color-f1dark: #15151e;
+  --color-f1darker: #0b0b12;
+  --color-f1gray: #38383f;
+}
 
 @layer base {
   html,
