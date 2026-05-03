@@ -91,6 +91,10 @@ class Settings(BaseSettings):
         default=Path("data/outputs"),
         description="Model prediction parquet outputs.",
     )
+    data_external_dir: Path = Field(
+        default=Path("data/external"),
+        description="External metadata (e.g. track characteristics).",
+    )
     models_dir: Path = Field(
         default=Path("models/artifacts"),
         description="Serialized model artifacts (joblib).",
@@ -154,6 +158,7 @@ class Settings(BaseSettings):
         "data_raw_dir",
         "data_processed_dir",
         "data_outputs_dir",
+        "data_external_dir",
         "models_dir",
         "reports_dir",
         mode="after",

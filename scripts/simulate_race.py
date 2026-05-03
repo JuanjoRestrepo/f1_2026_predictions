@@ -17,6 +17,64 @@ from f1_predictions.utils.logging_setup import (
 logger = get_logger(__name__)
 
 
+def _enrich_with_track_metadata(df: pd.DataFrame) -> pd.DataFrame:
+    """Join track characteristics metadata with the main DataFrame.
+
+    Args:
+        df: Input DataFrame containing EventName.
+
+    Returns:
+        DataFrame enriched with numeric track features.
+    """
+    settings = get_settings()
+    meta_path = settings.data_external_dir / "track_metadata.csv"
+
+    if not meta_path.exists():
+        logger.warning("Track metadata not found at %s. Skipping enrichment.", meta_path)
+        return df
+
+    meta_df = pd.read_csv(meta_path)
+
+    # Encode categorical features numerically for the GBM
+    type_map = {"Street": 1, "Permanent": 2, "Hybrid": 3}
+    df_map = {"Ultra-Low": 1, "Low": 2, "Medium": 3, "High": 4, "Ultra-High": 5}
+
+    meta_df["TrackType_val"] = meta_df["TrackType"].map(type_map).fillna(0)
+    meta_df["DownforceLevel_val"] = meta_df["DownforceLevel"].map(df_map).fillna(0)
+
+    # Merge on EventName (standardised in both files)
+    enriched_df = df.merge(
+        meta_df[
+            [
+                "EventName",
+                "TrackType_val",
+                "DownforceLevel_val",
+                "Abrasiveness",
+                "FullThrottlePct",
+                "AvgSpeed_kph",
+                "MaxSpeed_kph",
+                "CornerCount",
+            ]
+        ],
+        on="EventName",
+        how="left",
+    )
+
+    # Fill NaNs for tracks not in metadata
+    fill_cols = [
+        "TrackType_val",
+        "DownforceLevel_val",
+        "Abrasiveness",
+        "FullThrottlePct",
+        "AvgSpeed_kph",
+        "MaxSpeed_kph",
+        "CornerCount",
+    ]
+    enriched_df[fill_cols] = enriched_df[fill_cols].fillna(0)
+
+    return enriched_df
+
+
 def run_race_simulation(
     year: int, round_number: int, event_name: str, lap_number: int = 15
 ) -> None:
@@ -130,12 +188,17 @@ def run_race_simulation(
     gold_all = pd.concat([pd.read_parquet(f) for f in gold_all_files])
     df_train_full = gold_all[gold_all["Season"].isin(train_years)]
 
+    # ENRICH with track metadata
+    logger.info("Enriching training and simulation data with track characteristics...")
+    df_train_full = _enrich_with_track_metadata(df_train_full)
+    df_sim = _enrich_with_track_metadata(df_sim)
+
     xgb_model = F1PaceRegressor()
     lgb_model = LightGBMPaceRegressor()
 
     # Feature matrix alignment
     df_combined = pd.concat([df_train_full, df_sim], ignore_index=True)
-    x_all, _ = prepare_feature_matrix(df_combined)
+    x_all, _ = prepare_feature_matrix(df_combined, require_target=False)
 
     x_train = x_all.iloc[: -len(drivers)]
     y_train = df_train_full["LapTime_s"]
@@ -167,15 +230,25 @@ def run_race_simulation(
         f"\nVirtual Race Prediction for {event_name} ({year}) finished successfully."
     )
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a virtual F1 race simulation.")
     parser.add_argument("--year", type=int, default=2026, help="Season year")
     parser.add_argument("--round", type=int, required=True, help="Round number")
-    parser.add_argument("--event", type=str, required=True, help="Event name (e.g. 'Miami Grand Prix')")
-    parser.add_argument("--lap", type=int, default=15, help="Hypothetical lap number to simulate")
+    parser.add_argument(
+        "--event", type=str, required=True, help="Event name (e.g. 'Miami Grand Prix')"
+    )
+    parser.add_argument(
+        "--lap", type=int, default=15, help="Hypothetical lap number to simulate"
+    )
     parser.add_argument("--log-level", default="INFO", help="Logging level")
 
     args = parser.parse_args()
     configure_root_pipeline_logger(level=args.log_level)
 
-    run_race_simulation(year=args.year, round_number=args.round, event_name=args.event, lap_number=args.lap)
+    run_race_simulation(
+        year=args.year,
+        round_number=args.round,
+        event_name=args.event,
+        lap_number=args.lap,
+    )

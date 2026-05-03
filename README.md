@@ -10,6 +10,7 @@ An automated, elite machine learning pipeline designed to predict Formula 1 race
 
 - **Automated Data Ingestion**: Seamless integration with the `FastF1` API. Supports chunked ingestion to prevent memory overhead.
 - **Virtual Race Simulation**: General-purpose race simulator that predicts performance hierarchies for any GP based on current season form.
+- **Track-Aware Modeling**: Integrates circuit-specific metadata (Downforce, Abrasiveness, Speed Profiles) to provide context-aware predictions across different track archetypes.
 - **Elite Hierarchical Reporting**: Organizes results by `Year / Grand Prix / Results` with professional F1-style visual reports.
 - **Dual-Model Architecture**: Benchmarks **XGBoost** and **LightGBM**. Current 2026 MAE: **0.185s** (LightGBM).
 - **Professional DevOps**: Orchestrated via `main.py` and `uv`, ensuring reproducibility and high performance.
