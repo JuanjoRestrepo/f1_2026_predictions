@@ -44,9 +44,9 @@ def test_categorical_feature_encoder_basic():
     encoder = CategoricalFeatureEncoder(columns=["Compound", "Team"])
     encoded_train = encoder.fit_transform(train_df)
     
-    # Check that original columns are dropped
-    assert "Compound" not in encoded_train.columns
-    assert "Team" not in encoded_train.columns
+    # Original columns are preserved for reporting/EDA and appended OHE columns
+    assert "Compound" in encoded_train.columns
+    assert "Team" in encoded_train.columns
     assert "Other" in encoded_train.columns
     
     # Check for OHE columns

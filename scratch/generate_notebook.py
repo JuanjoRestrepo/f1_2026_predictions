@@ -35,6 +35,7 @@ cells = [
 6. Feature Engineering Summary  
 7. Baseline Model — Linear Regression  
 8. XGBoost Regressor + Grid Search  
+8.1 LightGBM Benchmark  
 9. Evaluation & Interpretation  
 10. Conclusions & Next Steps  
 """),
@@ -54,8 +55,10 @@ import plotly.graph_objects as go
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, root_mean_squared_error
 from sklearn.model_selection import GridSearchCV
+from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+import lightgbm as lgb
 import xgboost as xgb
 
 # ── Path setup: resolve project root regardless of CWD ────────────────────────
@@ -325,11 +328,12 @@ X_train, X_test = X_train[shared_cols], X_test[shared_cols]
 
 # Baseline
 baseline_pipe = Pipeline([
+    ("imputer", SimpleImputer(strategy="constant", fill_value=0.0)),
     ("scaler", StandardScaler()),
     ("lr",     LinearRegression()),
 ])
-baseline_pipe.fit(X_train.fillna(X_train.median()), y_train)
-y_pred_bl = baseline_pipe.predict(X_test.fillna(X_train.median()))
+baseline_pipe.fit(X_train, y_train)
+y_pred_bl = baseline_pipe.predict(X_test)
 
 mae_bl  = mean_absolute_error(y_test, y_pred_bl)
 rmse_bl = root_mean_squared_error(y_test, y_pred_bl)
@@ -366,7 +370,7 @@ base_xgb = xgb.XGBRegressor(
     subsample        = 0.8,
     colsample_bytree = 0.8,
     random_state     = 42,
-    n_jobs           = -1,
+    n_jobs           = 1,
     # XGBoost natively handles NaN — no imputation step required
 )
 
@@ -376,7 +380,7 @@ gs = GridSearchCV(
     scoring    = "neg_mean_absolute_error",
     cv         = KFold(n_splits=3, shuffle=False),  # shuffle=False preserves temporal order
     verbose    = 1,
-    n_jobs     = -1,
+    n_jobs     = 1,
 )
 gs.fit(X_train_xgb, y_train)
 
@@ -399,6 +403,57 @@ print(f"{'='*45}")
 print(f"  Baseline LR  — MAE: {mae_bl:.3f} s  RMSE: {rmse_bl:.3f} s")
 print(f"  XGBoost      — MAE: {mae_xgb:.3f} s  RMSE: {rmse_xgb:.3f} s")
 print(f"  Improvement  : {improvement:.1f}% reduction in MAE")
+print(f"{'='*45}")
+"""),
+    md("""### 8.1 LightGBM Benchmark
+
+LightGBM uses the same chronologically split feature matrix as XGBoost so the
+comparison isolates the learner, not the data preparation.
+"""),
+    code("""\
+# LightGBM benchmark on the same feature matrix and split
+param_grid_lgbm = {
+    "num_leaves": [31, 63],
+    "learning_rate": [0.05, 0.1],
+}
+
+base_lgbm = lgb.LGBMRegressor(
+    n_estimators=300,
+    subsample=0.8,
+    colsample_bytree=0.8,
+    random_state=42,
+    n_jobs=1,
+    verbosity=-1,
+)
+
+gs_lgbm = GridSearchCV(
+    estimator=base_lgbm,
+    param_grid=param_grid_lgbm,
+    scoring="neg_mean_absolute_error",
+    cv=KFold(n_splits=3, shuffle=False),
+    verbose=1,
+    n_jobs=1,
+)
+gs_lgbm.fit(X_train_xgb, y_train)
+
+print(f"\\nBest LightGBM params: {gs_lgbm.best_params_}")
+print(f"CV MAE (train): {-gs_lgbm.best_score_:.3f} s")
+"""),
+    code("""\
+best_lgbm = gs_lgbm.best_estimator_
+y_pred_lgbm = best_lgbm.predict(X_test_xgb)
+
+mae_lgbm = mean_absolute_error(y_test, y_pred_lgbm)
+rmse_lgbm = root_mean_squared_error(y_test, y_pred_lgbm)
+
+winner = "LightGBM" if mae_lgbm < mae_xgb else "XGBoost"
+
+print(f"{'='*45}")
+print(f"  TREE MODEL COMPARISON")
+print(f"{'='*45}")
+print(f"  XGBoost      — MAE: {mae_xgb:.3f} s  RMSE: {rmse_xgb:.3f} s")
+print(f"  LightGBM     — MAE: {mae_lgbm:.3f} s  RMSE: {rmse_lgbm:.3f} s")
+print(f"  Winner       : {winner}")
 print(f"{'='*45}")
 """),
     # ─── 9. Evaluation & Interpretation ───────────────────────────────────────
@@ -464,28 +519,11 @@ While Gain-based importance tells us which features are used most, **SHAP (SHapl
 tells us the *direction* and *magnitude* of each feature's impact on individual predictions.
 """),
     code("""\
-import shap
+from f1_predictions.models.explainability import save_tree_shap_artifacts
 
-# Initialise SHAP explainer for the XGBoost model
-# TreeExplainer is highly optimised for gradient boosted trees
-explainer = shap.TreeExplainer(best_xgb)
-shap_values = explainer.shap_values(X_test)
-
-# 1. SHAP Summary Plot (Beeswarm)
-# This plot ranks features by total impact and shows how high/low values of 
-# each feature affect the predicted lap time.
-plt.figure(figsize=(10, 8))
-shap.summary_plot(shap_values, X_test, show=False)
-plt.title("SHAP Summary Plot — Feature Impact Directionality", fontsize=14, pad=20)
-plt.savefig(REPORTS_DIR / "fig_07_shap_summary.png", bbox_inches="tight")
-plt.show()
-
-# 2. SHAP Bar Plot (Global Importance)
-plt.figure(figsize=(10, 6))
-shap.plots.bar(explainer(X_test), show=False)
-plt.title("Mean |SHAP Value| (Average Impact)", fontsize=14)
-plt.savefig(REPORTS_DIR / "fig_08_shap_bar.png", bbox_inches="tight")
-plt.show()
+shap_artifacts = save_tree_shap_artifacts(best_xgb, X_test_xgb, REPORTS_DIR)
+print(f"SHAP summary saved to: {shap_artifacts['summary']}")
+print(f"SHAP bar saved to: {shap_artifacts['bar']}")
 """),
     md("### 9.3 Residual Analysis"),
     code("""\
@@ -518,20 +556,20 @@ print(f"Std  residual : {residuals.std():.4f} s")
 1. **Rolling pace features** (`roll_laptime_3`, `roll_laptime_5`) are the strongest  
    predictors of a driver's next lap time, validating the signal-extraction rationale.  
 2. **Tyre degradation slope** and **normalised tyre life** surface non-linear wear effects  
-   that Linear Regression cannot capture — contributing to XGBoost's MAE improvement.  
-3. **Weather and historical points** add marginal predictive power individually but  
+   that Linear Regression cannot capture — contributing to tree model gains.  
+3. **LightGBM vs XGBoost** is now an empirical decision on the same split; the notebook  
+   prints the winner directly from MAE.  
+4. **Weather and historical points** add marginal predictive power individually but  
    provide important cross-session context for circuit-specific generalisation.
 
 ### Next Steps (Priority Order)
 1. **Unit Tests** (`pytest`) on `rolling_pace.py`, `tyre_degradation.py`, and `encoding.py`  
    targeting ≥80% coverage (as per project standards).  
-2. **SHAP Explainability** — replace Gain importance with SHAP values for additive,  
-   per-prediction explanations (already in dev dependencies).  
-3. **LightGBM Benchmark** — per `@data-science-expert`, always benchmark XGBoost vs  
-   LightGBM on tabular data before declaring a winner.  
-4. **Per-Circuit Evaluation** — decompose MAE by `EventName` to detect circuit-specific  
+2. **SHAP Explainability** — validated and persisted via the shared helper for additive,  
+   per-prediction explanations.  
+3. **Per-Circuit Evaluation** — decompose MAE by `EventName` to detect circuit-specific  
    model weaknesses (urban vs. permanent tracks).  
-5. **Model Serialisation** — export best XGBoost model as `models/xgboost_pace_v1.json`  
+4. **Model Serialisation** — export the selected tree model as `models/xgb_or_lgbm_pace_v1.json`  
    for inference in the production pipeline.
 """),
     code("""\

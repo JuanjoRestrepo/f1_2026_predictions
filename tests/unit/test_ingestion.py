@@ -80,8 +80,8 @@ def minimal_laps_df() -> pd.DataFrame:
         "Sector1Time":   pd.to_timedelta(["0:00:28", "0:00:29", "0:00:28"]),
         "Sector2Time":   pd.to_timedelta(["0:00:31", "0:00:32", "0:00:31"]),
         "Sector3Time":   pd.to_timedelta(["0:00:31", "0:00:31", "0:00:32"]),
-        "PitOutTime":    [pd.NaT, pd.NaT, pd.NaT],
-        "PitInTime":     [pd.NaT, pd.NaT, pd.NaT],
+        "PitOutTime":    pd.Series([pd.NaT, pd.NaT, pd.NaT], dtype="timedelta64[ns]"),
+        "PitInTime":     pd.Series([pd.NaT, pd.NaT, pd.NaT], dtype="timedelta64[ns]"),
     })
 
 
@@ -95,9 +95,9 @@ def minimal_results_df() -> pd.DataFrame:
         "TeamName":     ["Red Bull Racing", "Mercedes"],
         "GridPosition": [1.0, 2.0],
         "Position":     [1.0, 2.0],
-        "Q1":           [pd.NaT, pd.NaT],
-        "Q2":           [pd.NaT, pd.NaT],
-        "Q3":           [pd.NaT, pd.NaT],
+        "Q1":           pd.Series([pd.NaT, pd.NaT], dtype="timedelta64[ns]"),
+        "Q2":           pd.Series([pd.NaT, pd.NaT], dtype="timedelta64[ns]"),
+        "Q3":           pd.Series([pd.NaT, pd.NaT], dtype="timedelta64[ns]"),
         "Time":         pd.to_timedelta(["1:30:00", None]),
         "Status":       ["Finished", "Finished"],
         "Points":       [25.0, 18.0],
