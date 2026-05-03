@@ -51,7 +51,10 @@ from f1_predictions.models import (
     prepare_feature_matrix,
 )
 from f1_predictions.utils.config import get_settings
-from f1_predictions.utils.logging_setup import configure_root_pipeline_logger, get_logger
+from f1_predictions.utils.logging_setup import (
+    configure_root_pipeline_logger,
+    get_logger,
+)
 
 logger = get_logger(__name__)
 
@@ -333,7 +336,10 @@ def save_outputs(
     logger.info("Saved prediction Parquets: %s, %s", xgb_parquet, lgb_parquet)
 
     # Driver standings CSVs
-    for model_key, col in [("xgb", "predicted_laptime_xgb_s"), ("lgb", "predicted_laptime_lgb_s")]:
+    for model_key, col in [
+        ("xgb", "predicted_laptime_xgb_s"),
+        ("lgb", "predicted_laptime_lgb_s"),
+    ]:
         standings = build_driver_standings(predictions_df, col)
         standings_path = output_dir / f"standings_{model_key}_{predict_year}.csv"
         standings.to_csv(standings_path, index=False)
@@ -348,11 +354,17 @@ def save_outputs(
         "predict_year": predict_year,
         "train_years": train_years,
         "total_laps_predicted": len(predictions_df),
-        "top5_drivers_xgb": xgb_standings.head(5)[["rank", "Driver", "median_predicted_s"]].to_dict(orient="records"),
-        "top5_drivers_lgb": lgb_standings.head(5)[["rank", "Driver", "median_predicted_s"]].to_dict(orient="records"),
+        "top5_drivers_xgb": xgb_standings.head(5)[
+            ["rank", "Driver", "median_predicted_s"]
+        ].to_dict(orient="records"),
+        "top5_drivers_lgb": lgb_standings.head(5)[
+            ["rank", "Driver", "median_predicted_s"]
+        ].to_dict(orient="records"),
     }
     summary_path = output_dir / f"predictions_summary_{predict_year}.json"
-    summary_path.write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
+    summary_path.write_text(
+        json.dumps(summary, indent=2, default=str), encoding="utf-8"
+    )
     saved["summary_json"] = summary_path
     logger.info("Saved summary JSON: %s", summary_path)
 

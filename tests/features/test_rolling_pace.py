@@ -89,7 +89,7 @@ def test_rolling_pace_errors() -> None:
     """Verify that type and key errors are raised correctly."""
     # Non-DataFrame input — raw string avoids RUF043 metacharacter warning
     with pytest.raises(TypeError, match=r"Expected pd\.DataFrame"):
-        add_rolling_pace_features(["not", "a", "df"])
+        add_rolling_pace_features(["not", "a", "df"])  # type: ignore[arg-type]
 
     # Missing columns
     df = pd.DataFrame({"Driver": ["VER"], "Stint": [1]})

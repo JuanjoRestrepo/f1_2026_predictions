@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import shutil
 import uuid
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
@@ -13,7 +14,7 @@ _TEMP_ROOT.mkdir(parents=True, exist_ok=True)
 
 
 @pytest.fixture()
-def tmp_path() -> Path:
+def tmp_path() -> Generator[Path, None, None]:
     """Return an isolated writable temporary directory for tests.
 
     This shadows pytest's built-in ``tmp_path`` fixture to avoid the Windows

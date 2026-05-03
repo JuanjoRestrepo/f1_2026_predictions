@@ -156,8 +156,9 @@ class TestAddWeatherFeaturesTypeGuards:
     def test_non_dataframe_laps_raises(self, full_weather_df: pd.DataFrame) -> None:
         """Non-DataFrame laps input must raise TypeError."""
         with pytest.raises(TypeError, match=r"Expected df_laps to be pd\.DataFrame"):
-            add_weather_features(  # type: ignore[arg-type]
-                ["not", "a", "df"], full_weather_df
+            add_weather_features(
+                ["not", "a", "df"],  # type: ignore[arg-type]
+                full_weather_df,
             )
 
     def test_non_dataframe_weather_raises(self, laps_df: pd.DataFrame) -> None:

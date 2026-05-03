@@ -40,7 +40,10 @@ from f1_predictions.models import (
 )
 from f1_predictions.models.explainability import save_tree_shap_artifacts
 from f1_predictions.utils.config import get_settings
-from f1_predictions.utils.logging_setup import configure_root_pipeline_logger, get_logger
+from f1_predictions.utils.logging_setup import (
+    configure_root_pipeline_logger,
+    get_logger,
+)
 
 # Use non-interactive backend: prevents display errors in headless/CI environments.
 matplotlib.use("Agg")
@@ -61,6 +64,7 @@ TOP_N_FEATURES: int = 20
 # ---------------------------------------------------------------------------
 # Data loading
 # ---------------------------------------------------------------------------
+
 
 def load_gold_dataframe(data_outputs_dir: Path) -> pd.DataFrame:
     """Discover and concatenate all Gold-layer Parquet files.
@@ -100,6 +104,7 @@ def load_gold_dataframe(data_outputs_dir: Path) -> pd.DataFrame:
 # Figure generators
 # ---------------------------------------------------------------------------
 
+
 def _save_and_close(path: Path) -> None:
     """Save the current matplotlib figure and close it cleanly."""
     plt.savefig(path, dpi=FIGURE_DPI, bbox_inches="tight")
@@ -129,7 +134,9 @@ def plot_predicted_vs_actual(
         Path to the saved figure.
     """
     fig, axes = plt.subplots(1, 2, figsize=(14, 6), sharey=True)
-    fig.suptitle("Predicted vs Actual Lap Times (Test Season)", fontsize=14, fontweight="bold")
+    fig.suptitle(
+        "Predicted vs Actual Lap Times (Test Season)", fontsize=14, fontweight="bold"
+    )
 
     for ax, y_pred, metrics, label, color in zip(
         axes,
@@ -143,7 +150,13 @@ def plot_predicted_vs_actual(
         max_val = float(max(y_true.max(), y_pred.max()))
 
         ax.scatter(y_true, y_pred, alpha=SCATTER_ALPHA, color=color, s=12, linewidths=0)
-        ax.plot([min_val, max_val], [min_val, max_val], "k--", linewidth=1, label="Perfect fit")
+        ax.plot(
+            [min_val, max_val],
+            [min_val, max_val],
+            "k--",
+            linewidth=1,
+            label="Perfect fit",
+        )
         ax.set_xlabel("Actual Lap Time (s)", fontsize=11)
         ax.set_ylabel("Predicted Lap Time (s)", fontsize=11)
         ax.set_title(
@@ -186,7 +199,11 @@ def plot_feature_importance(
     _fig, ax = plt.subplots(figsize=(10, 6))
     top.plot.barh(ax=ax, color=color, alpha=0.85)
     ax.set_xlabel("Feature Importance Score", fontsize=11)
-    ax.set_title(f"Top-{TOP_N_FEATURES} Feature Importances — {model_label}", fontsize=13, fontweight="bold")
+    ax.set_title(
+        f"Top-{TOP_N_FEATURES} Feature Importances — {model_label}",
+        fontsize=13,
+        fontweight="bold",
+    )
     ax.grid(True, axis="x", alpha=0.3)
     plt.tight_layout()
 
@@ -198,6 +215,7 @@ def plot_feature_importance(
 # ---------------------------------------------------------------------------
 # Metrics persistence
 # ---------------------------------------------------------------------------
+
 
 def save_metrics_json(
     metrics_xgb: RegressionMetrics,
@@ -234,6 +252,7 @@ def save_metrics_json(
 # HTML report rendering
 # ---------------------------------------------------------------------------
 
+
 def render_html_report(
     metrics_xgb: RegressionMetrics,
     metrics_lgb: RegressionMetrics,
@@ -265,9 +284,7 @@ def render_html_report(
     template = env.get_template("report.html.j2")
 
     # Build relative paths from reports_dir for self-contained HTML navigation
-    rel_figures: dict[str, str] = {
-        key: path.name for key, path in figure_paths.items()
-    }
+    rel_figures: dict[str, str] = {key: path.name for key, path in figure_paths.items()}
 
     html_content = template.render(
         train_years=train_years,
@@ -286,6 +303,7 @@ def render_html_report(
 # ---------------------------------------------------------------------------
 # Main pipeline
 # ---------------------------------------------------------------------------
+
 
 def run_report_pipeline(
     train_years: list[int],
@@ -321,12 +339,16 @@ def run_report_pipeline(
     # ── 3. Train both models ──────────────────────────────────────────────
     logger.info("Training XGBoost...")
     xgb_model = F1PaceRegressor(random_state=settings.random_seed)
-    metrics_xgb_dict = xgb_model.train_evaluate_chronological(df, train_years, test_year)
+    metrics_xgb_dict = xgb_model.train_evaluate_chronological(
+        df, train_years, test_year
+    )
     metrics_xgb = RegressionMetrics(**metrics_xgb_dict)
 
     logger.info("Training LightGBM...")
     lgb_model = LightGBMPaceRegressor(random_state=settings.random_seed)
-    metrics_lgb_dict = lgb_model.train_evaluate_chronological(df, train_years, test_year)
+    metrics_lgb_dict = lgb_model.train_evaluate_chronological(
+        df, train_years, test_year
+    )
     metrics_lgb = RegressionMetrics(**metrics_lgb_dict)
 
     # Rebuild predictions for plotting (models already trained above)
@@ -350,14 +372,22 @@ def run_report_pipeline(
 
     xgb_importances: np.ndarray = xgb_est.feature_importances_
     figure_paths["importance_xgb"] = plot_feature_importance(
-        shared_cols, xgb_importances, "XGBoost", "fig_02_importance_xgb.png",
-        BAR_COLOR_XGB, reports_dir
+        shared_cols,
+        xgb_importances,
+        "XGBoost",
+        "fig_02_importance_xgb.png",
+        BAR_COLOR_XGB,
+        reports_dir,
     )
 
     lgb_importances: np.ndarray = lgb_est.feature_importances_
     figure_paths["importance_lgb"] = plot_feature_importance(
-        shared_cols, lgb_importances, "LightGBM", "fig_03_importance_lgb.png",
-        BAR_COLOR_LGB, reports_dir
+        shared_cols,
+        lgb_importances,
+        "LightGBM",
+        "fig_03_importance_lgb.png",
+        BAR_COLOR_LGB,
+        reports_dir,
     )
 
     # ── 6. SHAP (optional) ────────────────────────────────────────────────
@@ -383,6 +413,7 @@ def run_report_pipeline(
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
+
 
 def parse_args() -> argparse.Namespace:
     """Parse CLI arguments for the report generator."""
