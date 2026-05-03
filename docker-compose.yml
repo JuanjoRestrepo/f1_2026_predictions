@@ -20,6 +20,7 @@ services:
       - .env
     
     environment:
+      - HOME=/app
       - PYTHONPATH=/app/src
       - F1_DATA_RAW_DIR=/app/data/raw
       - F1_DATA_PROCESSED_DIR=/app/data/processed
