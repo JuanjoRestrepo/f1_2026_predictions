@@ -336,39 +336,35 @@ def run_report_pipeline(
     x_train, x_test = x_train[shared_cols], x_test[shared_cols]
     logger.info("Shared feature columns: %d", len(shared_cols))
 
-    # ── 3. Train both models ──────────────────────────────────────────────
+    # ── 3. Training & Evaluation: XGBoost
     logger.info("Training XGBoost...")
-    xgb_model = F1PaceRegressor(random_state=settings.random_seed)
-    metrics_xgb_dict = xgb_model.train_evaluate_chronological(
-        df, train_years, test_year
-    )
-    metrics_xgb = RegressionMetrics(**metrics_xgb_dict)
+    model_xgb = F1PaceRegressor()
+    metrics_xgb_dict = model_xgb.train_evaluate_chronological(df, train_years, test_year)
+    metrics_xgb = RegressionMetrics(mae=metrics_xgb_dict["MAE"], rmse=metrics_xgb_dict["RMSE"])
+    y_pred_xgb = model_xgb.predict(df_test)
 
+    # 4. Training & Evaluation: LightGBM
     logger.info("Training LightGBM...")
-    lgb_model = LightGBMPaceRegressor(random_state=settings.random_seed)
-    metrics_lgb_dict = lgb_model.train_evaluate_chronological(
-        df, train_years, test_year
-    )
-    metrics_lgb = RegressionMetrics(**metrics_lgb_dict)
+    model_lgb = LightGBMPaceRegressor()
+    metrics_lgb_dict = model_lgb.train_evaluate_chronological(df, train_years, test_year)
+    metrics_lgb = RegressionMetrics(mae=metrics_lgb_dict["MAE"], rmse=metrics_lgb_dict["RMSE"])
+    y_pred_lgb = model_lgb.predict(df_test)
 
-    # Rebuild predictions for plotting (models already trained above)
-    import xgboost as xgb
-    from lightgbm import LGBMRegressor
-
-    xgb_est = cast(xgb.XGBRegressor, xgb_model.model)
-    lgb_est = cast(LGBMRegressor, lgb_model.model)
-    y_pred_xgb: np.ndarray = xgb_est.predict(x_test)
-    y_pred_lgb: np.ndarray = lgb_est.predict(x_test)
-
-    # ── 4. Save metrics JSON ──────────────────────────────────────────────
+    # ── 5. Save metrics JSON ──────────────────────────────────────────────
     save_metrics_json(metrics_xgb, metrics_lgb, train_years, test_year, reports_dir)
 
-    # ── 5. Generate figures ───────────────────────────────────────────────
+    # ── 6. Generate figures ───────────────────────────────────────────────
     figure_paths: dict[str, Path] = {}
 
     figure_paths["predicted_vs_actual"] = plot_predicted_vs_actual(
         y_test, y_pred_xgb, y_pred_lgb, metrics_xgb, metrics_lgb, reports_dir
     )
+
+    import xgboost as xgb
+    from lightgbm import LGBMRegressor
+
+    xgb_est = cast(xgb.XGBRegressor, model_xgb.model)
+    lgb_est = cast(LGBMRegressor, model_lgb.model)
 
     xgb_importances: np.ndarray = xgb_est.feature_importances_
     figure_paths["importance_xgb"] = plot_feature_importance(
@@ -390,7 +386,7 @@ def run_report_pipeline(
         reports_dir,
     )
 
-    # ── 6. SHAP (optional) ────────────────────────────────────────────────
+    # ── 7. SHAP (optional) ────────────────────────────────────────────────
     if include_shap:
         logger.info("Generating SHAP plots (LightGBM)...")
         shap_paths = save_tree_shap_artifacts(lgb_est, x_test, reports_dir)

@@ -112,6 +112,9 @@ dependencies = [
     "jinja2>=3.1.0",
     "openpyxl>=3.1.0",
     "pyarrow>=24.0.0",
+    # --- Explainability ---
+    "shap>=0.45.0",
+    "numba>=0.60.0",
 ]
 
 # ---------------------------------------------------------------------------
@@ -136,9 +139,6 @@ dev = [
     "ipykernel>=6.29.0",
     "jupyter>=1.0.0",
     "nbformat>=5.10.0",
-    # SHAP: model explainability post-training (dev only; not required in pipeline)
-    "numba>=0.60.0",
-    "shap>=0.45.0",
 ]
 
 # ---------------------------------------------------------------------------
