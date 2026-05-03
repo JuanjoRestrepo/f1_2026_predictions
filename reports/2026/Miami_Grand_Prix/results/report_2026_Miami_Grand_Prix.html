@@ -72,6 +72,12 @@
             text-align: right;
             font-weight: bold;
         }
+        .range {
+            font-size: 11px;
+            color: var(--text-dim);
+            text-align: right;
+            font-family: monospace;
+        }
         .footer {
             margin-top: 50px;
             text-align: center;
@@ -91,7 +97,7 @@
                 <tr>
                     <th>Pos</th>
                     <th>Driver / Team</th>
-                    <th style="text-align: right;">Predicted Pace</th>
+                    <th style="text-align: right;">Predicted Pace (Range)</th>
                 </tr>
             </thead>
             <tbody>
@@ -102,7 +108,10 @@
                 <div class="driver-code">NOR</div>
                 <div class="team">McLaren</div>
             </td>
-            <td class="time">85.495s</td>
+            <td>
+                <div class="time">85.897s</div>
+                <div class="range">[84.807s - 86.002s]</div>
+            </td>
         </tr>
         <tr>
             <td class="rank">2</td>
@@ -110,7 +119,10 @@
                 <div class="driver-code">BOR</div>
                 <div class="team">Audi</div>
             </td>
-            <td class="time">86.708s</td>
+            <td>
+                <div class="time">87.050s</div>
+                <div class="range">[85.340s - 87.195s]</div>
+            </td>
         </tr>
         <tr>
             <td class="rank">3</td>
@@ -118,7 +130,10 @@
                 <div class="driver-code">ALB</div>
                 <div class="team">Williams</div>
             </td>
-            <td class="time">87.044s</td>
+            <td>
+                <div class="time">87.559s</div>
+                <div class="range">[85.969s - 87.742s]</div>
+            </td>
         </tr>
         <tr>
             <td class="rank">4</td>
@@ -126,23 +141,32 @@
                 <div class="driver-code">ANT</div>
                 <div class="team">Mercedes</div>
             </td>
-            <td class="time">93.465s</td>
+            <td>
+                <div class="time">93.615s</div>
+                <div class="range">[93.053s - 93.615s]</div>
+            </td>
         </tr>
         <tr>
             <td class="rank">5</td>
             <td>
-                <div class="driver-code">RUS</div>
-                <div class="team">Mercedes</div>
+                <div class="driver-code">LEC</div>
+                <div class="team">Ferrari</div>
             </td>
-            <td class="time">93.586s</td>
+            <td>
+                <div class="time">93.865s</div>
+                <div class="range">[93.449s - 93.865s]</div>
+            </td>
         </tr>
         <tr>
             <td class="rank">6</td>
             <td>
-                <div class="driver-code">LEC</div>
-                <div class="team">Ferrari</div>
+                <div class="driver-code">RUS</div>
+                <div class="team">Mercedes</div>
             </td>
-            <td class="time">93.697s</td>
+            <td>
+                <div class="time">93.911s</div>
+                <div class="range">[93.364s - 93.911s]</div>
+            </td>
         </tr>
         <tr>
             <td class="rank">7</td>
@@ -150,23 +174,32 @@
                 <div class="driver-code">VER</div>
                 <div class="team">Red Bull</div>
             </td>
-            <td class="time">93.917s</td>
+            <td>
+                <div class="time">94.189s</div>
+                <div class="range">[93.739s - 94.316s]</div>
+            </td>
         </tr>
         <tr>
             <td class="rank">8</td>
             <td>
-                <div class="driver-code">HAM</div>
-                <div class="team">Ferrari</div>
+                <div class="driver-code">PIA</div>
+                <div class="team">McLaren</div>
             </td>
-            <td class="time">94.078s</td>
+            <td>
+                <div class="time">94.372s</div>
+                <div class="range">[93.572s - 94.372s]</div>
+            </td>
         </tr>
         <tr>
             <td class="rank">9</td>
             <td>
-                <div class="driver-code">PIA</div>
-                <div class="team">McLaren</div>
+                <div class="driver-code">HAM</div>
+                <div class="team">Ferrari</div>
             </td>
-            <td class="time">94.223s</td>
+            <td>
+                <div class="time">94.409s</div>
+                <div class="range">[93.848s - 94.409s]</div>
+            </td>
         </tr>
         <tr>
             <td class="rank">10</td>
@@ -174,7 +207,10 @@
                 <div class="driver-code">GAS</div>
                 <div class="team">Alpine</div>
             </td>
-            <td class="time">94.326s</td>
+            <td>
+                <div class="time">94.470s</div>
+                <div class="range">[93.942s - 94.470s]</div>
+            </td>
         </tr>
         <tr>
             <td class="rank">11</td>
@@ -182,7 +218,10 @@
                 <div class="driver-code">OCO</div>
                 <div class="team">Haas</div>
             </td>
-            <td class="time">94.892s</td>
+            <td>
+                <div class="time">94.871s</div>
+                <div class="range">[94.611s - 95.180s]</div>
+            </td>
         </tr>
         <tr>
             <td class="rank">12</td>
@@ -190,23 +229,32 @@
                 <div class="driver-code">LIN</div>
                 <div class="team">Racing Bulls</div>
             </td>
-            <td class="time">95.218s</td>
+            <td>
+                <div class="time">95.404s</div>
+                <div class="range">[94.984s - 95.511s]</div>
+            </td>
         </tr>
         <tr>
             <td class="rank">13</td>
             <td>
-                <div class="driver-code">LAW</div>
-                <div class="team">Racing Bulls</div>
+                <div class="driver-code">COL</div>
+                <div class="team">Alpine</div>
             </td>
-            <td class="time">95.536s</td>
+            <td>
+                <div class="time">95.561s</div>
+                <div class="range">[95.419s - 95.944s]</div>
+            </td>
         </tr>
         <tr>
             <td class="rank">14</td>
             <td>
-                <div class="driver-code">COL</div>
-                <div class="team">Alpine</div>
+                <div class="driver-code">LAW</div>
+                <div class="team">Racing Bulls</div>
             </td>
-            <td class="time">95.563s</td>
+            <td>
+                <div class="time">95.574s</div>
+                <div class="range">[95.241s - 95.852s]</div>
+            </td>
         </tr>
         <tr>
             <td class="rank">15</td>
@@ -214,7 +262,10 @@
                 <div class="driver-code">SAI</div>
                 <div class="team">Williams</div>
             </td>
-            <td class="time">95.960s</td>
+            <td>
+                <div class="time">96.056s</div>
+                <div class="range">[95.769s - 96.161s]</div>
+            </td>
         </tr>
         <tr>
             <td class="rank">16</td>
@@ -222,7 +273,10 @@
                 <div class="driver-code">PER</div>
                 <div class="team">Cadillac</div>
             </td>
-            <td class="time">96.392s</td>
+            <td>
+                <div class="time">96.420s</div>
+                <div class="range">[96.099s - 96.627s]</div>
+            </td>
         </tr>
         <tr>
             <td class="rank">17</td>
@@ -230,31 +284,43 @@
                 <div class="driver-code">BEA</div>
                 <div class="team">Haas</div>
             </td>
-            <td class="time">96.437s</td>
+            <td>
+                <div class="time">96.446s</div>
+                <div class="range">[96.229s - 96.724s]</div>
+            </td>
         </tr>
         <tr>
             <td class="rank">18</td>
             <td>
-                <div class="driver-code">HUL</div>
-                <div class="team">Audi</div>
+                <div class="driver-code">STR</div>
+                <div class="team">Aston Martin</div>
             </td>
-            <td class="time">96.555s</td>
+            <td>
+                <div class="time">97.224s</div>
+                <div class="range">[96.832s - 97.513s]</div>
+            </td>
         </tr>
         <tr>
             <td class="rank">19</td>
             <td>
-                <div class="driver-code">HAD</div>
-                <div class="team">Red Bull</div>
+                <div class="driver-code">HUL</div>
+                <div class="team">Audi</div>
             </td>
-            <td class="time">97.162s</td>
+            <td>
+                <div class="time">97.336s</div>
+                <div class="range">[96.444s - 97.336s]</div>
+            </td>
         </tr>
         <tr>
             <td class="rank">20</td>
             <td>
-                <div class="driver-code">STR</div>
-                <div class="team">Aston Martin</div>
+                <div class="driver-code">HAD</div>
+                <div class="team">Red Bull</div>
             </td>
-            <td class="time">97.223s</td>
+            <td>
+                <div class="time">97.819s</div>
+                <div class="range">[96.865s - 97.819s]</div>
+            </td>
         </tr>
         <tr>
             <td class="rank">21</td>
@@ -262,7 +328,10 @@
                 <div class="driver-code">ALO</div>
                 <div class="team">Aston Martin</div>
             </td>
-            <td class="time">98.463s</td>
+            <td>
+                <div class="time">98.747s</div>
+                <div class="range">[98.005s - 98.747s]</div>
+            </td>
         </tr>
         <tr>
             <td class="rank">22</td>
@@ -270,7 +339,10 @@
                 <div class="driver-code">BOT</div>
                 <div class="team">Cadillac</div>
             </td>
-            <td class="time">98.989s</td>
+            <td>
+                <div class="time">99.651s</div>
+                <div class="range">[98.800s - 99.651s]</div>
+            </td>
         </tr>
             </tbody>
         </table>

@@ -36,10 +36,17 @@ class LightGBMPaceRegressor(BasePaceRegressor):
         self,
         random_state: int = 42,
         model_params: Mapping[str, Any] | None = None,
+        alpha: float | None = None,
     ) -> None:
         """Initialise the LightGBM regressor with tunable hyperparameters."""
         self._model_params = dict(LIGHTGBM_DEFAULT_PARAMS)
         self._model_params["random_state"] = random_state
+        
+        # If alpha is provided, switch to quantile regression
+        if alpha is not None:
+            self._model_params["objective"] = "quantile"
+            self._model_params["alpha"] = alpha
+            
         if model_params is not None:
             self._model_params.update(model_params)
         super().__init__(random_state=random_state)

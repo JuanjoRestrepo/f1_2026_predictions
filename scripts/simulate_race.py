@@ -3,6 +3,7 @@
 import argparse
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from f1_predictions.models import F1PaceRegressor, LightGBMPaceRegressor
@@ -77,10 +78,35 @@ def _enrich_with_track_metadata(df: pd.DataFrame) -> pd.DataFrame:
     return enriched_df
 
 
+def _calculate_sample_weights(
+    df: pd.DataFrame, target_year: int, target_round: int
+) -> pd.Series:
+    """Calculate exponential decay weights based on race recency.
+
+    Rationale: F1 is a development-heavy sport. Form from 2 months ago is
+    less relevant than the last race. This weighting helps the model
+    capture 'momentum' and recent technical upgrades.
+
+    Formula: weight = exp(-decay * distance_in_rounds)
+    """
+    # Calculate distance in rounds (approximate across years)
+    # Assume 24 rounds per year for distance calculation
+    df["round_dist"] = (target_year - df["Season"]) * 24 + (
+        target_round - df["RoundNumber"]
+    )
+
+    # Decay factor: weight halves every 10 rounds (~half a season)
+    decay_rate = 0.07  # exp(-0.07 * 10) approx 0.5
+    weights = np.exp(-decay_rate * df["round_dist"])
+
+    # Normalise weights so mean is 1.0 (standard practice for GBMs)
+    return weights / weights.mean()
+
+
 def run_race_simulation(
     year: int, round_number: int, event_name: str, lap_number: int = 15
 ) -> None:
-    """Run a virtual race simulation for a specific GP and year.
+    """Run a virtual race simulation with statistical rigor (Phase 2).
 
     Args:
         year: The season year to simulate.
@@ -93,8 +119,6 @@ def run_race_simulation(
 
     # 1. Load historical/current season data
     data_dir = Path(settings.data_outputs_dir) / "laps"
-    # We look for all data up to the current round if possible,
-    # but primarily the current season's form.
     gold_files = list(data_dir.glob(f"season={year}/**/*.parquet"))
 
     if not gold_files:
@@ -154,7 +178,7 @@ def run_race_simulation(
                 "Stint": 1,
                 "TyreLife": 10,
                 "Compound": "MEDIUM",
-                "Position": 5,  # Assume a neutral mid-pack position for pace comparison
+                "Position": 5,
                 "DriverPointsPreRace": d_info["DriverPointsPreRace"],
                 "TeamPointsPreRace": d_info["TeamPointsPreRace"],
                 "SpeedI1": d_info["SpeedI1"],
@@ -172,7 +196,7 @@ def run_race_simulation(
                 "tyre_life_norm": d_info["tyre_life_norm"],
                 "PitInTime_s": 0,
                 "PitOutTime_s": 0,
-                "LapTime_s": 0,  # Target placeholder
+                "LapTime_s": 0,
             }
         )
 
@@ -181,53 +205,59 @@ def run_race_simulation(
     # 4. Train Models on Historical Data (2022 to year-1)
     train_years = list(range(2022, year))
     if not train_years:
-        train_years = [2022, 2023, 2024, 2025]  # Fallback
+        train_years = [2022, 2023, 2024, 2025]
 
-    logger.info("Training models on historical data: %s...", train_years)
-
-    # Load all historical data for training
+    # Load and enrich
     gold_all_files = list(data_dir.glob("season=[2-9]*/**/*.parquet"))
     gold_all = pd.concat([pd.read_parquet(f) for f in gold_all_files])
     df_train_full = gold_all[gold_all["Season"].isin(train_years)]
 
-    # ENRICH with track metadata
-    logger.info("Enriching training and simulation data with track characteristics...")
+    logger.info("Enriching data and calculating temporal weights...")
     df_train_full = _enrich_with_track_metadata(df_train_full)
     df_sim = _enrich_with_track_metadata(df_sim)
 
-    xgb_model = F1PaceRegressor()
-    lgb_model = LightGBMPaceRegressor()
+    # Calculate Weights (Phase 2.2)
+    sample_weights = _calculate_sample_weights(df_train_full, year, round_number)
 
-    # Feature matrix alignment
+    # Prepare features
     df_combined = pd.concat([df_train_full, df_sim], ignore_index=True)
     x_all, _ = prepare_feature_matrix(df_combined, require_target=False)
 
-    x_train = x_all.iloc[: -len(drivers)]
+    x_train = x_all.iloc[: -len(drivers)].drop(columns=["Season"], errors="ignore")
     y_train = df_train_full["LapTime_s"]
-
-    # Fit models
-    xgb_model.model.fit(x_train.drop(columns=["Season"], errors="ignore"), y_train)
-    lgb_model.model.fit(x_train.drop(columns=["Season"], errors="ignore"), y_train)
-
-    # 5. Predict Virtual Lap Results
-    logger.info("Running virtual race simulation for %s...", event_name)
     x_sim = x_all.tail(len(drivers)).drop(columns=["Season"], errors="ignore")
+
+    # 5. Training Suite (Phase 2.1: Quantile Regression)
+    logger.info("Training Quantile Regression suite (P05, P50, P95)...")
+
+    # XGBoost as baseline (mean)
+    xgb_model = F1PaceRegressor()
+    xgb_model.model.fit(x_train, y_train, sample_weight=sample_weights)
     y_pred_xgb = xgb_model.model.predict(x_sim)
-    y_pred_lgb = lgb_model.model.predict(x_sim)
+
+    # LightGBM Quantile Models
+    quantiles = [0.05, 0.50, 0.95]
+    quantile_preds = {}
+
+    for q in quantiles:
+        logger.info("Fitting LightGBM for alpha=%.2f...", q)
+        lgb_q = LightGBMPaceRegressor(alpha=q)
+        lgb_q.model.fit(x_train, y_train, sample_weight=sample_weights)
+        quantile_preds[q] = lgb_q.model.predict(x_sim)
 
     # 6. Save Results
     res_dir = Path(settings.reports_dir) / str(year) / safe_event / "results"
     res_dir.mkdir(parents=True, exist_ok=True)
 
     metadata = df_sim[["Season", "RoundNumber", "EventName", "Driver", "Team"]]
-    predictions_df = build_predictions_df(metadata, y_pred_xgb, y_pred_lgb)
+    predictions_df = build_predictions_df(metadata, y_pred_xgb, quantile_preds)
 
     # Save CSVs
-    standings_lgb = build_driver_standings(predictions_df, "predicted_laptime_lgb_s")
-    standings_lgb.to_csv(res_dir / "standings.csv", index=False)
+    standings = build_driver_standings(predictions_df)
+    standings.to_csv(res_dir / "standings.csv", index=False)
     predictions_df.to_csv(res_dir / "predictions.csv", index=False)
 
-    logger.info("Simulation complete! Results saved to: %s", res_dir)
+    logger.info("Simulation complete! Results with uncertainty saved to: %s", res_dir)
     print(f"\nVirtual Race Prediction for {event_name} ({year}) finished successfully.")
 
 

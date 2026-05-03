@@ -40,7 +40,7 @@ def generate_visuals(year: int, event_name: str) -> None:
     logger.info("Generating visuals for %s %d...", event_name, year)
     df = pd.read_csv(standings_path)
 
-    # 1. Image Generation (Bar Chart)
+    # 1. Image Generation (Bar Chart with Uncertainty)
     plt.figure(figsize=(12, 10))
     sns.set_style("darkgrid")
 
@@ -50,27 +50,41 @@ def generate_visuals(year: int, event_name: str) -> None:
     # Dynamic color palette
     colors = sns.color_palette("rocket_r", len(df))
 
-    bars = plt.barh(df_plot["Driver"], df_plot["median_predicted_s"], color=colors)
+    # Calculate error lengths
+    xerr = [
+        df_plot["median_predicted_s"] - df_plot["lower_bound_s"],
+        df_plot["upper_bound_s"] - df_plot["median_predicted_s"],
+    ]
+
+    bars = plt.barh(
+        df_plot["Driver"],
+        df_plot["median_predicted_s"],
+        color=colors,
+        xerr=xerr,
+        ecolor="white",
+        capsize=3,
+        alpha=0.8,
+    )
 
     # Labels and Titles
     plt.xlabel("Predicted Race Pace (s)", fontsize=12, fontweight="bold", labelpad=15)
     plt.title(
-        f"{event_name} {year}\nPredicted Performance Ranking",
+        f"{event_name} {year}\nPredicted Performance Ranking (with 90% Confidence Interval)",
         fontsize=18,
         fontweight="bold",
         pad=25,
     )
 
     # Axis Zoom
-    min_time = df["median_predicted_s"].min()
-    max_time = df["median_predicted_s"].max()
+    min_time = df["lower_bound_s"].min()
+    max_time = df["upper_bound_s"].max()
     plt.xlim(min_time - 0.5, max_time + 0.5)
 
     # Add time labels
     for bar in bars:
         width = bar.get_width()
         plt.text(
-            width + 0.05,
+            width + 0.1,
             bar.get_y() + bar.get_height() / 2,
             f"{width:.3f}s",
             va="center",
@@ -159,6 +173,12 @@ def generate_visuals(year: int, event_name: str) -> None:
             text-align: right;
             font-weight: bold;
         }}
+        .range {{
+            font-size: 11px;
+            color: var(--text-dim);
+            text-align: right;
+            font-family: monospace;
+        }}
         .footer {{
             margin-top: 50px;
             text-align: center;
@@ -178,7 +198,7 @@ def generate_visuals(year: int, event_name: str) -> None:
                 <tr>
                     <th>Pos</th>
                     <th>Driver / Team</th>
-                    <th style="text-align: right;">Predicted Pace</th>
+                    <th style="text-align: right;">Predicted Pace (Range)</th>
                 </tr>
             </thead>
             <tbody>
@@ -201,7 +221,10 @@ def generate_visuals(year: int, event_name: str) -> None:
                 <div class="driver-code">{row["Driver"]}</div>
                 <div class="team">{row["Team"]}</div>
             </td>
-            <td class="time">{row["median_predicted_s"]:.3f}s</td>
+            <td>
+                <div class="time">{row["median_predicted_s"]:.3f}s</div>
+                <div class="range">[{row["lower_bound_s"]:.3f}s - {row["upper_bound_s"]:.3f}s]</div>
+            </td>
         </tr>"""
 
     html_content = html_template.format(event=event_name, year=year, rows=rows_html)
