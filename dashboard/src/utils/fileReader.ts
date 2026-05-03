@@ -165,3 +165,46 @@ export function getPredictedLapPositions(year: number, roundNum: number): LapPos
     return null;
   }
 }
+
+export interface TyreStint {
+  stint: number;
+  compound: string;
+  laps: number;
+  color: string;
+}
+
+export interface DriverTyreData {
+  driver: string;
+  team: string;
+  stints: TyreStint[];
+}
+
+export interface TyreIntelligenceData {
+  gp: string;
+  year: number;
+  winning_strategy: string;
+  avg_pit_stop: string;
+  proven_strategy_insight: string;
+  drivers: DriverTyreData[];
+}
+
+/**
+ * Reads the tyre intelligence JSON file.
+ */
+export function getTyreIntelligence(year: number, roundNum: number): TyreIntelligenceData | null {
+  try {
+    const filePath = path.join(
+      getReportsDirectory(),
+      year.toString(),
+      "summaries",
+      `tyre_intelligence_round_${roundNum}.json`
+    );
+    if (!fs.existsSync(filePath)) return null;
+    const raw = fs.readFileSync(filePath, "utf8");
+    return JSON.parse(raw) as TyreIntelligenceData;
+  } catch (error) {
+    console.error("Failed to read tyre intelligence:", error);
+    return null;
+  }
+}
+

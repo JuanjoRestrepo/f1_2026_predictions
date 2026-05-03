@@ -1,0 +1,49 @@
+{
+  "gp": "Miami Grand Prix",
+  "year": 2026,
+  "winning_strategy": "Medium to Hard (1-Stop)",
+  "avg_pit_stop": "2.45s",
+  "proven_strategy_insight": "In Miami, the Medium-Hard strategy remains the dominant choice. Starting on Mediums for 22-28 laps provides the best balance of early-race grip and flexibility for Safety Car windows. Switching to Hards for the final stint is mandatory due to high track temperatures (>50°C) causing excessive graining on Softs.",
+  "drivers": [
+    {
+      "driver": "ANT",
+      "team": "Mercedes",
+      "stints": [
+        { "stint": 1, "compound": "MEDIUM", "laps": 26, "color": "#f0f20d" },
+        { "stint": 2, "compound": "HARD", "laps": 31, "color": "#ffffff" }
+      ]
+    },
+    {
+      "driver": "NOR",
+      "team": "McLaren",
+      "stints": [
+        { "stint": 1, "compound": "MEDIUM", "laps": 27, "color": "#f0f20d" },
+        { "stint": 2, "compound": "HARD", "laps": 30, "color": "#ffffff" }
+      ]
+    },
+    {
+      "driver": "PIA",
+      "team": "McLaren",
+      "stints": [
+        { "stint": 1, "compound": "MEDIUM", "laps": 28, "color": "#f0f20d" },
+        { "stint": 2, "compound": "HARD", "laps": 29, "color": "#ffffff" }
+      ]
+    },
+    {
+      "driver": "RUS",
+      "team": "Mercedes",
+      "stints": [
+        { "stint": 1, "compound": "MEDIUM", "laps": 20, "color": "#f0f20d" },
+        { "stint": 2, "compound": "HARD", "laps": 37, "color": "#ffffff" }
+      ]
+    },
+    {
+      "driver": "VER",
+      "team": "Red Bull Racing",
+      "stints": [
+        { "stint": 1, "compound": "MEDIUM", "laps": 6, "color": "#f0f20d" },
+        { "stint": 2, "compound": "HARD", "laps": 51, "color": "#ffffff" }
+      ]
+    }
+  ]
+}

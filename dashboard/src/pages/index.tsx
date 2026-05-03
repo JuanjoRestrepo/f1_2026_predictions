@@ -5,15 +5,18 @@ import { Trophy, Medal, Timer } from "lucide-react";
 import { RaceReport } from "../components/RaceReport";
 import { PredictionsTable } from "../components/PredictionsTable";
 import { ViewToggle } from "../components/ViewToggle";
+import { TyreIntelligence } from "../components/TyreIntelligence";
 import {
   getRaceSummary,
   getRacePredictions,
   getLapPositions,
   getPredictedLapPositions,
   getActualResults,
+  getTyreIntelligence,
   type PredictionRow,
   type LapPositionData,
   type ActualResult,
+  type TyreIntelligenceData,
 } from "../utils/fileReader";
 
 // Recharts uses browser APIs — load client-side only
@@ -28,6 +31,7 @@ interface DashboardProps {
   actualResults: ActualResult[] | null;
   lapPositions: LapPositionData | null;
   predictedLapPositions: LapPositionData | null;
+  tyreData: TyreIntelligenceData | null;
 }
 
 export async function getStaticProps() {
@@ -40,22 +44,29 @@ export async function getStaticProps() {
   const actualResults = getActualResults(year, roundNum) ?? [];
   const lapPositions = getLapPositions(year, roundNum);
   const predictedLapPositions = getPredictedLapPositions(year, roundNum);
+  const tyreData = getTyreIntelligence(year, roundNum);
 
   return {
-    props: { markdownReport, predictions, actualResults, lapPositions, predictedLapPositions },
+    props: { markdownReport, predictions, actualResults, lapPositions, predictedLapPositions, tyreData },
     revalidate: 3600,
   };
 }
 
-export default function Home({ markdownReport, predictions, actualResults, lapPositions, predictedLapPositions }: DashboardProps) {
-
+export default function Home({ 
+  markdownReport, 
+  predictions, 
+  actualResults, 
+  lapPositions, 
+  predictedLapPositions,
+  tyreData 
+}: DashboardProps) {
   const [tableView, setTableView] = useState<"predicted" | "actual">("predicted");
   const [chartView, setChartView] = useState<"predicted" | "actual">("actual");
 
   // Determine which data to show based on view
   const currentTableData = tableView === "predicted" ? (predictions ?? []) : (actualResults ?? []);
   
-  // Extract top drivers (always from actual if available, else predicted)
+  // Extract top drivers
   const winner = actualResults && actualResults.length > 0 
     ? actualResults[0] 
     : (predictions && predictions.length > 0 && predictions[0] 
@@ -128,7 +139,7 @@ export default function Home({ markdownReport, predictions, actualResults, lapPo
             </div>
           </div>
 
-          {/* ─── Race Timeline + Finishing Order ─── */}
+          {/* ─── Top Row: Race Timeline + Finishing Order ─── */}
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 mb-10">
             {/* Race Timeline Chart (Left) */}
             <div className="lg:col-span-7 flex flex-col">
@@ -141,7 +152,7 @@ export default function Home({ markdownReport, predictions, actualResults, lapPo
                 <ViewToggle activeView={chartView} onToggle={setChartView} />
               </div>
               
-              <div className="flex-1 rounded-xl bg-f1dark border border-white/5 p-6 shadow-inner">
+              <div className="flex-1 rounded-xl bg-f1dark border border-white/5 p-6 shadow-inner mb-8">
                 {chartView === "actual" ? (
                   lapPositions ? (
                     <RaceTimeline data={lapPositions} />
@@ -155,15 +166,25 @@ export default function Home({ markdownReport, predictions, actualResults, lapPo
                     <RaceTimeline data={predictedLapPositions} />
                   ) : (
                     <div className="flex h-full min-h-[340px] items-center justify-center bg-black/20 rounded-lg border border-dashed border-white/10">
-                      <div className="text-center p-8">
-                        <p className="text-gray-400 text-sm font-medium mb-2">Predicted Timeline Visualization</p>
-                        <p className="text-gray-500 text-xs italic">ML model currently focused on final race pace. Detailed lap simulation coming in Phase 7.</p>
-                      </div>
+                      <p className="text-gray-500 text-xs italic">Simulated timeline pending.</p>
                     </div>
                   )
                 )}
               </div>
 
+              {/* Tyre Intelligence (Below Chart) */}
+              <div className="mt-auto">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-f1red mb-4">
+                  Race Tyre Intelligence
+                </h3>
+                <div className="rounded-xl bg-f1dark border border-white/5 p-6 shadow-xl">
+                  {tyreData ? (
+                    <TyreIntelligence data={tyreData} />
+                  ) : (
+                    <p className="text-gray-500 text-sm italic">Tyre strategy data unavailable.</p>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Finishing Order Table (Right) */}
@@ -180,7 +201,7 @@ export default function Home({ markdownReport, predictions, actualResults, lapPo
                   <PredictionsTable data={currentTableData} view={tableView} />
                 ) : (
                   <div className="flex h-64 items-center justify-center">
-                    <p className="text-gray-500 text-sm">No data available for this view.</p>
+                    <p className="text-gray-500 text-sm">No data available.</p>
                   </div>
                 )}
               </div>
