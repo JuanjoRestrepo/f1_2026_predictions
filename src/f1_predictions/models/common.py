@@ -96,7 +96,12 @@ def prepare_feature_matrix(
 
     cols_to_drop = [col for col in drop_cols if col in clean_df.columns]
     x = clean_df.drop(columns=cols_to_drop, errors="ignore")
+    
+    # Ensure only pure numeric features are passed to the model.
+    # We explicitly exclude timedeltas and datetimes which can sometimes 
+    # be caught in np.number but are not supported by GBMs.
     x = x.select_dtypes(include=[np.number])
+    x = x.select_dtypes(exclude=["timedelta", "datetime"])
 
     return x, y
 

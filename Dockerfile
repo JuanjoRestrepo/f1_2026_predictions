@@ -18,6 +18,11 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Stage 2: Runner
 FROM python:3.12-slim-bookworm
 
+# Install system dependencies required by LightGBM/XGBoost (OpenMP)
+RUN apt-get update && apt-get install -y \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
 # Non-root user for security (DevOps best practice)
 RUN groupadd -r f1user && useradd -r -g f1user f1user
 
