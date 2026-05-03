@@ -8,6 +8,7 @@ us a second tree-boosting baseline before we commit to a final model choice.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import Any
 
 import lightgbm as lgb
 import pandas as pd
@@ -15,7 +16,7 @@ from lightgbm import LGBMRegressor
 
 from f1_predictions.models.base import BasePaceRegressor
 
-LIGHTGBM_DEFAULT_PARAMS: dict[str, object] = {
+LIGHTGBM_DEFAULT_PARAMS: dict[str, Any] = {
     "n_estimators": 500,
     "learning_rate": 0.05,
     "num_leaves": 31,
@@ -34,7 +35,7 @@ class LightGBMPaceRegressor(BasePaceRegressor):
     def __init__(
         self,
         random_state: int = 42,
-        model_params: Mapping[str, object] | None = None,
+        model_params: Mapping[str, Any] | None = None,
     ) -> None:
         """Initialise the LightGBM regressor with tunable hyperparameters."""
         self._model_params = dict(LIGHTGBM_DEFAULT_PARAMS)

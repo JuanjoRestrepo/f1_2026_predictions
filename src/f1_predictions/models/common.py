@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import mean_absolute_error, root_mean_squared_error
+from sklearn.metrics import mean_absolute_error, root_mean_squared_error  # type: ignore[import-untyped]
 
 DEFAULT_TARGET_COLUMN: str = "LapTime_s"
 DEFAULT_SEASON_COLUMN: str = "Season"

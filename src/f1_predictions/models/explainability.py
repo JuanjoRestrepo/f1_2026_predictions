@@ -7,6 +7,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from typing import Any
 
 from f1_predictions.utils.logging_setup import get_logger
 
@@ -14,12 +15,12 @@ logger = get_logger(__name__)
 
 
 def save_tree_shap_artifacts(
-    model: object,
+    model: Any,
     x_test: pd.DataFrame,
     reports_dir: Path,
     summary_filename: str = "fig_07_shap_summary.png",
     bar_filename: str = "fig_08_shap_bar.png",
-    explainer_factory: Callable[[object], object] | None = None,
+    explainer_factory: Callable[[Any], Any] | None = None,
     summary_plot_fn: Callable[..., None] | None = None,
     bar_plot_fn: Callable[..., None] | None = None,
     savefig_fn: Callable[[Path], None] | None = None,

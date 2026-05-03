@@ -98,4 +98,4 @@ class BasePaceRegressor(ABC):
 
         x = x.reindex(columns=self.features, fill_value=np.nan)
         model = cast(Any, self.model)
-        return model.predict(x)
+        return cast(np.ndarray, model.predict(x))

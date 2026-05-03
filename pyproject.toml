@@ -229,10 +229,7 @@ ignore_missing_imports = false  # Strict: all imports must have stubs or py.type
 module = [
     "fastf1",        # No py.typed; upstream stubs not yet published
     "fastf1.*",
-    "sweetviz",      # No py.typed
-    "missingno",     # No py.typed; small utility library
     "lightgbm",      # Partial stubs; mypy cannot resolve all generics
-    "plotly.*",      # Stubs incomplete for graph_objects submodules
     "shap",          # No py.typed
     "tenacity",      # Partial stubs
 ]
