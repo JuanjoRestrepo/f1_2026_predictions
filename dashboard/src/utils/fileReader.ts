@@ -77,6 +77,33 @@ export function getRacePredictions(year: number, eventDirName: string): Predicti
   }
 }
 
+export interface ActualResult {
+  position: number;
+  driver: string;
+  team: string;
+  time: string;
+  gap: string;
+}
+
+/**
+ * Reads the actual race results JSON generated post-race.
+ */
+export function getActualResults(year: number, roundNum: number): ActualResult[] | null {
+  try {
+    const filePath = path.join(
+      getReportsDirectory(),
+      year.toString(),
+      "summaries",
+      `actual_results_round_${roundNum}.json`
+    );
+    if (!fs.existsSync(filePath)) return null;
+    const raw = fs.readFileSync(filePath, "utf8");
+    return JSON.parse(raw) as ActualResult[];
+  } catch (error) {
+    console.error("Failed to read actual results:", error);
+    return null;
+  }
+}
 export interface DriverLapData {
   driver: string;
   team: string;

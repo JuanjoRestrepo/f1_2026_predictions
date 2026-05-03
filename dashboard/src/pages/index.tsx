@@ -1,14 +1,18 @@
 import Head from "next/head";
 import dynamic from "next/dynamic";
+import { useState } from "react";
 import { Trophy, Medal, Timer } from "lucide-react";
 import { RaceReport } from "../components/RaceReport";
 import { PredictionsTable } from "../components/PredictionsTable";
+import { ViewToggle } from "../components/ViewToggle";
 import {
   getRaceSummary,
   getRacePredictions,
   getLapPositions,
+  getActualResults,
   type PredictionRow,
   type LapPositionData,
+  type ActualResult,
 } from "../utils/fileReader";
 
 // Recharts uses browser APIs — load client-side only
@@ -20,6 +24,7 @@ const RaceTimeline = dynamic(
 interface DashboardProps {
   markdownReport: string | null;
   predictions: PredictionRow[] | null;
+  actualResults: ActualResult[] | null;
   lapPositions: LapPositionData | null;
 }
 
@@ -30,17 +35,34 @@ export async function getStaticProps() {
 
   const markdownReport = getRaceSummary(year, eventDirName, roundNum);
   const predictions = getRacePredictions(year, eventDirName) ?? [];
+  const actualResults = getActualResults(year, roundNum) ?? [];
   const lapPositions = getLapPositions(year, roundNum);
 
   return {
-    props: { markdownReport, predictions, lapPositions },
+    props: { markdownReport, predictions, actualResults, lapPositions },
     revalidate: 3600,
   };
 }
 
-export default function Home({ markdownReport, predictions, lapPositions }: DashboardProps) {
-  const winner = predictions && predictions.length > 0 ? predictions[0] : null;
-  const secondPlace = predictions && predictions.length > 1 ? predictions[1] : null;
+export default function Home({ markdownReport, predictions, actualResults, lapPositions }: DashboardProps) {
+  const [tableView, setTableView] = useState<"predicted" | "actual">("predicted");
+  const [chartView, setChartView] = useState<"predicted" | "actual">("actual");
+
+  // Determine which data to show based on view
+  const currentTableData = tableView === "predicted" ? (predictions ?? []) : (actualResults ?? []);
+  
+  // Extract top drivers (always from actual if available, else predicted)
+  const winner = actualResults && actualResults.length > 0 
+    ? actualResults[0] 
+    : (predictions && predictions.length > 0 && predictions[0] 
+        ? { Driver: predictions[0].Driver, Team: predictions[0].Team } 
+        : null);
+
+  const secondPlace = actualResults && actualResults.length > 1 
+    ? actualResults[1] 
+    : (predictions && predictions.length > 1 && predictions[1] 
+        ? { Driver: predictions[1].Driver, Team: predictions[1].Team } 
+        : null);
 
   return (
     <>
@@ -70,29 +92,29 @@ export default function Home({ markdownReport, predictions, lapPositions }: Dash
 
           {/* ─── Metric Cards ─── */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3 mb-10">
-            <div className="rounded-xl bg-f1dark p-6 border border-white/5 flex flex-col items-center justify-center text-center">
+            <div className="rounded-xl bg-f1dark p-6 border border-white/5 flex flex-col items-center justify-center text-center shadow-lg">
               <div className="flex items-center gap-2 text-yellow-500 mb-2">
                 <Trophy size={16} />
                 <span className="text-xs font-bold uppercase tracking-widest">Race Winner</span>
               </div>
               <h2 className="text-3xl font-bold text-white mb-1">
-                {winner ? winner.Driver : "--"}
+                {winner ? ("Driver" in winner ? winner.Driver : winner.driver) : "--"}
               </h2>
-              <p className="text-sm text-gray-400">{winner?.Team ?? ""}</p>
+              <p className="text-sm text-gray-400">{winner ? ("Team" in winner ? winner.Team : winner.team) : ""}</p>
             </div>
 
-            <div className="rounded-xl bg-f1dark p-6 border border-white/5 flex flex-col items-center justify-center text-center">
+            <div className="rounded-xl bg-f1dark p-6 border border-white/5 flex flex-col items-center justify-center text-center shadow-lg">
               <div className="flex items-center gap-2 text-gray-400 mb-2">
                 <Medal size={16} />
                 <span className="text-xs font-bold uppercase tracking-widest">2nd Place</span>
               </div>
               <h2 className="text-3xl font-bold text-white mb-1">
-                {secondPlace ? secondPlace.Driver : "--"}
+                {secondPlace ? ("Driver" in secondPlace ? secondPlace.Driver : secondPlace.driver) : "--"}
               </h2>
-              <p className="text-sm text-gray-400">{secondPlace?.Team ?? ""}</p>
+              <p className="text-sm text-gray-400">{secondPlace ? ("Team" in secondPlace ? secondPlace.Team : secondPlace.team) : ""}</p>
             </div>
 
-            <div className="rounded-xl bg-f1dark p-6 border border-white/5 flex flex-col items-center justify-center text-center">
+            <div className="rounded-xl bg-f1dark p-6 border border-white/5 flex flex-col items-center justify-center text-center shadow-lg">
               <div className="flex items-center gap-2 text-purple-400 mb-2">
                 <Timer size={16} />
                 <span className="text-xs font-bold uppercase tracking-widest">Fastest Lap</span>
@@ -106,18 +128,30 @@ export default function Home({ markdownReport, predictions, lapPositions }: Dash
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 mb-10">
             {/* Race Timeline Chart (Left) */}
             <div className="lg:col-span-7 flex flex-col">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-f1red mb-1">
-                Race Timeline — Position Chart
-              </h3>
-              <p className="text-xs text-gray-500 mb-4">
-                Coloured lines show lap-by-lap positions for the top 10 drivers. Hover to inspect.
-              </p>
-              <div className="flex-1 rounded-xl bg-f1dark border border-white/5 p-6">
-                {lapPositions ? (
-                  <RaceTimeline data={lapPositions} />
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-f1red">
+                    Race Timeline — Position Chart
+                  </h3>
+                </div>
+                <ViewToggle activeView={chartView} onToggle={setChartView} />
+              </div>
+              
+              <div className="flex-1 rounded-xl bg-f1dark border border-white/5 p-6 shadow-inner">
+                {chartView === "actual" ? (
+                  lapPositions ? (
+                    <RaceTimeline data={lapPositions} />
+                  ) : (
+                    <div className="flex h-64 items-center justify-center">
+                      <p className="text-gray-500 text-sm italic">No actual lap data available.</p>
+                    </div>
+                  )
                 ) : (
-                  <div className="flex h-64 items-center justify-center">
-                    <p className="text-gray-500 text-sm">No lap data available.</p>
+                  <div className="flex h-full min-h-[340px] items-center justify-center bg-black/20 rounded-lg border border-dashed border-white/10">
+                    <div className="text-center p-8">
+                      <p className="text-gray-400 text-sm font-medium mb-2">Predicted Timeline Visualization</p>
+                      <p className="text-gray-500 text-xs italic">ML model currently focused on final race pace. Detailed lap simulation coming in Phase 7.</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -125,15 +159,19 @@ export default function Home({ markdownReport, predictions, lapPositions }: Dash
 
             {/* Finishing Order Table (Right) */}
             <div className="lg:col-span-5 flex flex-col">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-f1red mb-5">
-                Finishing Order
-              </h3>
-              <div className="flex-1 rounded-xl bg-f1dark border border-white/5 overflow-hidden">
-                {predictions && predictions.length > 0 ? (
-                  <PredictionsTable predictions={predictions} />
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-f1red">
+                  Finishing Order
+                </h3>
+                <ViewToggle activeView={tableView} onToggle={setTableView} />
+              </div>
+              
+              <div className="flex-1 rounded-xl bg-f1dark border border-white/5 overflow-hidden shadow-xl">
+                {currentTableData.length > 0 ? (
+                  <PredictionsTable data={currentTableData} view={tableView} />
                 ) : (
                   <div className="flex h-64 items-center justify-center">
-                    <p className="text-gray-500 text-sm">No predictions available.</p>
+                    <p className="text-gray-500 text-sm">No data available for this view.</p>
                   </div>
                 )}
               </div>
@@ -145,20 +183,20 @@ export default function Home({ markdownReport, predictions, lapPositions }: Dash
             <h3 className="text-xs font-bold uppercase tracking-widest text-f1red mb-4">
               AI Race Analysis
             </h3>
-            <div className="rounded-xl bg-f1dark border border-white/5 p-6">
+            <div className="rounded-xl bg-f1dark border border-white/5 p-6 shadow-2xl">
               <div className="flex items-center gap-3 mb-5 border-b border-white/5 pb-4">
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-600/20 border border-red-600/30">
                   <span className="text-sm font-bold text-red-400">AI</span>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-white">Gemini 2.5 Flash</p>
-                  <p className="text-xs text-gray-500">Auto-generated post-race analysis</p>
+                  <p className="text-sm font-semibold text-white">Gemini 3.1 Pro</p>
+                  <p className="text-xs text-gray-500">Auto-generated post-race narrative</p>
                 </div>
               </div>
               {markdownReport ? (
                 <RaceReport markdownContent={markdownReport} />
               ) : (
-                <p className="text-gray-500 text-sm">No AI analysis available yet.</p>
+                <p className="text-gray-500 text-sm italic">No AI analysis available yet.</p>
               )}
             </div>
           </div>

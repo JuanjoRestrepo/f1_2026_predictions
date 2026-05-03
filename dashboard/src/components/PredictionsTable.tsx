@@ -1,7 +1,8 @@
-import type { PredictionRow } from "../utils/fileReader";
+import type { PredictionRow, ActualResult } from "../utils/fileReader";
 
 interface PredictionsTableProps {
-  predictions: PredictionRow[];
+  data: (PredictionRow | ActualResult)[];
+  view: "predicted" | "actual";
 }
 
 const TEAM_COLORS: Record<string, string> = {
@@ -14,25 +15,16 @@ const TEAM_COLORS: Record<string, string> = {
   Williams: "bg-[#005aff]",
   "Racing Bulls": "bg-[#4e7c9b]",
   Haas: "bg-[#b6babd]",
+  "Haas F1 Team": "bg-[#b6babd]",
   Audi: "bg-[#a5a5a5]",
+  Cadillac: "bg-[#ffffff]",
 };
 
 function getTeamColor(team: string) {
   return TEAM_COLORS[team] ?? "bg-gray-500";
 }
 
-// Calculate a human-readable gap from the winner's laptime
-function formatGap(winnerTime: number, driverTime: number, idx: number): string {
-  if (idx === 0) return "1:23:06.801"; // Winner time placeholder
-  const gapSeconds = driverTime - winnerTime;
-  return `+${gapSeconds.toFixed(3)}s`;
-}
-
-export function PredictionsTable({ predictions }: PredictionsTableProps) {
-  const winnerTime = predictions.length > 0
-    ? parseFloat(predictions[0]!.predicted_laptime_xgb_s)
-    : 0;
-
+export function PredictionsTable({ data, view }: PredictionsTableProps) {
   return (
     <div className="w-full">
       <table className="w-full text-left text-sm">
@@ -45,39 +37,53 @@ export function PredictionsTable({ predictions }: PredictionsTableProps) {
           </tr>
         </thead>
         <tbody className="divide-y divide-white/5">
-          {predictions.map((row, idx) => (
-            <tr key={idx} className="hover:bg-white/5 transition-colors group">
-              <td className="px-4 py-4 whitespace-nowrap">
-                <span className={`text-xs font-bold ${
-                  idx === 0 ? "text-yellow-500" :
-                  idx === 1 ? "text-gray-300" :
-                  idx === 2 ? "text-amber-600" :
-                  "text-gray-500"
-                }`}>
-                  P{row.predicted_position ?? idx + 1}
-                </span>
-              </td>
+          {data.map((row, idx) => {
+            const isPredicted = view === "predicted";
+            const driver = isPredicted ? (row as PredictionRow).Driver : (row as ActualResult).driver;
+            const team = isPredicted ? (row as PredictionRow).Team : (row as ActualResult).team;
+            const position = isPredicted 
+              ? (row as PredictionRow).predicted_position 
+              : (row as ActualResult).position;
+            
+            // For predicted, we show the laptime delta. For actual, we show the time/gap string.
+            const displayTime = isPredicted
+              ? (idx === 0 ? "1:23:06.801" : `+${parseFloat((row as PredictionRow).predicted_laptime_xgb_s).toFixed(3)}s`)
+              : (row as ActualResult).time || (row as ActualResult).gap;
 
-              <td className="px-4 py-4 whitespace-nowrap">
-                <span className="font-bold text-white group-hover:text-red-400 transition-colors">
-                  {row.Driver}
-                </span>
-              </td>
+            return (
+              <tr key={idx} className="hover:bg-white/5 transition-colors group">
+                <td className="px-4 py-4 whitespace-nowrap">
+                  <span className={`text-xs font-bold ${
+                    idx === 0 ? "text-yellow-500" :
+                    idx === 1 ? "text-gray-300" :
+                    idx === 2 ? "text-amber-600" :
+                    "text-gray-500"
+                  }`}>
+                    P{position || idx + 1}
+                  </span>
+                </td>
 
-              <td className="px-4 py-4 whitespace-nowrap">
-                <div className="flex items-center gap-2">
-                  <span className={`h-2 w-2 flex-shrink-0 rounded-full ${getTeamColor(row.Team)}`} />
-                  <span className="text-gray-400 text-xs truncate">{row.Team}</span>
-                </div>
-              </td>
+                <td className="px-4 py-4 whitespace-nowrap">
+                  <span className="font-bold text-white group-hover:text-red-400 transition-colors">
+                    {driver}
+                  </span>
+                </td>
 
-              <td className="px-4 py-4 whitespace-nowrap text-right">
-                <span className="font-mono text-sm text-gray-300">
-                  {formatGap(winnerTime, parseFloat(row.predicted_laptime_xgb_s), idx)}
-                </span>
-              </td>
-            </tr>
-          ))}
+                <td className="px-4 py-4 whitespace-nowrap">
+                  <div className="flex items-center gap-2">
+                    <span className={`h-2 w-2 flex-shrink-0 rounded-full ${getTeamColor(team)}`} />
+                    <span className="text-gray-400 text-xs truncate">{team}</span>
+                  </div>
+                </td>
+
+                <td className="px-4 py-4 whitespace-nowrap text-right">
+                  <span className="font-mono text-sm text-gray-300">
+                    {displayTime}
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
