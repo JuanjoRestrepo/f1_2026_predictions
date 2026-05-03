@@ -56,6 +56,3 @@ Addressing the "Small Sample" problem.
 
 - **Cross-Era Normalization**: Use 2024-2025 data but "normalize" it to 2026 performance levels using a scaling factor based on the first 3 rounds. This gives us thousands of additional training rows without the "old car" bias.
 - **Simulated Pits**: Integrate pit stop loss and tyre delta (S/M/H) as dynamic variables in the simulation.
-
----
-*Developed by Antigravity AI - Professional Data Science & DevOps Standard.*
