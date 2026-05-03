@@ -8,16 +8,14 @@ from f1_predictions.utils.logging_setup import get_logger
 logger = get_logger(__name__)
 
 def generate_miami_top10_viz(predictions_path: Path, output_path: Path):
-    """Generate a high-fidelity bar chart for the Miami GP Top 10 predictions.
-    
-    Uses a 'Miami Vice' aesthetic for the visualization.
-    """
-    if not predictions_path.exists():
-        logger.error(f"Predictions file not found at {predictions_path}")
-        return
+    """Create an aesthetic Top 10 visualization from prediction results."""
+    # Load data based on extension
+    if str(predictions_path).endswith(".csv"):
+        df = pd.read_csv(predictions_path)
+    else:
+        df = pd.read_parquet(predictions_path)
 
-    # Load and filter
-    df = pd.read_parquet(predictions_path)
+    # Filter for Miami if it's the global file
     miami_df = df[df['EventName'] == 'Miami Grand Prix']
     
     if miami_df.empty:
@@ -70,7 +68,17 @@ def generate_miami_top10_viz(predictions_path: Path, output_path: Path):
 if __name__ == "__main__":
     settings = get_settings()
     predict_year = 2026
-    source = Path(settings.reports_dir) / str(predict_year) / "predictions" / f"predictions_lgb_{predict_year}.parquet"
+    
+    # Try local simulation results first
+    miami_results = Path(settings.reports_dir) / str(predict_year) / "Miami_Grand_Prix" / "results" / "predictions.csv"
+    season_parquet = Path(settings.reports_dir) / str(predict_year) / "predictions" / f"predictions_lgb_{predict_year}.parquet"
+    
+    if miami_results.exists():
+        logger.info("Using Miami Simulation results for preview.")
+        source = miami_results
+    else:
+        logger.info("Falling back to Season Parquet.")
+        source = season_parquet
     # New Elite Structure path (Preview folder)
     target_dir = Path(settings.reports_dir) / str(predict_year) / "Miami_Grand_Prix" / "preview"
     target_dir.mkdir(parents=True, exist_ok=True)
