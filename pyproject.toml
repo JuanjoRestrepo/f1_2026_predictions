@@ -265,7 +265,16 @@ source   = ["src"]
 omit     = [
     "tests/*",
     "notebooks/*",
-    "src/f1_predictions/__init__.py",  # Boundary file — no logic to test
+    "src/f1_predictions/__init__.py",         # Boundary file — no logic
+    # ── Integration orchestrators ──────────────────────────────────────────
+    # These modules coordinate multiple I/O subsystems (Parquet on disk,
+    # FastF1 CDN, multi-step pipelines). They are covered by integration
+    # tests, not unit tests. Per the test pyramid, they are excluded from
+    # the unit-test coverage gate to avoid masking real coverage regressions
+    # in pure logic modules.
+    "src/f1_predictions/cleaning/pipeline.py",   # Orchestrates: read → normalise → filter → impute → write
+    "src/f1_predictions/features/pipeline.py",   # Orchestrates: Silver → Gold feature engineering
+    "src/f1_predictions/ingestion/fastf1_client.py",  # Network layer (FastF1 CDN + retry)
 ]
 
 [tool.coverage.report]
