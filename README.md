@@ -48,21 +48,24 @@ cd f1_2026_predictions
 uv sync
 ```
 
-### 🐳 Running with Docker
-If you prefer an isolated environment, use Docker Compose. The setup includes automatic volume mapping for data persistence.
+### 🐳 Running with Docker (Recommended)
+If you prefer an isolated environment, use the provided `Makefile`. It ensures a clean workspace by automatically removing containers after execution.
 
 ```bash
 # Build the image
-docker-compose build
+make build
 
-# Run ingestion (e.g., for 2024)
-docker-compose run pipeline python scripts/ingest_season.py --year 2024
+# Ingest a season (Bronze -> Silver -> Gold)
+make ingest YEAR=2025
 
-# Run reports
-docker-compose run pipeline python scripts/generate_reports.py --train-years 2022 2023 --test-year 2024
+# Generate technical reports
+make report TEST_YEAR=2024
 
-# Run predictions
-docker-compose run pipeline python scripts/predict_season.py --train-years 2022 2023 2024 --predict-year 2026
+# Run 2026 predictions
+make predict TRAIN_YEARS="2022 2023 2024 2025" PREDICT_YEAR=2026
+
+# Cleanup orphan containers
+make clean
 ```
 
 ### Configuration
