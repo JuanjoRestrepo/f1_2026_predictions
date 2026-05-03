@@ -1,6 +1,6 @@
 # F1 2026 Season Predictions Pipeline 🏎️💨
 
-![F1 Prediction Dashboard](images/f1_prediction_dashboard_hero_1777781438624.png)
+![F1 Prediction Dashboard](images/f1_prediction_dashboard_hero.png)
 
 An automated, end-to-end machine learning pipeline designed to predict Formula 1 race pace and season outcomes for 2025 and 2026. Leveraging historical data from the Ground Effect era (2022-present).
 
