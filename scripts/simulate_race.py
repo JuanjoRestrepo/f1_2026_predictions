@@ -212,9 +212,17 @@ def run_race_simulation(
     gold_all = pd.concat([pd.read_parquet(f) for f in gold_all_files])
     df_train_full = gold_all[gold_all["Season"].isin(train_years)]
 
+    from f1_predictions.features.era_normalization import apply_2026_regulations_penalty
+
+    # ENRICH with track metadata
     logger.info("Enriching data and calculating temporal weights...")
     df_train_full = _enrich_with_track_metadata(df_train_full)
     df_sim = _enrich_with_track_metadata(df_sim)
+
+    # NORMALIZE historical data to 2026 pace
+    if year == 2026:
+        logger.info("Applying 2026 Era Normalization to historical training data...")
+        df_train_full = apply_2026_regulations_penalty(df_train_full)
 
     # Calculate Weights (Phase 2.2)
     sample_weights = _calculate_sample_weights(df_train_full, year, round_number)

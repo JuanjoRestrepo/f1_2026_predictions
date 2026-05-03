@@ -67,9 +67,48 @@ def run_full_pipeline(year: int, round_num: int, event: str) -> None:
         sys.exit(1)
 
 
+def run_validation_loop(year: int, round_num: int, event: str) -> None:
+    """Runs residual analysis and triggers retraining if error is too high."""
+    logger.info("=" * 60)
+    logger.info("OBSERVABILITY PIPELINE: Validation for %s (%d)", event, year)
+    logger.info("=" * 60)
+
+    from scripts.analyze_residuals import run_residual_analysis
+
+    mae = run_residual_analysis(year, round_num, event)
+
+    if mae is None:
+        logger.error("Validation failed to complete. Check logs.")
+        sys.exit(1)
+
+    mae_threshold = 0.300  # 300ms threshold for F1 pace accuracy
+
+    if mae > mae_threshold:
+        logger.warning(
+            "MAE (%.3fs) exceeds threshold (%.3fs). TRIGGERING RETRAINING...",
+            mae,
+            mae_threshold,
+        )
+        logger.info("Running full pipeline with updated data/weights...")
+        run_full_pipeline(year, round_num, event)
+    else:
+        logger.info(
+            "MAE (%.3fs) is within acceptable threshold (%.3fs). No retraining needed.",
+            mae,
+            mae_threshold,
+        )
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="F1 2026 Prediction Pipeline Orchestrator"
+    )
+    parser.add_argument(
+        "action",
+        choices=["predict", "validate"],
+        help=(
+            "Action to perform: 'predict' runs the standard simulation pipeline. "
+            "'validate' checks past predictions and triggers retraining if needed."
+        )
     )
     parser.add_argument(
         "--year", type=int, default=2026, help="Season year (default: 2026)"
@@ -90,4 +129,7 @@ if __name__ == "__main__":
     # Configure logging for the main orchestrator
     configure_root_pipeline_logger(level=args.log_level)
 
-    run_full_pipeline(year=args.year, round_num=args.round, event=args.event)
+    if args.action == "predict":
+        run_full_pipeline(year=args.year, round_num=args.round, event=args.event)
+    elif args.action == "validate":
+        run_validation_loop(year=args.year, round_num=args.round, event=args.event)

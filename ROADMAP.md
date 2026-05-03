@@ -4,8 +4,8 @@ This document outlines the strategic technical evolution of the F1 2026 Predicti
 
 ---
 
-## 🏎️ Phase 1: Contextual Intelligence (Track Features)
-The model currently treats every "EventName" as a categorical label. We will move to a **Feature-Based Track Model**.
+## ✅ Phase 1: Contextual Intelligence (Track Features) [COMPLETED]
+The model currently treats every "EventName" as a categorical label. We moved to a **Feature-Based Track Model**.
 
 ### 1.1 Track Characteristics Database
 We are introducing `data/external/track_metadata.csv` with the following features:
@@ -20,7 +20,7 @@ The `simulate_race.py` script will perform a `LEFT JOIN` on `EventName` to injec
 
 ---
 
-## 📊 Phase 2: Statistical Rigor & Uncertainty
+## ✅ Phase 2: Statistical Rigor & Uncertainty [COMPLETED]
 Addressing the "Single Number" prediction fallacy.
 
 ### 2.1 Quantile Regression (Aleatory Uncertainty)
@@ -36,7 +36,7 @@ This ensures that a win in Round 4 has more influence on the Round 5 prediction 
 
 ---
 
-## 🛠️ Phase 3: Model Observability (DevOps Layer)
+## ✅ Phase 3: Model Observability (DevOps Layer) [COMPLETED]
 Closing the feedback loop.
 
 ### 3.1 Post-Race Residual Analysis
@@ -51,8 +51,8 @@ If the **MAPE (Mean Absolute Percentage Error)** exceeds 1.5%, the pipeline will
 
 ---
 
-## 📈 Phase 4: Data Augmentation
-Addressing the "Small Sample" problem.
+## ✅ Phase 4: Data Augmentation [COMPLETED]
+Addressing the "Small Sample" problem and preparing for the new regulations.
 
 - **Cross-Era Normalization**: Use 2024-2025 data but "normalize" it to 2026 performance levels using a scaling factor based on the first 3 rounds. This gives us thousands of additional training rows without the "old car" bias.
 - **Simulated Pits**: Integrate pit stop loss and tyre delta (S/M/H) as dynamic variables in the simulation.

@@ -9,9 +9,11 @@ An automated, elite machine learning pipeline designed to predict Formula 1 race
 ## 🌟 Key Features
 
 - **Automated Data Ingestion**: Seamless integration with the `FastF1` API. Supports chunked ingestion to prevent memory overhead.
-- **Virtual Race Simulation**: General-purpose race simulator that predicts performance hierarchies for any GP based on current season form.
+- **Virtual Race Simulation**: General-purpose race simulator that predicts performance hierarchies for any GP based on current season form, applying temporal decay (Exponential Weighting) to emphasize recent results.
 - **Track-Aware Modeling**: Integrates circuit-specific metadata (Downforce, Abrasiveness, Speed Profiles) to provide context-aware predictions across different track archetypes.
-- **Elite Hierarchical Reporting**: Organizes results by `Year / Grand Prix / Results` with professional F1-style visual reports.
+- **Probabilistic Forecasting**: Uses Quantile Regression to output 90% Confidence Intervals (P05/P95) instead of brittle point estimates, visualizing uncertainty.
+- **Multi-Era Normalization**: Dynamically penalizes historical lap times (2022-2025) based on aerodynamic profiles to construct a physically accurate "Virtual 2026" training set.
+- **Automated Observability**: Closed-loop MLOps architecture (`main.py validate`) that measures Mean Absolute Error (MAE) against real telemetry and auto-triggers model retraining if error thresholds are exceeded.
 - **Dual-Model Architecture**: Benchmarks **XGBoost** and **LightGBM**. Current 2026 MAE: **0.185s** (LightGBM).
 - **Professional DevOps**: Orchestrated via `main.py` and `uv`, ensuring reproducibility and high performance.
 
@@ -67,21 +69,28 @@ Generates the HTML and PNG artifacts from existing CSV data.
 uv run scripts/visualize_results.py --year 2026 --event "Miami Grand Prix"
 ```
 
-### 4. Technical Seasonal Reporting
+### 4. Observability & Auto-Retraining
+Validate predictions against real telemetry and trigger re-training if MAE > 0.300s.
+```bash
+uv run main.py validate --year 2026 --round 4 --event "Miami Grand Prix"
+```
+
+### 5. Technical Seasonal Reporting
 Generate deep-dive technical reports for the entire season.
 ```bash
 # Full Season Report
 uv run scripts/generate_reports.py --train-years 2022 2023 2024 2025 --test-year 2026
 ```
 
-## 🗺️ Future Roadmap
+## 🗺️ Project Roadmap Status
 
-We are continuously evolving the predictive accuracy of this pipeline. Key areas of focus for upcoming sprints:
-- **Track Contextualization**: Integrating a comprehensive database of circuit characteristics (Downforce, Abrasiveness, Throttle %).
-- **Uncertainty Quantification**: Moving from point predictions to Quantile Regression (0.05 - 0.95 intervals).
-- **Model Observability**: Automated residual analysis and feedback loops after each race.
+The predictive engine has evolved from a static script to a full MLOps framework.
+- ✅ **Phase 1 (Contextual Intelligence)**: Track characteristic DB injection completed.
+- ✅ **Phase 2 (Statistical Rigor)**: Quantile Regression & Temporal Decay implemented.
+- ✅ **Phase 3 (Model Observability)**: Automated residual analysis and MLOps feedback loops completed.
+- ✅ **Phase 4 (Data Normalization)**: Cross-Era aerodynamic scaling implemented for 2026 physics.
 
-See the detailed [ROADMAP.md](ROADMAP.md) for technical implementation plans.
+See the detailed [ROADMAP.md](ROADMAP.md) for technical implementation history.
 
 ---
 

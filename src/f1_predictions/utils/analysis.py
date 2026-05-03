@@ -12,24 +12,24 @@ def build_predictions_df(
     """Combine metadata with model predictions into a single DataFrame."""
     df = metadata.copy()
     df["predicted_laptime_xgb_s"] = y_pred_xgb
-    
+
     for alpha, y_pred in quantile_preds_lgb.items():
         col_name = f"predicted_laptime_lgb_p{int(alpha * 100):02d}_s"
         df[col_name] = y_pred
-        
+
     return df
 
 
 def build_driver_standings(df: pd.DataFrame) -> pd.DataFrame:
     """Calculate median predicted lap time per driver and rank them.
-    
+
     Includes uncertainty intervals (P05 and P95) from LightGBM.
     """
     # Column mapping for clarity
     p05_col = "predicted_laptime_lgb_p05_s"
     p50_col = "predicted_laptime_lgb_p50_s"
     p95_col = "predicted_laptime_lgb_p95_s"
-    
+
     standings = (
         df.groupby(["Driver", "Team"])
         .agg({p05_col: "median", p50_col: "median", p95_col: "median"})
