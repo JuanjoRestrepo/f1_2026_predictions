@@ -101,5 +101,5 @@ uv run pytest --cov=src --cov-fail-under=80
 - **Inference**: Active for 2025/2026 ✅
 
 ---
-**Author**: Jorge Restrepo  
+**Author**: Juan Jose Restrepo Rosero
 **Rationale**: Per Grinsztajn et al. (2022), tree-based models consistently outperform deep learning on structured/tabular problems. This project prioritizes GBM architectures for maximum predictive accuracy in F1 race dynamics.
