@@ -5,45 +5,27 @@
   "avg_pit_stop": "2.45s",
   "proven_strategy_insight": "In Miami, the Medium-Hard strategy remains the dominant choice. Starting on Mediums for 22-28 laps provides the best balance of early-race grip and flexibility for Safety Car windows. Switching to Hards for the final stint is mandatory due to high track temperatures (>50°C) causing excessive graining on Softs.",
   "drivers": [
-    {
-      "driver": "ANT",
-      "team": "Mercedes",
-      "stints": [
-        { "stint": 1, "compound": "MEDIUM", "laps": 26, "color": "#f0f20d" },
-        { "stint": 2, "compound": "HARD", "laps": 31, "color": "#ffffff" }
-      ]
-    },
-    {
-      "driver": "NOR",
-      "team": "McLaren",
-      "stints": [
-        { "stint": 1, "compound": "MEDIUM", "laps": 27, "color": "#f0f20d" },
-        { "stint": 2, "compound": "HARD", "laps": 30, "color": "#ffffff" }
-      ]
-    },
-    {
-      "driver": "PIA",
-      "team": "McLaren",
-      "stints": [
-        { "stint": 1, "compound": "MEDIUM", "laps": 28, "color": "#f0f20d" },
-        { "stint": 2, "compound": "HARD", "laps": 29, "color": "#ffffff" }
-      ]
-    },
-    {
-      "driver": "RUS",
-      "team": "Mercedes",
-      "stints": [
-        { "stint": 1, "compound": "MEDIUM", "laps": 20, "color": "#f0f20d" },
-        { "stint": 2, "compound": "HARD", "laps": 37, "color": "#ffffff" }
-      ]
-    },
-    {
-      "driver": "VER",
-      "team": "Red Bull Racing",
-      "stints": [
-        { "stint": 1, "compound": "MEDIUM", "laps": 6, "color": "#f0f20d" },
-        { "stint": 2, "compound": "HARD", "laps": 51, "color": "#ffffff" }
-      ]
-    }
+    { "driver": "ANT", "team": "Mercedes", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 26, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 31, "color": "#ffffff" }] },
+    { "driver": "NOR", "team": "McLaren", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 27, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 30, "color": "#ffffff" }] },
+    { "driver": "PIA", "team": "McLaren", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 28, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 29, "color": "#ffffff" }] },
+    { "driver": "RUS", "team": "Mercedes", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 20, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 37, "color": "#ffffff" }] },
+    { "driver": "VER", "team": "Red Bull Racing", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 6, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 51, "color": "#ffffff" }] },
+    { "driver": "LEC", "team": "Ferrari", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 28, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 29, "color": "#ffffff" }] },
+    { "driver": "HAM", "team": "Ferrari", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 25, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 32, "color": "#ffffff" }] },
+    { "driver": "COL", "team": "Alpine", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 25, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 32, "color": "#ffffff" }] },
+    { "driver": "SAI", "team": "Williams", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 22, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 35, "color": "#ffffff" }] },
+    { "driver": "ALB", "team": "Williams", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 20, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 37, "color": "#ffffff" }] },
+    { "driver": "BEA", "team": "Haas F1 Team", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 29, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 27, "color": "#ffffff" }] },
+    { "driver": "BOR", "team": "Audi", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 25, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 31, "color": "#ffffff" }] },
+    { "driver": "OCO", "team": "Haas F1 Team", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 30, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 26, "color": "#ffffff" }] },
+    { "driver": "LIN", "team": "Racing Bulls", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 26, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 30, "color": "#ffffff" }] },
+    { "driver": "ALO", "team": "Aston Martin", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 21, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 35, "color": "#ffffff" }] },
+    { "driver": "PER", "team": "Cadillac", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 25, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 31, "color": "#ffffff" }] },
+    { "driver": "STR", "team": "Aston Martin", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 24, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 32, "color": "#ffffff" }] },
+    { "driver": "BOT", "team": "Cadillac", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 22, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 34, "color": "#ffffff" }] },
+    { "driver": "HUL", "team": "Audi", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 1, "color": "#f0f20d" }, { "stint": 2, "compound": "MEDIUM", "laps": 6, "color": "#f0f20d" }] },
+    { "driver": "LAW", "team": "Racing Bulls", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 6, "color": "#f0f20d" }] },
+    { "driver": "GAS", "team": "Alpine", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 5, "color": "#f0f20d" }] },
+    { "driver": "HAD", "team": "Red Bull Racing", "stints": [{ "stint": 1, "compound": "HARD", "laps": 5, "color": "#ffffff" }] }
   ]
 }
