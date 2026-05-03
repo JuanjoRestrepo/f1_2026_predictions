@@ -102,6 +102,9 @@ data/outputs/
 !tests/fixtures/**/*.json
 !tests/fixtures/**/*.parquet
 
+# Exception: allow predicted CSVs in reports folder
+!reports/**/*.csv
+
 # Trained model artifacts (serialized with joblib/pickle)
 models/artifacts/
 *.pkl
@@ -162,6 +165,10 @@ SWEETVIZ_REPORT.html
 !images/*.jpg
 !images/*.jpeg
 !images/*.svg
+
+# Exception: allow report PNGs and HTMLs in reports folder
+!reports/**/*.png
+!reports/**/*.html
 
 
 
