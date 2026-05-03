@@ -19,6 +19,7 @@ from f1_predictions.utils.logging_setup import (
 
 logger = get_logger(__name__)
 
+
 def run_full_pipeline(year: int, round_num: int, event: str) -> None:
     """Executes the simulation and visualization scripts sequentially."""
     logger.info("=" * 60)

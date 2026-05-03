@@ -15,6 +15,7 @@ def build_predictions_df(
     df["predicted_laptime_lgb_s"] = y_pred_lgb
     return df
 
+
 def build_driver_standings(df: pd.DataFrame, pace_column: str) -> pd.DataFrame:
     """Calculate median predicted lap time per driver and rank them."""
     standings = (

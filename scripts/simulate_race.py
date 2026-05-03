@@ -30,7 +30,9 @@ def _enrich_with_track_metadata(df: pd.DataFrame) -> pd.DataFrame:
     meta_path = settings.data_external_dir / "track_metadata.csv"
 
     if not meta_path.exists():
-        logger.warning("Track metadata not found at %s. Skipping enrichment.", meta_path)
+        logger.warning(
+            "Track metadata not found at %s. Skipping enrichment.", meta_path
+        )
         return df
 
     meta_df = pd.read_csv(meta_path)
@@ -226,9 +228,7 @@ def run_race_simulation(
     predictions_df.to_csv(res_dir / "predictions.csv", index=False)
 
     logger.info("Simulation complete! Results saved to: %s", res_dir)
-    print(
-        f"\nVirtual Race Prediction for {event_name} ({year}) finished successfully."
-    )
+    print(f"\nVirtual Race Prediction for {event_name} ({year}) finished successfully.")
 
 
 if __name__ == "__main__":

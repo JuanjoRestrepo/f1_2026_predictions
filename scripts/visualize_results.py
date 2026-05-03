@@ -196,12 +196,12 @@ def generate_visuals(year: int, event_name: str) -> None:
     for _, row in df.iterrows():
         rows_html += f"""
         <tr>
-            <td class="rank">{int(row['rank'])}</td>
+            <td class="rank">{int(row["rank"])}</td>
             <td>
-                <div class="driver-code">{row['Driver']}</div>
-                <div class="team">{row['Team']}</div>
+                <div class="driver-code">{row["Driver"]}</div>
+                <div class="team">{row["Team"]}</div>
             </td>
-            <td class="time">{row['median_predicted_s']:.3f}s</td>
+            <td class="time">{row["median_predicted_s"]:.3f}s</td>
         </tr>"""
 
     html_content = html_template.format(event=event_name, year=year, rows=rows_html)
@@ -216,10 +216,17 @@ def generate_visuals(year: int, event_name: str) -> None:
     print(f"- Image: {img_path}")
     print(f"- HTML:  {html_path}")
 
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Generate visual reports for F1 predictions.")
-    parser.add_argument("--year", type=int, default=2026, help="Season year (e.g. 2026)")
-    parser.add_argument("--event", type=str, required=True, help="Event name (e.g. 'Miami Grand Prix')")
+    parser = argparse.ArgumentParser(
+        description="Generate visual reports for F1 predictions."
+    )
+    parser.add_argument(
+        "--year", type=int, default=2026, help="Season year (e.g. 2026)"
+    )
+    parser.add_argument(
+        "--event", type=str, required=True, help="Event name (e.g. 'Miami Grand Prix')"
+    )
     parser.add_argument("--log-level", default="INFO", help="Logging level")
 
     args = parser.parse_args()

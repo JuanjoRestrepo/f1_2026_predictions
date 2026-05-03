@@ -263,19 +263,19 @@ def render_html_report(
     event_filter: str | None = None,
 ) -> Path:
     """Render the Jinja2 template and save the final HTML report.
- summarising all results.
+    summarising all results.
 
-    Args:
-        metrics_xgb: XGBoost evaluation metrics.
-        metrics_lgb: LightGBM evaluation metrics.
-        train_years: Seasons used for training.
-        test_year: Season used for testing.
-        figure_paths: Mapping of figure key to saved Path.
-        reports_dir: Output directory for the HTML file.
-        event_filter: Optional GP event name filtering.
+       Args:
+           metrics_xgb: XGBoost evaluation metrics.
+           metrics_lgb: LightGBM evaluation metrics.
+           train_years: Seasons used for training.
+           test_year: Season used for testing.
+           figure_paths: Mapping of figure key to saved Path.
+           reports_dir: Output directory for the HTML file.
+           event_filter: Optional GP event name filtering.
 
-    Returns:
-        Path to the rendered HTML report.
+       Returns:
+           Path to the rendered HTML report.
     """
     from jinja2 import Environment, FileSystemLoader
 
@@ -353,9 +353,13 @@ def run_report_pipeline(
     if event_filter:
         df_test = df_test[df_test["EventName"] == event_filter].copy()
         if df_test.empty:
-            logger.error("No data found for event '%s' in season %d", event_filter, test_year)
+            logger.error(
+                "No data found for event '%s' in season %d", event_filter, test_year
+            )
             raise ValueError(f"Event '{event_filter}' not found in test set.")
-        logger.info("Filtering report for event: %s (%d rows)", event_filter, len(df_test))
+        logger.info(
+            "Filtering report for event: %s (%d rows)", event_filter, len(df_test)
+        )
 
     logger.info("Train rows: %d  |  Test rows: %d", len(df_train), len(df_test))
 
@@ -370,15 +374,23 @@ def run_report_pipeline(
     # ── 3. Training & Evaluation: XGBoost
     logger.info("Training XGBoost...")
     model_xgb = F1PaceRegressor()
-    metrics_xgb_dict = model_xgb.train_evaluate_chronological(df, train_years, test_year)
-    metrics_xgb = RegressionMetrics(mae=metrics_xgb_dict["MAE"], rmse=metrics_xgb_dict["RMSE"])
+    metrics_xgb_dict = model_xgb.train_evaluate_chronological(
+        df, train_years, test_year
+    )
+    metrics_xgb = RegressionMetrics(
+        mae=metrics_xgb_dict["MAE"], rmse=metrics_xgb_dict["RMSE"]
+    )
     y_pred_xgb = model_xgb.predict(df_test)
 
     # 4. Training & Evaluation: LightGBM
     logger.info("Training LightGBM...")
     model_lgb = LightGBMPaceRegressor()
-    metrics_lgb_dict = model_lgb.train_evaluate_chronological(df, train_years, test_year)
-    metrics_lgb = RegressionMetrics(mae=metrics_lgb_dict["MAE"], rmse=metrics_lgb_dict["RMSE"])
+    metrics_lgb_dict = model_lgb.train_evaluate_chronological(
+        df, train_years, test_year
+    )
+    metrics_lgb = RegressionMetrics(
+        mae=metrics_lgb_dict["MAE"], rmse=metrics_lgb_dict["RMSE"]
+    )
     y_pred_lgb = model_lgb.predict(df_test)
 
     # ── 5. Save metrics JSON ──────────────────────────────────────────────
