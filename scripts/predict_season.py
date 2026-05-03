@@ -416,13 +416,19 @@ def run_prediction_pipeline(
         df_all, train_years, predict_year, settings.random_seed
     )
 
+    # ── 1. Setup versioned output directories ─────────────────────────────
+    reports_root = Path(settings.reports_dir)
+    predict_dir = reports_root / str(predict_year) / "predictions"
+    predict_dir.mkdir(parents=True, exist_ok=True)
+    logger.info("Predictions will be saved to: %s", predict_dir)
+
     # ── 3. Predict ─────────────────────────────────────────────────────────
     y_pred_xgb, y_pred_lgb, _ = predict_season(xgb_model, lgb_model, df_predict)
 
     # ── 4. Build & save outputs ────────────────────────────────────────────
     metadata = extract_metadata(df_predict)
     predictions_df = build_predictions_df(metadata, y_pred_xgb, y_pred_lgb)
-    saved = save_outputs(predictions_df, predict_year, train_years, output_dir)
+    saved = save_outputs(predictions_df, predict_year, train_years, predict_dir)
 
     # ── 5. Print standings to console ─────────────────────────────────────
     xgb_standings = build_driver_standings(predictions_df, "predicted_laptime_xgb_s")

@@ -48,6 +48,10 @@ report:
 		--test-year $(TEST_YEAR) \
 		--shap
 
+miami-viz:
+	@echo "🌴 Generating Miami GP Race Preview Visualization..."
+	docker-compose run --rm pipeline python scripts/miami_preview.py
+
 clean:
 	@echo "🧹 Cleaning up orphan containers and temporary files..."
 	docker-compose down --remove-orphans
