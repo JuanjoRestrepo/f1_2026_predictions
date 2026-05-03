@@ -294,7 +294,7 @@ def render_html_report(
         figures=rel_figures,
     )
 
-    out_path = reports_dir / "f1_predictions_report.html"
+    out_path = reports_dir / f"f1_predictions_report_{test_year}.html"
     out_path.write_text(html_content, encoding="utf-8")
     logger.info("HTML report saved: %s", out_path)
     return out_path
@@ -318,8 +318,12 @@ def run_report_pipeline(
         include_shap: Whether to generate SHAP explainability plots.
     """
     settings = get_settings()
-    reports_dir = settings.reports_dir
+
+    # ── 2. Create versioned output directory ──────────────────────────────
+    reports_root = Path(settings.reports_dir)
+    reports_dir = reports_root / str(test_year)
     reports_dir.mkdir(parents=True, exist_ok=True)
+    logger.info("Reports will be saved to: %s", reports_dir)
 
     # ── 1. Load Gold data ─────────────────────────────────────────────────
     df = load_gold_dataframe(settings.data_outputs_dir)
