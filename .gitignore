@@ -97,6 +97,10 @@ data/outputs/
 *.json.gz
 *.jsonl
 
+# Exception: allow external metadata
+!data/external/
+!data/external/**/*.csv
+
 # Exception: committed fixture / sample files for unit tests
 !tests/fixtures/**/*.csv
 !tests/fixtures/**/*.json

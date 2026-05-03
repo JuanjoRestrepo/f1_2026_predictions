@@ -73,6 +73,15 @@ Generate deep-dive technical reports for the entire season.
 uv run scripts/generate_reports.py --train-years 2022 2023 2024 2025 --test-year 2026
 ```
 
+## 🗺️ Future Roadmap
+
+We are continuously evolving the predictive accuracy of this pipeline. Key areas of focus for upcoming sprints:
+- **Track Contextualization**: Integrating a comprehensive database of circuit characteristics (Downforce, Abrasiveness, Throttle %).
+- **Uncertainty Quantification**: Moving from point predictions to Quantile Regression (0.05 - 0.95 intervals).
+- **Model Observability**: Automated residual analysis and feedback loops after each race.
+
+See the detailed [ROADMAP.md](ROADMAP.md) for technical implementation plans.
+
 ---
 
 ## 📊 Technical Stack

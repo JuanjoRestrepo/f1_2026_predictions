@@ -1,0 +1,25 @@
+EventName,TrackType,DownforceLevel,Abrasiveness,FullThrottlePct,AvgSpeed_kph,MaxSpeed_kph,CornerCount
+Bahrain Grand Prix,Permanent,High,5,0.70,210,325,15
+Saudi Arabian Grand Prix,Street,Medium,2,0.80,250,340,27
+Australian Grand Prix,Street,Medium,3,0.75,235,330,14
+Japanese Grand Prix,Permanent,High,4,0.70,230,315,18
+Chinese Grand Prix,Permanent,High,3,0.60,205,320,16
+Miami Grand Prix,Street,Medium,2,0.72,225,340,19
+Emilia Romagna Grand Prix,Permanent,High,3,0.70,215,310,19
+Monaco Grand Prix,Street,Ultra-High,1,0.45,160,290,19
+Spanish Grand Prix,Permanent,High,4,0.70,220,325,14
+Canadian Grand Prix,Street,Low,3,0.75,210,340,14
+Austrian Grand Prix,Permanent,Medium,3,0.78,240,330,10
+British Grand Prix,Permanent,High,4,0.75,245,330,18
+Hungarian Grand Prix,Permanent,High,3,0.55,195,310,14
+Belgian Grand Prix,Permanent,Low,4,0.80,250,350,20
+Dutch Grand Prix,Permanent,High,3,0.65,215,310,14
+Italian Grand Prix,Permanent,Ultra-Low,2,0.85,260,360,11
+Azerbaijan Grand Prix,Street,Low,2,0.75,215,350,20
+Singapore Grand Prix,Street,Ultra-High,2,0.50,175,310,19
+United States Grand Prix,Permanent,High,4,0.65,220,325,20
+Mexico City Grand Prix,Permanent,Ultra-High,2,0.60,200,350,17
+Sao Paulo Grand Prix,Permanent,Medium,4,0.70,225,330,15
+Las Vegas Grand Prix,Street,Ultra-Low,1,0.80,240,350,17
+Qatar Grand Prix,Permanent,High,4,0.75,250,335,16
+Abu Dhabi Grand Prix,Permanent,Medium,3,0.68,210,330,16
