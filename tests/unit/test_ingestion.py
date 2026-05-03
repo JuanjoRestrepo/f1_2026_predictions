@@ -41,6 +41,7 @@ from f1_predictions.ingestion.session_loader import (
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture()
 def sample_key() -> SessionKey:
     """Return a canonical SessionKey for Bahrain 2025 Race."""
@@ -60,48 +61,52 @@ def sample_quali_key() -> SessionKey:
 @pytest.fixture()
 def minimal_laps_df() -> pd.DataFrame:
     """Minimal laps DataFrame with the columns required by LapsSchema."""
-    return pd.DataFrame({
-        "Time":          pd.to_timedelta(["0:01:30", "0:01:32", "0:01:31"]),
-        "LapTime":       pd.to_timedelta(["0:01:30", "0:01:32", "0:01:31"]),
-        "LapNumber":     [1, 1, 2],
-        "Driver":        ["VER", "HAM", "VER"],
-        "DriverNumber":  ["1", "44", "1"],
-        "Team":          ["Red Bull Racing", "Mercedes", "Red Bull Racing"],
-        "Compound":      ["SOFT", "MEDIUM", "SOFT"],
-        "TyreLife":      [1.0, 1.0, 2.0],
-        "FreshTyre":     [True, True, False],
-        "Stint":         [1, 1, 1],
-        "SpeedI1":       [310.5, 308.2, 311.0],
-        "SpeedI2":       [295.0, 293.0, 296.0],
-        "SpeedFL":       [280.0, 278.0, 281.0],
-        "SpeedST":       [320.0, 318.0, 321.0],
-        "IsPersonalBest":[True, False, False],
-        "TrackStatus":   ["1", "1", "1"],
-        "Sector1Time":   pd.to_timedelta(["0:00:28", "0:00:29", "0:00:28"]),
-        "Sector2Time":   pd.to_timedelta(["0:00:31", "0:00:32", "0:00:31"]),
-        "Sector3Time":   pd.to_timedelta(["0:00:31", "0:00:31", "0:00:32"]),
-        "PitOutTime":    pd.Series([pd.NaT, pd.NaT, pd.NaT], dtype="timedelta64[ns]"),
-        "PitInTime":     pd.Series([pd.NaT, pd.NaT, pd.NaT], dtype="timedelta64[ns]"),
-    })
+    return pd.DataFrame(
+        {
+            "Time": pd.to_timedelta(["0:01:30", "0:01:32", "0:01:31"]),
+            "LapTime": pd.to_timedelta(["0:01:30", "0:01:32", "0:01:31"]),
+            "LapNumber": [1, 1, 2],
+            "Driver": ["VER", "HAM", "VER"],
+            "DriverNumber": ["1", "44", "1"],
+            "Team": ["Red Bull Racing", "Mercedes", "Red Bull Racing"],
+            "Compound": ["SOFT", "MEDIUM", "SOFT"],
+            "TyreLife": [1.0, 1.0, 2.0],
+            "FreshTyre": [True, True, False],
+            "Stint": [1, 1, 1],
+            "SpeedI1": [310.5, 308.2, 311.0],
+            "SpeedI2": [295.0, 293.0, 296.0],
+            "SpeedFL": [280.0, 278.0, 281.0],
+            "SpeedST": [320.0, 318.0, 321.0],
+            "IsPersonalBest": [True, False, False],
+            "TrackStatus": ["1", "1", "1"],
+            "Sector1Time": pd.to_timedelta(["0:00:28", "0:00:29", "0:00:28"]),
+            "Sector2Time": pd.to_timedelta(["0:00:31", "0:00:32", "0:00:31"]),
+            "Sector3Time": pd.to_timedelta(["0:00:31", "0:00:31", "0:00:32"]),
+            "PitOutTime": pd.Series([pd.NaT, pd.NaT, pd.NaT], dtype="timedelta64[ns]"),
+            "PitInTime": pd.Series([pd.NaT, pd.NaT, pd.NaT], dtype="timedelta64[ns]"),
+        }
+    )
 
 
 @pytest.fixture()
 def minimal_results_df() -> pd.DataFrame:
     """Minimal results DataFrame compatible with ResultsSchema."""
-    return pd.DataFrame({
-        "DriverNumber": ["1", "44"],
-        "BroadcastName":["M VERSTAPPEN", "L HAMILTON"],
-        "Abbreviation": ["VER", "HAM"],
-        "TeamName":     ["Red Bull Racing", "Mercedes"],
-        "GridPosition": [1.0, 2.0],
-        "Position":     [1.0, 2.0],
-        "Q1":           pd.Series([pd.NaT, pd.NaT], dtype="timedelta64[ns]"),
-        "Q2":           pd.Series([pd.NaT, pd.NaT], dtype="timedelta64[ns]"),
-        "Q3":           pd.Series([pd.NaT, pd.NaT], dtype="timedelta64[ns]"),
-        "Time":         pd.to_timedelta(["1:30:00", None]),
-        "Status":       ["Finished", "Finished"],
-        "Points":       [25.0, 18.0],
-    })
+    return pd.DataFrame(
+        {
+            "DriverNumber": ["1", "44"],
+            "BroadcastName": ["M VERSTAPPEN", "L HAMILTON"],
+            "Abbreviation": ["VER", "HAM"],
+            "TeamName": ["Red Bull Racing", "Mercedes"],
+            "GridPosition": [1.0, 2.0],
+            "Position": [1.0, 2.0],
+            "Q1": pd.Series([pd.NaT, pd.NaT], dtype="timedelta64[ns]"),
+            "Q2": pd.Series([pd.NaT, pd.NaT], dtype="timedelta64[ns]"),
+            "Q3": pd.Series([pd.NaT, pd.NaT], dtype="timedelta64[ns]"),
+            "Time": pd.to_timedelta(["1:30:00", None]),
+            "Status": ["Finished", "Finished"],
+            "Points": [25.0, 18.0],
+        }
+    )
 
 
 @pytest.fixture()
@@ -113,20 +118,23 @@ def mock_session(
     session.laps = minimal_laps_df
     session.results = minimal_results_df
     session.event = {"EventName": "Bahrain Grand Prix"}
-    session.weather_data = pd.DataFrame({
-        "AirTemp":    [28.0, 29.0, 30.0],
-        "TrackTemp":  [38.0, 39.0, 40.0],
-        "Humidity":   [45.0, 46.0, 44.0],
-        "Pressure":   [1012.0, 1012.0, 1011.0],
-        "WindSpeed":  [5.0, 6.0, 4.0],
-        "Rainfall":   [False, False, False],
-    })
+    session.weather_data = pd.DataFrame(
+        {
+            "AirTemp": [28.0, 29.0, 30.0],
+            "TrackTemp": [38.0, 39.0, 40.0],
+            "Humidity": [45.0, 46.0, 44.0],
+            "Pressure": [1012.0, 1012.0, 1011.0],
+            "WindSpeed": [5.0, 6.0, 4.0],
+            "Rainfall": [False, False, False],
+        }
+    )
     return session
 
 
 # =============================================================================
 # Tests: SessionKey
 # =============================================================================
+
 
 class TestSessionKey:
     """Tests for SessionKey string representation."""
@@ -149,6 +157,7 @@ class TestSessionKey:
     def test_frozen_key_is_immutable(self, sample_key: SessionKey) -> None:
         """SessionKey is frozen — mutation raises FrozenInstanceError."""
         from dataclasses import FrozenInstanceError
+
         with pytest.raises(FrozenInstanceError):
             sample_key.year = 2026  # type: ignore[misc]
 
@@ -156,6 +165,7 @@ class TestSessionKey:
 # =============================================================================
 # Tests: load_session input validation
 # =============================================================================
+
 
 class TestLoadSessionValidation:
     """Tests for load_session() guard clauses — no network I/O."""
@@ -179,6 +189,7 @@ class TestLoadSessionValidation:
 # =============================================================================
 # Tests: _add_metadata_columns
 # =============================================================================
+
 
 class TestAddMetadataColumns:
     """Tests for metadata column injection."""
@@ -224,6 +235,7 @@ class TestAddMetadataColumns:
 # Tests: _extract_weather_summary
 # =============================================================================
 
+
 class TestExtractWeatherSummary:
     """Tests for weather extraction from a mock session."""
 
@@ -260,6 +272,7 @@ class TestExtractWeatherSummary:
 # =============================================================================
 # Tests: load_qualifying and load_race
 # =============================================================================
+
 
 class TestLoadQualifying:
     """Tests for the load_qualifying() extractor."""
@@ -312,6 +325,7 @@ class TestLoadRace:
 # =============================================================================
 # Tests: parquet_writer
 # =============================================================================
+
 
 class TestResolveParquetPath:
     """Tests for Hive-style path construction."""
@@ -419,7 +433,9 @@ class TestWriteAndReadParquet:
         """read_parquet with columns= returns only the requested columns."""
         write_parquet(minimal_laps_df, sample_key, DataType.LAPS, base_dir=tmp_path)
         result = read_parquet(
-            sample_key, DataType.LAPS, base_dir=tmp_path,
+            sample_key,
+            DataType.LAPS,
+            base_dir=tmp_path,
             columns=["Driver", "LapNumber"],
         )
         assert list(result.columns) == ["Driver", "LapNumber"]

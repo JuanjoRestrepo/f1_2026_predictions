@@ -191,7 +191,8 @@ def add_tyre_degradation_slope(
         )
         if include_intercept:
             result[COL_DEG_INTERCEPT] = pd.Series(
-                [intercepts.get(k, float("nan")) for k in group_keys], index=result.index
+                [intercepts.get(k, float("nan")) for k in group_keys],
+                index=result.index,
             )
 
     logger.info(
