@@ -389,7 +389,6 @@ def run_prediction_pipeline(
         predict_year: Season to generate predictions for.
     """
     settings = get_settings()
-    output_dir = settings.reports_dir / "predictions"
 
     # ── 1. Load data ───────────────────────────────────────────────────────
     df_all: pd.DataFrame
@@ -436,14 +435,14 @@ def run_prediction_pipeline(
         safe_gp_name = gp_name.replace(" ", "_")
         gp_dir = reports_root / str(predict_year) / safe_gp_name / "results"
         gp_dir.mkdir(parents=True, exist_ok=True)
-        
+
         gp_data = predictions_df[predictions_df["EventName"] == gp_name]
         gp_data.to_csv(gp_dir / "predictions.csv", index=False)
-        
+
         # Save local standings for this GP
         gp_standings = build_driver_standings(gp_data, "predicted_laptime_xgb_s")
         gp_standings.to_csv(gp_dir / "standings.csv", index=False)
-        
+
         logger.info("Saved GP results for %s in: %s", gp_name, gp_dir)
 
     # ── 5. Print standings to console ─────────────────────────────────────

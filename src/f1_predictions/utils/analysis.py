@@ -1,5 +1,8 @@
+"""Utility functions for analyzing and ranking F1 prediction results."""
+
 import numpy as np
 import pandas as pd
+
 
 def build_predictions_df(
     metadata: pd.DataFrame,

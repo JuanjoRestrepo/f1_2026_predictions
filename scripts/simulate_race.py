@@ -1,19 +1,27 @@
+"""Virtual race simulation script: predict performance hierarchy for a specific GP."""
+
 import argparse
-import pandas as pd
-import numpy as np
 from pathlib import Path
-from f1_predictions.utils.config import get_settings
-from f1_predictions.utils.logging_setup import configure_root_pipeline_logger, get_logger
+
+import pandas as pd
+
 from f1_predictions.models import F1PaceRegressor, LightGBMPaceRegressor
-from f1_predictions.utils.analysis import build_predictions_df, build_driver_standings
 from f1_predictions.models.common import prepare_feature_matrix
+from f1_predictions.utils.analysis import build_driver_standings, build_predictions_df
+from f1_predictions.utils.config import get_settings
+from f1_predictions.utils.logging_setup import (
+    configure_root_pipeline_logger,
+    get_logger,
+)
 
 logger = get_logger(__name__)
 
-def run_race_simulation(year: int, round_number: int, event_name: str, lap_number: int = 15):
-    """
-    Run a virtual race simulation for a specific GP and year.
-    
+
+def run_race_simulation(
+    year: int, round_number: int, event_name: str, lap_number: int = 15
+) -> None:
+    """Run a virtual race simulation for a specific GP and year.
+
     Args:
         year: The season year to simulate.
         round_number: The round number of the event.
@@ -22,124 +30,142 @@ def run_race_simulation(year: int, round_number: int, event_name: str, lap_numbe
     """
     settings = get_settings()
     safe_event = event_name.replace(" ", "_")
-    
+
     # 1. Load historical/current season data
     data_dir = Path(settings.data_outputs_dir) / "laps"
-    # We look for all data up to the current round if possible, 
+    # We look for all data up to the current round if possible,
     # but primarily the current season's form.
     gold_files = list(data_dir.glob(f"season={year}/**/*.parquet"))
-    
+
     if not gold_files:
-        logger.error(f"No data found for season {year} in {data_dir}. Please ingest previous rounds first.")
+        logger.error(
+            "No data found for season %d in %s. Please ingest previous rounds first.",
+            year,
+            data_dir,
+        )
         return
-        
+
     df_current = pd.concat([pd.read_parquet(f) for f in gold_files])
-    
+
     # 2. Calculate driver-specific metrics for current form
-    logger.info(f"Calculating current form for {year} season (up to round {round_number})...")
-    driver_stats = df_current.groupby('Driver').agg({
-        'SpeedI1': 'median',
-        'SpeedI2': 'median',
-        'SpeedFL': 'median',
-        'SpeedST': 'median',
-        'Sector1Time_s': 'median',
-        'Sector2Time_s': 'median',
-        'Sector3Time_s': 'median',
-        'LapTime_s': 'median',
-        'roll_std_3': 'median',
-        'delta_roll_pace': 'median',
-        'tyre_deg_slope': 'median',
-        'tyre_life_norm': 'median',
-        'DriverPointsPreRace': 'max',
-        'TeamPointsPreRace': 'max',
-        'Team': 'first'
-    }).reset_index()
+    logger.info(
+        "Calculating current form for %d season (up to round %d)...",
+        year,
+        round_number,
+    )
+    driver_stats = (
+        df_current.groupby("Driver")
+        .agg(
+            {
+                "SpeedI1": "median",
+                "SpeedI2": "median",
+                "SpeedFL": "median",
+                "SpeedST": "median",
+                "Sector1Time_s": "median",
+                "Sector2Time_s": "median",
+                "Sector3Time_s": "median",
+                "LapTime_s": "median",
+                "roll_std_3": "median",
+                "delta_roll_pace": "median",
+                "tyre_deg_slope": "median",
+                "tyre_life_norm": "median",
+                "DriverPointsPreRace": "max",
+                "TeamPointsPreRace": "max",
+                "Team": "first",
+            }
+        )
+        .reset_index()
+    )
 
     # 3. Build simulation scenario (Virtual Lap)
-    drivers = driver_stats['Driver'].unique()
+    drivers = driver_stats["Driver"].unique()
     sim_data = []
-    
+
     for driver in drivers:
-        d_info = driver_stats[driver_stats['Driver'] == driver].iloc[0]
-        sim_data.append({
-            'Season': year,
-            'RoundNumber': round_number,
-            'EventName': event_name,
-            'Driver': driver,
-            'Team': d_info['Team'],
-            'LapNumber': lap_number,
-            'Stint': 1,
-            'TyreLife': 10,
-            'Compound': 'MEDIUM',
-            'Position': 5, # Assume a neutral mid-pack position for pace comparison
-            'DriverPointsPreRace': d_info['DriverPointsPreRace'],
-            'TeamPointsPreRace': d_info['TeamPointsPreRace'],
-            'SpeedI1': d_info['SpeedI1'],
-            'SpeedI2': d_info['SpeedI2'],
-            'SpeedFL': d_info['SpeedFL'],
-            'SpeedST': d_info['SpeedST'],
-            'Sector1Time_s': d_info['Sector1Time_s'],
-            'Sector2Time_s': d_info['Sector2Time_s'],
-            'Sector3Time_s': d_info['Sector3Time_s'],
-            'roll_laptime_3': d_info['LapTime_s'],
-            'roll_laptime_5': d_info['LapTime_s'],
-            'roll_std_3': d_info['roll_std_3'],
-            'delta_roll_pace': d_info['delta_roll_pace'],
-            'tyre_deg_slope': d_info['tyre_deg_slope'],
-            'tyre_life_norm': d_info['tyre_life_norm'],
-            'PitInTime_s': 0,
-            'PitOutTime_s': 0,
-            'LapTime_s': 0 # Target placeholder
-        })
-    
+        d_info = driver_stats[driver_stats["Driver"] == driver].iloc[0]
+        sim_data.append(
+            {
+                "Season": year,
+                "RoundNumber": round_number,
+                "EventName": event_name,
+                "Driver": driver,
+                "Team": d_info["Team"],
+                "LapNumber": lap_number,
+                "Stint": 1,
+                "TyreLife": 10,
+                "Compound": "MEDIUM",
+                "Position": 5,  # Assume a neutral mid-pack position for pace comparison
+                "DriverPointsPreRace": d_info["DriverPointsPreRace"],
+                "TeamPointsPreRace": d_info["TeamPointsPreRace"],
+                "SpeedI1": d_info["SpeedI1"],
+                "SpeedI2": d_info["SpeedI2"],
+                "SpeedFL": d_info["SpeedFL"],
+                "SpeedST": d_info["SpeedST"],
+                "Sector1Time_s": d_info["Sector1Time_s"],
+                "Sector2Time_s": d_info["Sector2Time_s"],
+                "Sector3Time_s": d_info["Sector3Time_s"],
+                "roll_laptime_3": d_info["LapTime_s"],
+                "roll_laptime_5": d_info["LapTime_s"],
+                "roll_std_3": d_info["roll_std_3"],
+                "delta_roll_pace": d_info["delta_roll_pace"],
+                "tyre_deg_slope": d_info["tyre_deg_slope"],
+                "tyre_life_norm": d_info["tyre_life_norm"],
+                "PitInTime_s": 0,
+                "PitOutTime_s": 0,
+                "LapTime_s": 0,  # Target placeholder
+            }
+        )
+
     df_sim = pd.DataFrame(sim_data)
-    
+
     # 4. Train Models on Historical Data (2022 to year-1)
     train_years = list(range(2022, year))
     if not train_years:
-        train_years = [2022, 2023, 2024, 2025] # Fallback
-        
-    logger.info(f"Training models on historical data: {train_years}...")
-    
+        train_years = [2022, 2023, 2024, 2025]  # Fallback
+
+    logger.info("Training models on historical data: %s...", train_years)
+
     # Load all historical data for training
     gold_all_files = list(data_dir.glob("season=[2-9]*/**/*.parquet"))
     gold_all = pd.concat([pd.read_parquet(f) for f in gold_all_files])
-    df_train_full = gold_all[gold_all['Season'].isin(train_years)]
-    
+    df_train_full = gold_all[gold_all["Season"].isin(train_years)]
+
     xgb_model = F1PaceRegressor()
     lgb_model = LightGBMPaceRegressor()
-    
+
     # Feature matrix alignment
     df_combined = pd.concat([df_train_full, df_sim], ignore_index=True)
     x_all, _ = prepare_feature_matrix(df_combined)
-    
-    x_train = x_all.iloc[:-len(drivers)]
-    y_train = df_train_full['LapTime_s']
-    
+
+    x_train = x_all.iloc[: -len(drivers)]
+    y_train = df_train_full["LapTime_s"]
+
     # Fit models
-    xgb_model.model.fit(x_train.drop(columns=['Season'], errors='ignore'), y_train)
-    lgb_model.model.fit(x_train.drop(columns=['Season'], errors='ignore'), y_train)
-    
+    xgb_model.model.fit(x_train.drop(columns=["Season"], errors="ignore"), y_train)
+    lgb_model.model.fit(x_train.drop(columns=["Season"], errors="ignore"), y_train)
+
     # 5. Predict Virtual Lap Results
-    logger.info(f"Running virtual race simulation for {event_name}...")
-    x_sim = x_all.tail(len(drivers)).drop(columns=['Season'], errors='ignore')
+    logger.info("Running virtual race simulation for %s...", event_name)
+    x_sim = x_all.tail(len(drivers)).drop(columns=["Season"], errors="ignore")
     y_pred_xgb = xgb_model.model.predict(x_sim)
     y_pred_lgb = lgb_model.model.predict(x_sim)
-    
+
     # 6. Save Results
     res_dir = Path(settings.reports_dir) / str(year) / safe_event / "results"
     res_dir.mkdir(parents=True, exist_ok=True)
-    
-    metadata = df_sim[['Season', 'RoundNumber', 'EventName', 'Driver', 'Team']]
+
+    metadata = df_sim[["Season", "RoundNumber", "EventName", "Driver", "Team"]]
     predictions_df = build_predictions_df(metadata, y_pred_xgb, y_pred_lgb)
-    
+
     # Save CSVs
     standings_lgb = build_driver_standings(predictions_df, "predicted_laptime_lgb_s")
     standings_lgb.to_csv(res_dir / "standings.csv", index=False)
     predictions_df.to_csv(res_dir / "predictions.csv", index=False)
-    
-    logger.info(f"Simulation complete! Results saved to: {res_dir}")
-    print(f"\nVirtual Race Prediction for {event_name} ({year}) finished successfully.")
+
+    logger.info("Simulation complete! Results saved to: %s", res_dir)
+    print(
+        f"\nVirtual Race Prediction for {event_name} ({year}) finished successfully."
+    )
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a virtual F1 race simulation.")
@@ -148,8 +174,8 @@ if __name__ == "__main__":
     parser.add_argument("--event", type=str, required=True, help="Event name (e.g. 'Miami Grand Prix')")
     parser.add_argument("--lap", type=int, default=15, help="Hypothetical lap number to simulate")
     parser.add_argument("--log-level", default="INFO", help="Logging level")
-    
+
     args = parser.parse_args()
     configure_root_pipeline_logger(level=args.log_level)
-    
+
     run_race_simulation(year=args.year, round_number=args.round, event_name=args.event, lap_number=args.lap)

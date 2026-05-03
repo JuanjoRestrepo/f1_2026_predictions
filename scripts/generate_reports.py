@@ -305,7 +305,7 @@ def render_html_report(
     else:
         # This is a Season-wide report
         filename = f"REPORTE_GLOBAL_TEMPORADA_{test_year}.html"
-        
+
     out_path = reports_dir / filename
     out_path.write_text(html_content, encoding="utf-8")
     logger.info("HTML report saved: %s", out_path)
@@ -340,7 +340,7 @@ def run_report_pipeline(
         reports_dir = reports_root / str(test_year) / safe_event / "results"
     else:
         reports_dir = reports_root / str(test_year)
-    
+
     reports_dir.mkdir(parents=True, exist_ok=True)
     logger.info("Reports will be saved to: %s", reports_dir)
 
@@ -349,7 +349,7 @@ def run_report_pipeline(
 
     # ── 2. Chronological split ────────────────────────────────────────────
     df_train, df_test = chronological_split(df, train_years, test_year)
-    
+
     if event_filter:
         df_test = df_test[df_test["EventName"] == event_filter].copy()
         if df_test.empty:
