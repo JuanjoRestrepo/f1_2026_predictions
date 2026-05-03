@@ -4,43 +4,39 @@ interface PredictionsTableProps {
   predictions: PredictionRow[];
 }
 
-function getTeamColor(abbr: string) {
-  const map: Record<string, string> = {
-    "RUS": "bg-[#00d2be]", // Mercedes
-    "ANT": "bg-[#00d2be]", 
-    "LEC": "bg-[#dc0000]", // Ferrari
-    "HAM": "bg-[#dc0000]",
-    "NOR": "bg-[#ff8700]", // McLaren
-    "PIA": "bg-[#ff8700]",
-    "VER": "bg-[#0600ef]", // Red Bull
-    "HAD": "bg-[#0600ef]",
-    "ALO": "bg-[#006f62]", // Aston Martin
-    "STR": "bg-[#006f62]",
-  };
-  return map[abbr] || "bg-gray-500";
+const TEAM_COLORS: Record<string, string> = {
+  Mercedes: "bg-[#00d2be]",
+  Ferrari: "bg-[#dc0000]",
+  McLaren: "bg-[#ff8700]",
+  "Red Bull Racing": "bg-[#0600ef]",
+  "Aston Martin": "bg-[#006f62]",
+  Alpine: "bg-[#0090ff]",
+  Williams: "bg-[#005aff]",
+  "Racing Bulls": "bg-[#4e7c9b]",
+  Haas: "bg-[#b6babd]",
+  Audi: "bg-[#a5a5a5]",
+};
+
+function getTeamColor(team: string) {
+  return TEAM_COLORS[team] ?? "bg-gray-500";
 }
 
-function getTeamName(abbr: string) {
-  const map: Record<string, string> = {
-    "RUS": "Mercedes",
-    "ANT": "Mercedes",
-    "LEC": "Ferrari",
-    "HAM": "Ferrari",
-    "NOR": "McLaren",
-    "PIA": "McLaren",
-    "VER": "Red Bull",
-    "HAD": "Red Bull",
-    "ALO": "Aston Martin",
-    "STR": "Aston Martin",
-  };
-  return map[abbr] || "Team";
+// Calculate a human-readable gap from the winner's laptime
+function formatGap(winnerTime: number, driverTime: number, idx: number): string {
+  if (idx === 0) return "1:23:06.801"; // Winner time placeholder
+  const gapSeconds = driverTime - winnerTime;
+  return `+${gapSeconds.toFixed(3)}s`;
 }
 
 export function PredictionsTable({ predictions }: PredictionsTableProps) {
+  const winnerTime = predictions.length > 0
+    ? parseFloat(predictions[0]!.predicted_laptime_xgb_s)
+    : 0;
+
   return (
     <div className="w-full">
       <table className="w-full text-left text-sm">
-        <thead className="text-[10px] uppercase tracking-widest text-f1gray border-b border-white/5">
+        <thead className="text-[10px] uppercase tracking-widest text-gray-500 border-b border-white/5">
           <tr>
             <th className="px-4 py-3 font-medium w-12">Pos</th>
             <th className="px-4 py-3 font-medium">Driver</th>
@@ -56,30 +52,28 @@ export function PredictionsTable({ predictions }: PredictionsTableProps) {
                   idx === 0 ? "text-yellow-500" :
                   idx === 1 ? "text-gray-300" :
                   idx === 2 ? "text-amber-600" :
-                  "text-f1gray"
+                  "text-gray-500"
                 }`}>
-                  P{row.Predicted_Position || idx + 1}
+                  P{row.predicted_position ?? idx + 1}
                 </span>
               </td>
-              
+
               <td className="px-4 py-4 whitespace-nowrap">
-                <div className="flex flex-col">
-                  <span className="font-bold text-white group-hover:text-red-400 transition-colors">
-                    {row.Abbreviation}
-                  </span>
-                </div>
+                <span className="font-bold text-white group-hover:text-red-400 transition-colors">
+                  {row.Driver}
+                </span>
               </td>
-              
+
               <td className="px-4 py-4 whitespace-nowrap">
                 <div className="flex items-center gap-2">
-                  <span className={`h-2 w-2 rounded-full ${getTeamColor(row.Abbreviation)}`}></span>
-                  <span className="text-gray-400 text-xs">{getTeamName(row.Abbreviation)}</span>
+                  <span className={`h-2 w-2 flex-shrink-0 rounded-full ${getTeamColor(row.Team)}`} />
+                  <span className="text-gray-400 text-xs truncate">{row.Team}</span>
                 </div>
               </td>
-              
+
               <td className="px-4 py-4 whitespace-nowrap text-right">
                 <span className="font-mono text-sm text-gray-300">
-                  {idx === 0 ? "1:23:06.801" : `+${parseFloat(row.predicted_laptime_xgb_s).toFixed(3)}s`}
+                  {formatGap(winnerTime, parseFloat(row.predicted_laptime_xgb_s), idx)}
                 </span>
               </td>
             </tr>

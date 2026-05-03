@@ -12,10 +12,10 @@ function getReportsDirectory() {
 }
 
 export interface PredictionRow {
-  Abbreviation: string;
-  Status: string;
-  Predicted_Position: string;
+  Driver: string;
+  Team: string;
   predicted_laptime_xgb_s: string;
+  predicted_position?: number;
 }
 
 /**
@@ -64,7 +64,13 @@ export function getRacePredictions(year: number, eventDirName: string): Predicti
       skipEmptyLines: true,
     });
     
-    return parsed.data;
+    // Sort by predicted laptime ascending to get finishing order
+    const sorted = parsed.data
+      .filter(r => r.Driver && r.predicted_laptime_xgb_s)
+      .sort((a, b) => parseFloat(a.predicted_laptime_xgb_s) - parseFloat(b.predicted_laptime_xgb_s))
+      .map((row, idx) => ({ ...row, predicted_position: idx + 1 }));
+
+    return sorted;
   } catch (error) {
     console.error("Failed to read predictions CSV:", error);
     return null;
