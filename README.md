@@ -2,110 +2,85 @@
 
 ![F1 Prediction Dashboard](images/f1_prediction_dashboard_hero.png)
 
-An automated, end-to-end machine learning pipeline designed to predict Formula 1 race pace and season outcomes for 2025 and 2026. Leveraging historical data from the Ground Effect era (2022-present).
-
-[Read the Technical Analysis & Conclusions →](./ANALYSIS.md)
+An automated, elite machine learning pipeline designed to predict Formula 1 race pace and season outcomes. Leveraging historical data from the Ground Effect era (2022-present) with a professional DevOps orchestration layer.
 
 ---
 
 ## 🌟 Key Features
 
-- **Automated Data Ingestion**: Seamless integration with the `FastF1` API for telemetry, weather, and results.
-- **Advanced Feature Engineering**:
-  - OLS-based tyre degradation slopes.
-  - Rolling pace analysis (Short/Long window volatility).
-  - Historical momentum tracking (Pre-race championship points).
-  - Weather context broadcasting (Air/Track Temp, Rainfall).
-- **Dual-Model Architecture**: Benchmarks both **XGBoost** and **LightGBM** to select the optimal predictor for specific circuit profiles.
-- **Professional CI/CD**: Enforces strict `mypy` (type safety), `ruff` (linting), and `pytest` (80%+ coverage) standards.
-- **Rich Reporting**: Automated HTML report generation with SHAP explainability and performance metrics (MAE/RMSE).
+- **Automated Data Ingestion**: Seamless integration with the `FastF1` API. Supports chunked ingestion to prevent memory overhead.
+- **Elite Hierarchical Reporting**: Organizes results by `Year / Grand Prix / Results` for deep-dive race analysis.
+- **Dual-Model Architecture**: Benchmarks **XGBoost** and **LightGBM**. Current 2026 MAE: **0.200s** (LightGBM).
+- **Professional DevOps**: Orchestrated via `Makefile` and `Docker`, ensuring 100% environment consistency and automatic cleanup.
 
 ---
 
-## 🏗️ Architecture (Medallion Structure)
+## 🏗️ Hierarchical Structure (Elite Reporting)
 
-The pipeline follows a robust data engineering architecture to ensure idempotency and reproducibility:
+The pipeline now organizes all outputs into a versioned, multi-dimensional hierarchy:
 
-1.  **Bronze Layer (`data/raw/`)**: Raw Parquet files from FastF1. Immutable.
-2.  **Silver Layer (`data/processed/`)**: Cleaned and normalized data. Standardized driver/team identifiers and outlier filtering applied.
-3.  **Gold Layer (`data/outputs/`)**: Feature-engineered matrices ready for training and inference.
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-- **Python 3.12+**
-- **uv** (High-performance package manager)
-
-### Installation
-```bash
-# Clone the repository
-git clone https://github.com/JuanjoRestrepo/f1_2026_predictions.git
-cd f1_2026_predictions
-
-# Install dependencies and create virtual environment
-uv sync
+```text
+reports/
+└── {Year}/
+    ├── {Grand_Prix_Name}/
+    │   └── results/
+    │       ├── f1_predictions_report_{Year}.html  <-- Full Technical Analysis
+    │       ├── standings.csv                     <-- Race-specific results
+    │       └── miami_race_preview.png            <-- High-fidelity visualizations
+    └── predictions/
+        └── standings_xgb_{Year}.csv              <-- Season-wide standings
 ```
 
-### 🐳 Running with Docker (Recommended)
-If you prefer an isolated environment, use the provided `Makefile`. It ensures a clean workspace by automatically removing containers after execution.
+---
 
+## 🚀 Execution Workflow (Standard Operating Procedure)
+
+Follow these commands in order to execute the full pipeline using **Docker (Recommended)**.
+
+### 1. Project Setup
 ```bash
-# Build the image
+# Build the production image
 make build
+```
 
-# Ingest a season (Bronze -> Silver -> Gold)
+### 2. Data Ingestion
+Ingest historical or current season data. Use `--rounds` for specific races if memory is limited.
+```bash
+# Ingest full 2025 season
 make ingest YEAR=2025
 
-# Generate technical reports
-make report TEST_YEAR=2024
+# Ingest current 2026 season rounds
+make ingest YEAR=2026
+```
 
-# Run 2026 predictions
+### 3. Generate Seasonal Predictions
+Train on historical data and predict the outcome of the target season.
+```bash
+# Predict 2026 using 2022-2025 as training
 make predict TRAIN_YEARS="2022 2023 2024 2025" PREDICT_YEAR=2026
+```
 
-# Cleanup orphan containers
+### 4. Technical Reporting
+Generate deep-dive HTML reports for the entire season or a specific Grand Prix.
+```bash
+# Full Season Report
+make report TEST_YEAR=2026 TRAIN_YEARS="2022 2023 2024 2025"
+
+# Specific Grand Prix Report (e.g. Japanese GP)
+make report TEST_YEAR=2026 EVENT="Japanese Grand Prix" TRAIN_YEARS="2022 2023 2024 2025"
+```
+
+### 5. Visualizations (Race Previews)
+Generate aesthetic visualizations for upcoming races.
+```bash
+# Miami GP Race Preview
+make miami-viz
+```
+
+### 6. Cleanup
+Remove orphan containers and temporary execution files.
+```bash
 make clean
-```
-
-### Configuration
-Create a `.env` file in the root directory:
-```env
-F1_CACHE_DIR=./cache/fastf1
-F1_DATA_RAW_DIR=./data/raw
-F1_DATA_PROCESSED_DIR=./data/processed
-F1_DATA_OUTPUTS_DIR=./data/outputs
-F1_REPORTS_DIR=./reports
-```
-
----
-
-## 🛠️ Usage
-
-### 1. Generate Performance Reports
-Evaluate model health on historical seasons:
-```bash
-uv run python scripts/generate_reports.py --train-years 2022 2023 --test-year 2024
-```
-
-### 2. Predict Future Seasons
-Run inference for the 2026 season:
-```bash
-uv run python scripts/predict_season.py --train-years 2022 2023 2024 2025 --predict-year 2026
-```
-
-### 3. Local Quality Checks
-Mirror the GitHub Actions CI pipeline:
-```bash
-# Linting & Formatting
-uv run ruff check src/ tests/
-uv run ruff format --check src/ tests/
-
-# Type Checking
-uv run mypy src/ --strict
-
-# Testing with Coverage
-uv run pytest --cov=src --cov-fail-under=80
 ```
 
 ---
@@ -113,17 +88,11 @@ uv run pytest --cov=src --cov-fail-under=80
 ## 📊 Technical Stack
 
 - **ML**: `scikit-learn`, `xgboost`, `lightgbm`, `shap`
-- **Data**: `pandas`, `pyarrow`, `fastf1`
-- **Quality**: `mypy` (Strict), `ruff`, `pytest`, `pytest-cov`
-- **DevOps**: `GitHub Actions`, `uv`
+- **Data**: `pandas`, `polars`, `pyarrow`, `fastf1`
+- **Quality**: `mypy` (Strict), `ruff`, `pytest` (80%+ coverage)
+- **Infra**: `Docker`, `Docker Compose`, `Makefile`, `uv`
 
 ---
 
-## 📈 Current Project Status
-- **Coverage**: ~90% ✅
-- **Linting**: Ruff Clean ✅
-- **Inference**: Active for 2025/2026 ✅
-
----
 **Author**: Juan Jose Restrepo Rosero
-**Rationale**: Per Grinsztajn et al. (2022), tree-based models consistently outperform deep learning on structured/tabular problems. This project prioritizes GBM architectures for maximum predictive accuracy in F1 race dynamics.
+**Rationale**: Tree-based models consistently outperform deep learning on structured/tabular problems (Grinsztajn et al., 2022). This project prioritizes GBM architectures for maximum predictive accuracy in F1 race dynamics.
