@@ -42,10 +42,11 @@ predict:
 		--predict-year $(PREDICT_YEAR)
 
 report:
-	@echo "📊 Generating Technical Report (Test Year: $(TEST_YEAR))..."
+	@echo "📊 Generating Technical Report (Test Year: $(TEST_YEAR) | Event: $(EVENT))..."
 	docker-compose run --rm pipeline python scripts/generate_reports.py \
 		--train-years $(TRAIN_YEARS) \
 		--test-year $(TEST_YEAR) \
+		--event "$(EVENT)" \
 		--shap
 
 miami-viz:

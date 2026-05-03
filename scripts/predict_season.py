@@ -425,10 +425,26 @@ def run_prediction_pipeline(
     # ── 3. Predict ─────────────────────────────────────────────────────────
     y_pred_xgb, y_pred_lgb, _ = predict_season(xgb_model, lgb_model, df_predict)
 
-    # ── 4. Build & save outputs ────────────────────────────────────────────
+    # ── 4. Build & save outputs (Season Level) ────────────────────────────
     metadata = extract_metadata(df_predict)
     predictions_df = build_predictions_df(metadata, y_pred_xgb, y_pred_lgb)
     saved = save_outputs(predictions_df, predict_year, train_years, predict_dir)
+
+    # ── 5. Save per-GP Results (Elite Structure) ─────────────────────────
+    for gp_name in predictions_df["EventName"].unique():
+        # Sanitize folder name
+        safe_gp_name = gp_name.replace(" ", "_")
+        gp_dir = reports_root / str(predict_year) / safe_gp_name / "results"
+        gp_dir.mkdir(parents=True, exist_ok=True)
+        
+        gp_data = predictions_df[predictions_df["EventName"] == gp_name]
+        gp_data.to_csv(gp_dir / "predictions.csv", index=False)
+        
+        # Save local standings for this GP
+        gp_standings = build_driver_standings(gp_data, "predicted_laptime_xgb_s")
+        gp_standings.to_csv(gp_dir / "standings.csv", index=False)
+        
+        logger.info("Saved GP results for %s in: %s", gp_name, gp_dir)
 
     # ── 5. Print standings to console ─────────────────────────────────────
     xgb_standings = build_driver_standings(predictions_df, "predicted_laptime_xgb_s")

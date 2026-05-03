@@ -309,6 +309,7 @@ def run_report_pipeline(
     train_years: list[int],
     test_year: int,
     include_shap: bool,
+    event_filter: str | None = None,
 ) -> None:
     """Execute the full report generation pipeline.
 
@@ -316,12 +317,18 @@ def run_report_pipeline(
         train_years: List of seasons to use for model training.
         test_year: Season to use as held-out test set.
         include_shap: Whether to generate SHAP explainability plots.
+        event_filter: Optional GP event name to filter the test set.
     """
     settings = get_settings()
 
-    # ── 2. Create versioned output directory ──────────────────────────────
+    # ── 2. Create versioned output directory (Hierarchical) ──────────────
     reports_root = Path(settings.reports_dir)
-    reports_dir = reports_root / str(test_year)
+    if event_filter:
+        safe_event = event_filter.replace(" ", "_")
+        reports_dir = reports_root / str(test_year) / safe_event / "results"
+    else:
+        reports_dir = reports_root / str(test_year)
+    
     reports_dir.mkdir(parents=True, exist_ok=True)
     logger.info("Reports will be saved to: %s", reports_dir)
 
@@ -330,6 +337,14 @@ def run_report_pipeline(
 
     # ── 2. Chronological split ────────────────────────────────────────────
     df_train, df_test = chronological_split(df, train_years, test_year)
+    
+    if event_filter:
+        df_test = df_test[df_test["EventName"] == event_filter].copy()
+        if df_test.empty:
+            logger.error("No data found for event '%s' in season %d", event_filter, test_year)
+            raise ValueError(f"Event '{event_filter}' not found in test set.")
+        logger.info("Filtering report for event: %s (%d rows)", event_filter, len(df_test))
+
     logger.info("Train rows: %d  |  Test rows: %d", len(df_train), len(df_test))
 
     x_train, _y_train = prepare_feature_matrix(df_train)
@@ -441,6 +456,11 @@ def parse_args() -> argparse.Namespace:
         help="Generate SHAP summary and bar plots (requires shap package).",
     )
     parser.add_argument(
+        "--event",
+        type=str,
+        help="Specific GP event name to filter and report on (e.g., 'Miami Grand Prix').",
+    )
+    parser.add_argument(
         "--log-level",
         default="INFO",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
@@ -465,6 +485,7 @@ if __name__ == "__main__":
             train_years=args.train_years,
             test_year=args.test_year,
             include_shap=args.include_shap,
+            event_filter=args.event,
         )
     except (FileNotFoundError, ValueError):
         logger.exception("Pipeline failed.")
