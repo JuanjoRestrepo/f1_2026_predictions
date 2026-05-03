@@ -9,6 +9,7 @@ import {
   getRaceSummary,
   getRacePredictions,
   getLapPositions,
+  getPredictedLapPositions,
   getActualResults,
   type PredictionRow,
   type LapPositionData,
@@ -26,6 +27,7 @@ interface DashboardProps {
   predictions: PredictionRow[] | null;
   actualResults: ActualResult[] | null;
   lapPositions: LapPositionData | null;
+  predictedLapPositions: LapPositionData | null;
 }
 
 export async function getStaticProps() {
@@ -37,14 +39,16 @@ export async function getStaticProps() {
   const predictions = getRacePredictions(year, eventDirName) ?? [];
   const actualResults = getActualResults(year, roundNum) ?? [];
   const lapPositions = getLapPositions(year, roundNum);
+  const predictedLapPositions = getPredictedLapPositions(year, roundNum);
 
   return {
-    props: { markdownReport, predictions, actualResults, lapPositions },
+    props: { markdownReport, predictions, actualResults, lapPositions, predictedLapPositions },
     revalidate: 3600,
   };
 }
 
-export default function Home({ markdownReport, predictions, actualResults, lapPositions }: DashboardProps) {
+export default function Home({ markdownReport, predictions, actualResults, lapPositions, predictedLapPositions }: DashboardProps) {
+
   const [tableView, setTableView] = useState<"predicted" | "actual">("predicted");
   const [chartView, setChartView] = useState<"predicted" | "actual">("actual");
 
@@ -147,14 +151,19 @@ export default function Home({ markdownReport, predictions, actualResults, lapPo
                     </div>
                   )
                 ) : (
-                  <div className="flex h-full min-h-[340px] items-center justify-center bg-black/20 rounded-lg border border-dashed border-white/10">
-                    <div className="text-center p-8">
-                      <p className="text-gray-400 text-sm font-medium mb-2">Predicted Timeline Visualization</p>
-                      <p className="text-gray-500 text-xs italic">ML model currently focused on final race pace. Detailed lap simulation coming in Phase 7.</p>
+                  predictedLapPositions ? (
+                    <RaceTimeline data={predictedLapPositions} />
+                  ) : (
+                    <div className="flex h-full min-h-[340px] items-center justify-center bg-black/20 rounded-lg border border-dashed border-white/10">
+                      <div className="text-center p-8">
+                        <p className="text-gray-400 text-sm font-medium mb-2">Predicted Timeline Visualization</p>
+                        <p className="text-gray-500 text-xs italic">ML model currently focused on final race pace. Detailed lap simulation coming in Phase 7.</p>
+                      </div>
                     </div>
-                  </div>
+                  )
                 )}
               </div>
+
             </div>
 
             {/* Finishing Order Table (Right) */}

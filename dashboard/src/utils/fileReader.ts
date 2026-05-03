@@ -142,3 +142,26 @@ export function getLapPositions(year: number, roundNum: number): LapPositionData
   }
 }
 
+/**
+ * Reads the predicted lap-by-lap position JSON file.
+ */
+export function getPredictedLapPositions(year: number, roundNum: number): LapPositionData | null {
+  try {
+    const filePath = path.join(
+      getReportsDirectory(),
+      year.toString(),
+      "summaries",
+      `predicted_lap_positions_round_${roundNum}.json`
+    );
+
+    if (!fs.existsSync(filePath)) {
+      return null;
+    }
+
+    const raw = fs.readFileSync(filePath, "utf8");
+    return JSON.parse(raw) as LapPositionData;
+  } catch (error) {
+    console.error("Failed to read predicted lap positions:", error);
+    return null;
+  }
+}
