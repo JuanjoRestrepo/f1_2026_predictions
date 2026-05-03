@@ -1,0 +1,36 @@
+services:
+  pipeline:
+    build: .
+    container_name: f1_prediction_pipeline
+    volumes:
+      # Data persistence: map local directories to container directories
+      # This allows sharing Parquet files between host and container
+      - ./data:/app/data
+      - ./reports:/app/reports
+      - ./logs:/app/logs
+      - ./cache:/app/cache
+      
+      # Optional: Mount scripts if you want to edit them and run immediately 
+      # without rebuilding the image
+      - ./scripts:/app/scripts
+      - ./src:/app/src
+    
+    # Load environment variables from .env file
+    env_file:
+      - .env
+    
+    environment:
+      - PYTHONPATH=/app/src
+      - F1_DATA_RAW_DIR=/app/data/raw
+      - F1_DATA_PROCESSED_DIR=/app/data/processed
+      - F1_DATA_OUTPUTS_DIR=/app/data/outputs
+      - F1_REPORTS_DIR=/app/reports
+      - F1_CACHE_DIR=/app/cache/fastf1
+    
+    # Use a non-interactive TTY for better logging visibility
+    tty: true
+    stdin_open: true
+
+networks:
+  default:
+    name: f1_network

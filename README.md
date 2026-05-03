@@ -48,6 +48,23 @@ cd f1_2026_predictions
 uv sync
 ```
 
+### 🐳 Running with Docker
+If you prefer an isolated environment, use Docker Compose. The setup includes automatic volume mapping for data persistence.
+
+```bash
+# Build the image
+docker-compose build
+
+# Run ingestion (e.g., for 2024)
+docker-compose run pipeline python scripts/ingest_season.py --year 2024
+
+# Run reports
+docker-compose run pipeline python scripts/generate_reports.py --train-years 2022 2023 --test-year 2024
+
+# Run predictions
+docker-compose run pipeline python scripts/predict_season.py --train-years 2022 2023 2024 --predict-year 2026
+```
+
 ### Configuration
 Create a `.env` file in the root directory:
 ```env
