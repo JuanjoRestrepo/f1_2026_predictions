@@ -254,14 +254,16 @@ def save_metrics_json(
 
 
 def render_html_report(
+    test_year: int,
     metrics_xgb: RegressionMetrics,
     metrics_lgb: RegressionMetrics,
     train_years: list[int],
-    test_year: int,
     figure_paths: dict[str, Path],
     reports_dir: Path,
+    event_filter: str | None = None,
 ) -> Path:
-    """Render a Jinja2 HTML report summarising all results.
+    """Render the Jinja2 template and save the final HTML report.
+ summarising all results.
 
     Args:
         metrics_xgb: XGBoost evaluation metrics.
@@ -270,6 +272,7 @@ def render_html_report(
         test_year: Season used for testing.
         figure_paths: Mapping of figure key to saved Path.
         reports_dir: Output directory for the HTML file.
+        event_filter: Optional GP event name filtering.
 
     Returns:
         Path to the rendered HTML report.
@@ -294,7 +297,16 @@ def render_html_report(
         figures=rel_figures,
     )
 
-    out_path = reports_dir / f"f1_predictions_report_{test_year}.html"
+    # Final output path
+    if event_filter:
+        # This is a GP-specific report
+        safe_name = event_filter.replace(" ", "_")
+        filename = f"REPORTE_{safe_name}_{test_year}.html"
+    else:
+        # This is a Season-wide report
+        filename = f"REPORTE_GLOBAL_TEMPORADA_{test_year}.html"
+        
+    out_path = reports_dir / filename
     out_path.write_text(html_content, encoding="utf-8")
     logger.info("HTML report saved: %s", out_path)
     return out_path
@@ -415,7 +427,13 @@ def run_report_pipeline(
 
     # ── 7. Render HTML report ─────────────────────────────────────────────
     html_path = render_html_report(
-        metrics_xgb, metrics_lgb, train_years, test_year, figure_paths, reports_dir
+        test_year,
+        metrics_xgb,
+        metrics_lgb,
+        train_years,
+        figure_paths,
+        reports_dir,
+        event_filter=event_filter,
     )
 
     logger.info("=" * 60)

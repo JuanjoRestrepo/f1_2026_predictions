@@ -71,8 +71,8 @@ if __name__ == "__main__":
     settings = get_settings()
     predict_year = 2026
     source = Path(settings.reports_dir) / str(predict_year) / "predictions" / f"predictions_lgb_{predict_year}.parquet"
-    # New Elite Structure path
-    target_dir = Path(settings.reports_dir) / str(predict_year) / "Miami_Grand_Prix" / "results"
+    # New Elite Structure path (Preview folder)
+    target_dir = Path(settings.reports_dir) / str(predict_year) / "Miami_Grand_Prix" / "preview"
     target_dir.mkdir(parents=True, exist_ok=True)
     target = target_dir / "miami_race_preview.png"
     

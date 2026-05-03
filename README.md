@@ -24,11 +24,10 @@ reports/
 └── {Year}/
     ├── {Grand_Prix_Name}/
     │   └── results/
-    │       ├── f1_predictions_report_{Year}.html  <-- Full Technical Analysis
-    │       ├── standings.csv                     <-- Race-specific results
-    │       └── miami_race_preview.png            <-- High-fidelity visualizations
-    └── predictions/
-        └── standings_xgb_{Year}.csv              <-- Season-wide standings
+    │       ├── REPORTE_{Grand_Prix_Name}_{Year}.html  <-- Dynamic GP Report
+    │       ├── standings.csv                        <-- Race-specific results
+    │       └── miami_race_preview.png               <-- High-fidelity visualizations
+    └── REPORTE_GLOBAL_TEMPORADA_{Year}.html          <-- Seasonal Summary
 ```
 
 ---
