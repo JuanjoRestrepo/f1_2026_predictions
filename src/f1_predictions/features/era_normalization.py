@@ -15,6 +15,7 @@ from f1_predictions.utils.logging_setup import get_logger
 
 logger = get_logger(__name__)
 
+
 def apply_2026_regulations_penalty(df: pd.DataFrame) -> pd.DataFrame:
     """Apply a dynamic temporal penalty to LapTime_s for historical records.
 
@@ -60,7 +61,8 @@ def apply_2026_regulations_penalty(df: pd.DataFrame) -> pd.DataFrame:
     avg_penalty = total_penalty.mean()
     logger.info(
         "Applied 2026 Era Normalization to %d historical records. Avg penalty: +%.3fs",
-        mask.sum(), avg_penalty
+        mask.sum(),
+        avg_penalty,
     )
 
     return adjusted
