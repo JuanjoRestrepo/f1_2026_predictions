@@ -156,10 +156,6 @@ SWEETVIZ_REPORT.html
 *.eps
 *.pdf
 
-# Exception: committed reference images for documentation / README
-!docs/images/
-!README_assets/
-
 
 # =============================================================================
 # 7. CACHE DIRECTORIES
