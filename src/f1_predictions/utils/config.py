@@ -79,6 +79,10 @@ class Settings(BaseSettings):
         description="FastF1 telemetry cache directory. "
         "Set to an absolute path outside the repo.",
     )
+    gemini_api_key: str | None = Field(
+        default=None,
+        description="Google Gemini API Key for the AI Race Summarizer.",
+    )
     data_raw_dir: Path = Field(
         default=Path("data/raw"),
         description="Raw parquet outputs from ingestion stage.",

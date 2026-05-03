@@ -11,10 +11,14 @@ import sys
 
 import fastf1
 import pandas as pd
+from dotenv import load_dotenv
 from google import genai
 
 from f1_predictions.utils.config import get_settings
 from f1_predictions.utils.logging_setup import get_logger
+
+# Load environment variables from .env file
+load_dotenv()
 
 logger = get_logger(__name__)
 
