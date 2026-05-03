@@ -12,6 +12,7 @@ interface Stint {
 
 interface DriverTyreData {
   driver: string;
+  fullName: string;
   team: string;
   stints: Stint[];
 }
@@ -34,10 +35,15 @@ export function TyreIntelligence({ data }: TyreIntelligenceProps) {
   const [search, setSearch] = useState("");
   const totalLaps = 57;
 
-  const filteredDrivers = data.drivers.filter(d => 
-    d.driver.toLowerCase().includes(search.toLowerCase()) || 
-    d.team.toLowerCase().includes(search.toLowerCase())
-  );
+  // Flexible search: match driver code, full name, or team
+  const filteredDrivers = data.drivers.filter(d => {
+    const s = search.toLowerCase();
+    return (
+      d.driver.toLowerCase().includes(s) || 
+      d.fullName.toLowerCase().includes(s) || 
+      d.team.toLowerCase().includes(s)
+    );
+  });
 
   return (
     <div className="w-full space-y-6">
@@ -68,16 +74,16 @@ export function TyreIntelligence({ data }: TyreIntelligenceProps) {
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2 text-xs text-gray-400">
             <MousePointer2 size={12} className="text-f1red" />
-            <span>Click a driver to highlight</span>
+            <span>Click to highlight</span>
           </div>
           <div className="relative group">
             <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-f1red transition-colors" />
             <input 
               type="text" 
-              placeholder="Filter drivers..." 
+              placeholder="Search Lando, Norris, etc..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="bg-black/40 border border-white/10 rounded-md py-1 pl-7 pr-3 text-[10px] text-white focus:outline-none focus:border-f1red transition-all w-32 md:w-40"
+              className="bg-black/40 border border-white/10 rounded-md py-1.5 pl-7 pr-3 text-[10px] text-white placeholder:text-gray-600 focus:outline-none focus:border-f1red transition-all w-40 md:w-56"
             />
           </div>
         </div>
@@ -100,9 +106,9 @@ export function TyreIntelligence({ data }: TyreIntelligenceProps) {
                     <span className={`text-xs font-bold font-mono ${isHighlighted ? "text-f1red" : "text-gray-300"}`}>
                       {driver.driver}
                     </span>
-                    {isHighlighted && (
-                      <span className="text-[10px] text-gray-500 uppercase tracking-tighter">{driver.team}</span>
-                    )}
+                    <span className={`text-[10px] uppercase tracking-tight ${isHighlighted ? "text-white font-semibold" : "text-gray-500"}`}>
+                      {driver.fullName}
+                    </span>
                   </div>
                   <div className="flex gap-2">
                     {driver.stints.map((s, idx) => (
@@ -137,6 +143,11 @@ export function TyreIntelligence({ data }: TyreIntelligenceProps) {
               </div>
             );
           })}
+          {filteredDrivers.length === 0 && (
+            <div className="py-8 text-center">
+              <p className="text-xs text-gray-500 italic">No drivers matching "{search}"</p>
+            </div>
+          )}
         </div>
       </div>
 

@@ -175,6 +175,7 @@ export interface TyreStint {
 
 export interface DriverTyreData {
   driver: string;
+  fullName: string;
   team: string;
   stints: TyreStint[];
 }
