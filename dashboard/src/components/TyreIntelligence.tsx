@@ -88,7 +88,7 @@ export function TyreIntelligence({ data }: TyreIntelligenceProps) {
           </div>
         </div>
 
-        <div className="max-h-[360px] overflow-y-auto pr-2 custom-scrollbar space-y-3">
+        <div className="max-h-[380px] overflow-y-auto pr-2 custom-scrollbar space-y-4">
           {filteredDrivers.map((driver) => {
             const isHighlighted = activeDriver === driver.driver;
             const isDimmed = activeDriver && activeDriver !== driver.driver;
@@ -97,34 +97,39 @@ export function TyreIntelligence({ data }: TyreIntelligenceProps) {
               <div 
                 key={driver.driver} 
                 onClick={() => setActiveDriver(activeDriver === driver.driver ? null : driver.driver)}
-                className={`space-y-1.5 cursor-pointer transition-all duration-300 ${
+                className={`space-y-2 cursor-pointer transition-all duration-300 ${
                   isHighlighted ? "scale-[1.02] translate-x-1" : ""
                 } ${isDimmed ? "opacity-30 blur-[0.5px]" : "opacity-100"}`}
               >
-                <div className="flex justify-between items-center px-1">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs font-bold font-mono ${isHighlighted ? "text-f1red" : "text-gray-300"}`}>
-                      {driver.driver}
-                    </span>
-                    <span className={`text-[10px] uppercase tracking-tight ${isHighlighted ? "text-white font-semibold" : "text-gray-500"}`}>
-                      {driver.fullName}
+                <div className="flex justify-between items-end px-1">
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-bold font-mono ${isHighlighted ? "text-f1red" : "text-gray-300"}`}>
+                        {driver.driver}
+                      </span>
+                      <span className={`text-[10px] uppercase tracking-tight ${isHighlighted ? "text-white font-bold" : "text-gray-400"}`}>
+                        {driver.fullName}
+                      </span>
+                    </div>
+                    <span className="text-[9px] text-gray-600 uppercase font-medium tracking-tighter">
+                      {driver.team}
                     </span>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 pb-0.5">
                     {driver.stints.map((s, idx) => (
-                      <span key={idx} className={`text-[9px] uppercase font-medium ${
+                      <span key={idx} className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded-sm bg-white/5 border border-white/5 ${
                         s.compound === "SOFT" ? "text-red-500" :
                         s.compound === "MEDIUM" ? "text-yellow-500" :
                         "text-white"
                       }`}>
                         {s.compound[0]}
-                        <span className="text-gray-600 ml-0.5">({s.laps})</span>
+                        <span className="text-gray-500 ml-1 font-medium">{s.laps}</span>
                       </span>
                     ))}
                   </div>
                 </div>
-                <div className={`h-2 w-full bg-white/5 rounded-full overflow-hidden flex transition-all ${
-                  isHighlighted ? "ring-1 ring-f1red/30 shadow-[0_0_10px_rgba(225,6,0,0.1)]" : ""
+                <div className={`h-2.5 w-full bg-white/5 rounded-full overflow-hidden flex transition-all ${
+                  isHighlighted ? "ring-1 ring-f1red/40 shadow-[0_0_15px_rgba(225,6,0,0.15)]" : ""
                 }`}>
                   {driver.stints.map((stint, idx) => {
                     const width = (stint.laps / totalLaps) * 100;
