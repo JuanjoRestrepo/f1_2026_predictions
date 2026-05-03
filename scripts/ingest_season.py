@@ -116,29 +116,24 @@ def ingest_round(
 
 def ingest_season(
     year: int,
-    max_rounds: int,
-    overwrite: bool,
-    delay_seconds: float,
+    max_rounds: int = 24,
+    rounds: list[int] | None = None,
+    overwrite: bool = False,
+    delay_seconds: float = 2.0,
 ) -> None:
-    """Iterate over all rounds in a season and ingest each one.
-
-    Args:
-        year: Championship season year.
-        max_rounds: Maximum rounds to attempt (use season length).
-        overwrite: Whether to re-process existing files.
-        delay_seconds: Seconds to wait between rounds (respects FastF1 CDN rate limits).
-    """
+    """Iterate over all rounds in a season and ingest each one."""
+    rounds_to_process = rounds if rounds else list(range(1, max_rounds + 1))
     successes: list[int] = []
     failures: list[int] = []
 
-    for round_number in range(1, max_rounds + 1):
+    for round_number in rounds_to_process:
         ok = ingest_round(year, round_number, overwrite=overwrite)
         if ok:
             successes.append(round_number)
         else:
             failures.append(round_number)
 
-        if round_number < max_rounds:
+        if delay_seconds > 0:
             logger.info("Waiting %.1fs before next round...", delay_seconds)
             time.sleep(delay_seconds)
 
@@ -163,10 +158,16 @@ def parse_args() -> argparse.Namespace:
         "--year", type=int, required=True, help="Championship season year (e.g. 2024)."
     )
     parser.add_argument(
+        "--rounds",
+        nargs="+",
+        type=int,
+        help="Specific round numbers to process (e.g. --rounds 1 2 5).",
+    )
+    parser.add_argument(
         "--max-rounds",
         type=int,
         default=24,
-        help="Maximum rounds to process (use season round count).",
+        help="Maximum rounds to process if --rounds is not specified.",
     )
     parser.add_argument(
         "--overwrite",
@@ -204,6 +205,7 @@ if __name__ == "__main__":
     ingest_season(
         year=args.year,
         max_rounds=args.max_rounds,
+        rounds=args.rounds,
         overwrite=args.overwrite,
         delay_seconds=args.delay,
     )
