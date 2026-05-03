@@ -21,12 +21,12 @@ help:
 	@echo "  make ingest YEAR=2025  - Ingest a full season (Bronze->Silver->Gold)"
 	@echo "  make predict           - Run 2026 predictions using 2022-2025 data"
 	@echo "  make report            - Generate the full SHAP technical report"
+	@echo "  make race-sim YEAR=2026 ROUND=4 EVENT=\"Miami Grand Prix\" - Run full simulation + visuals"
 	@echo "  make clean             - Remove all orphan containers and temp artifacts"
-	@echo "  make full-pipeline     - Run the complete flow: Ingest -> Predict -> Report"
 	@echo ""
 	@echo "Examples:"
 	@echo "  make ingest YEAR=2025"
-	@echo "  make predict TRAIN_YEARS=\"2022 2023\" PREDICT_YEAR=2024"
+	@echo "  make race-sim ROUND=4 EVENT=\"Miami Grand Prix\""
 
 build:
 	docker-compose build
@@ -49,9 +49,12 @@ report:
 		--event "$(EVENT)" \
 		--shap
 
-miami-viz:
-	@echo "🌴 Generating Miami GP Race Preview Visualization..."
-	docker-compose run --rm pipeline python scripts/miami_preview.py
+race-sim:
+	@echo "🏁 Running Race Simulation (Year: $(YEAR) | Round: $(ROUND) | Event: $(EVENT))..."
+	docker-compose run --rm pipeline python main.py \
+		--year $(YEAR) \
+		--round $(ROUND) \
+		--event "$(EVENT)"
 
 clean:
 	@echo "🧹 Cleaning up orphan containers and temporary files..."
