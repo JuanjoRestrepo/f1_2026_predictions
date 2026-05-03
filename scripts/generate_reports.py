@@ -40,7 +40,7 @@ from f1_predictions.models import (
 )
 from f1_predictions.models.explainability import save_tree_shap_artifacts
 from f1_predictions.utils.config import get_settings
-from f1_predictions.utils.logging_setup import configure_root_logger, get_logger
+from f1_predictions.utils.logging_setup import configure_root_pipeline_logger, get_logger
 
 # Use non-interactive backend: prevents display errors in headless/CI environments.
 matplotlib.use("Agg")
@@ -420,7 +420,7 @@ def parse_args() -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = parse_args()
-    configure_root_logger(level=args.log_level)
+    configure_root_pipeline_logger(level=args.log_level)
 
     logger.info(
         "Starting report pipeline: train=%s  test=%d  shap=%s",

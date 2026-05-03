@@ -51,7 +51,7 @@ from f1_predictions.models import (
     prepare_feature_matrix,
 )
 from f1_predictions.utils.config import get_settings
-from f1_predictions.utils.logging_setup import configure_root_logger, get_logger
+from f1_predictions.utils.logging_setup import configure_root_pipeline_logger, get_logger
 
 logger = get_logger(__name__)
 
@@ -80,7 +80,7 @@ METADATA_COLS: list[str] = [
 def load_gold_by_season(
     data_outputs_dir: Path,
     season: int,
-) -> pd.DataFrame:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Load and concatenate all Gold Parquet files for a specific season.
 
     Args:
@@ -124,7 +124,7 @@ def load_gold_by_season(
         season,
         len(df_all),
     )
-    return df_all, df_season  # type: ignore[return-value]  # both needed by caller
+    return df_all, df_season
 
 
 def extract_metadata(df: pd.DataFrame) -> pd.DataFrame:
@@ -380,6 +380,8 @@ def run_prediction_pipeline(
     output_dir = settings.reports_dir / "predictions"
 
     # ── 1. Load data ───────────────────────────────────────────────────────
+    df_all: pd.DataFrame
+    df_predict: pd.DataFrame
     df_all, df_predict = load_gold_by_season(settings.data_outputs_dir, predict_year)
 
     available_seasons = sorted(df_all["Season"].unique().tolist())
@@ -468,7 +470,7 @@ def parse_args() -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = parse_args()
-    configure_root_logger(level=args.log_level)
+    configure_root_pipeline_logger(level=args.log_level)
 
     logger.info(
         "F1 Prediction Pipeline | Train=%s → Predict=%d",
