@@ -132,14 +132,35 @@ def main():
     # 3. Tyre
     def process_tyre_data(limit=18):
         data = []
+        compound_colors = {
+            "SOFT": "#ef4444",
+            "MEDIUM": "#facc15",
+            "HARD": "#f8fafc",
+            "INTERMEDIATE": "#22c55e",
+            "WET": "#3b82f6"
+        }
         for drv in all_drivers[:limit]:
             drv_laps = session.laps.pick_drivers(drv)
             if drv_laps.empty: continue
             stints = drv_laps[['Stint', 'Compound', 'LapNumber']].groupby(['Stint', 'Compound'], sort=False).count().reset_index()
-            data.append({'driver': drv, 'fullName': drv, 'team': drv_laps['Team'].iloc[0], 'stints': [{'stint': int(r['Stint']), 'compound': str(r['Compound']).upper(), 'laps': int(r['LapNumber']), 'color': '#888888'} for _, r in stints.iterrows()]})
-        return {"gp": session.event['EventName'], "year": args.year, "drivers": data}
-    save_artifact(process_tyre_data(18), f"tyre_intelligence_round_{args.round}.json", args.year, race_info['dir'])
-    save_artifact(process_tyre_data(18), f"predicted_tyre_intelligence_round_{args.round}.json", args.year, race_info['dir'])
+            data.append({
+                'driver': drv, 
+                'fullName': drv, 
+                'team': drv_laps['Team'].iloc[0], 
+                'stints': [
+                    {
+                        'stint': int(r['Stint']), 
+                        'compound': str(r['Compound']).upper(), 
+                        'laps': int(r['LapNumber']), 
+                        'color': compound_colors.get(str(r['Compound']).upper(), "#888888")
+                    } for _, r in stints.iterrows()
+                ]
+            })
+        return {"gp": session.event['EventName'], "year": args.year, "total_laps": total_laps, "drivers": data}
+    
+    tyre_data = process_tyre_data(22) # Full grid
+    save_artifact(tyre_data, f"tyre_intelligence_round_{args.round}.json", args.year, race_info['dir'])
+    save_artifact(tyre_data, f"predicted_tyre_intelligence_round_{args.round}.json", args.year, race_info['dir'])
     
     # 4. AI Narratives
     if ai_model:

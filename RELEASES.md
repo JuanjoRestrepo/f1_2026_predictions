@@ -1,5 +1,16 @@
 # Project Releases & Versioning 🏁📜
 
+## v2.2.1 - Strategic Tyre Intelligence Overhaul
+**Date**: May 2026
+
+### 🛠️ Strategic Enhancements
+- **Proportional Stint Timeline**: Redesigned tyre bars as dynamic "loading bars" where width accurately reflects stint duration relative to total race laps.
+- **Official Compound Colors**: Fixed pipeline mapping to ensure Soft (Red), Medium (Yellow), and Hard (White) compounds use official F1 broadcast colors.
+- **Dynamic Circuit Scaling**: Implemented `total_laps` awareness, allowing the strategy timeline to scale accurately for any circuit distance.
+- **High-Fidelity Visuals**: Added linear gradients, internal shadows, and interactive hover effects to strategy bars for a premium aesthetic.
+
+---
+
 ## v2.2.0 - Professional F1 Broadcast Aesthetics & AI Stabilization
 **Date**: May 2026
 
