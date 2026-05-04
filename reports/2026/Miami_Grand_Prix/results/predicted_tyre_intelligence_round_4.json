@@ -2,6 +2,9 @@
   "gp": "Miami Grand Prix",
   "year": 2026,
   "total_laps": 57,
+  "winning_strategy": "AI Optimal (M-H)",
+  "avg_pit_stop": "2.50s (Est.)",
+  "proven_strategy_insight": "AI Prediction Insight.",
   "drivers": [
     {
       "driver": "ANT",
