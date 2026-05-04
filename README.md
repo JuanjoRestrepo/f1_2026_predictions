@@ -1,6 +1,6 @@
 # F1 2026 Season Predictive Platform 🏎️📊🤖
 
-![F1 Prediction Dashboard](images/f1_prediction_dashboard_hero.png)
+![F1 Prediction Dashboard](images/dashboard_preview.png)
 
 A production-grade, end-to-end MLOps platform designed to predict Formula 1 race dynamics for the 2026 regulation era. This system combines state-of-the-art Gradient Boosting (XGBoost/LightGBM) with a high-fidelity interactive dashboard inspired by F1 TV telemetry.
 
