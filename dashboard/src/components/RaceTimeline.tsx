@@ -140,18 +140,39 @@ export function RaceTimeline({ data }: RaceTimelineProps) {
             
             <Legend
               verticalAlign="bottom"
-              height={60}
-              iconType="circle"
-              iconSize={8}
-              wrapperStyle={{ fontSize: "10px", paddingTop: "20px", opacity: 0.8 }}
-              formatter={(value) => (
-                <span 
-                  className="cursor-pointer hover:text-white transition-colors"
-                  onMouseEnter={() => setActiveDriver(value)}
-                  onMouseLeave={() => setActiveDriver(null)}
-                >
-                  {value}
-                </span>
+              height={80}
+              wrapperStyle={{ fontSize: "10px", paddingTop: "30px" }}
+              content={({ payload }) => (
+                <div className="flex flex-wrap justify-center gap-x-4 gap-y-2">
+                  {payload?.map((entry: any) => {
+                    const driver = data.drivers.find(d => d.driver === entry.value);
+                    const isDashed = driver?.lineStyle === "dashed";
+                    const color = entry.color;
+                    
+                    return (
+                      <div 
+                        key={entry.value}
+                        className="flex items-center gap-1.5 cursor-pointer group"
+                        onMouseEnter={() => setActiveDriver(entry.value)}
+                        onMouseLeave={() => setActiveDriver(null)}
+                      >
+                        {/* Professional F1 Line Indicator */}
+                        <svg width="24" height="6" className="flex-shrink-0">
+                          <line 
+                            x1="0" y1="3" x2="24" y2="3" 
+                            stroke={color} 
+                            strokeWidth="3" 
+                            strokeDasharray={isDashed ? "4 2" : "0"}
+                            className="transition-all duration-300 group-hover:stroke-white"
+                          />
+                        </svg>
+                        <span className="text-gray-400 group-hover:text-white transition-colors uppercase font-mono">
+                          {entry.value}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             />
 
