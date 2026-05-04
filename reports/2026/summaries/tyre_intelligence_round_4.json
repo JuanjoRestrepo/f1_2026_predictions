@@ -5,7 +5,7 @@
   "drivers": [
     {
       "driver": "ANT",
-      "fullName": "ANT",
+      "fullName": "Kimi Antonelli",
       "team": "Mercedes",
       "stints": [
         {
@@ -24,7 +24,7 @@
     },
     {
       "driver": "NOR",
-      "fullName": "NOR",
+      "fullName": "Lando Norris",
       "team": "McLaren",
       "stints": [
         {
@@ -43,7 +43,7 @@
     },
     {
       "driver": "PIA",
-      "fullName": "PIA",
+      "fullName": "Oscar Piastri",
       "team": "McLaren",
       "stints": [
         {
@@ -62,7 +62,7 @@
     },
     {
       "driver": "RUS",
-      "fullName": "RUS",
+      "fullName": "George Russell",
       "team": "Mercedes",
       "stints": [
         {
@@ -81,7 +81,7 @@
     },
     {
       "driver": "VER",
-      "fullName": "VER",
+      "fullName": "Max Verstappen",
       "team": "Red Bull Racing",
       "stints": [
         {
@@ -100,7 +100,7 @@
     },
     {
       "driver": "HAM",
-      "fullName": "HAM",
+      "fullName": "Lewis Hamilton",
       "team": "Ferrari",
       "stints": [
         {
@@ -119,7 +119,7 @@
     },
     {
       "driver": "COL",
-      "fullName": "COL",
+      "fullName": "Franco Colapinto",
       "team": "Alpine",
       "stints": [
         {
@@ -138,7 +138,7 @@
     },
     {
       "driver": "LEC",
-      "fullName": "LEC",
+      "fullName": "Charles Leclerc",
       "team": "Ferrari",
       "stints": [
         {
@@ -157,7 +157,7 @@
     },
     {
       "driver": "SAI",
-      "fullName": "SAI",
+      "fullName": "Carlos Sainz",
       "team": "Williams",
       "stints": [
         {
@@ -176,7 +176,7 @@
     },
     {
       "driver": "ALB",
-      "fullName": "ALB",
+      "fullName": "Alexander Albon",
       "team": "Williams",
       "stints": [
         {
@@ -195,7 +195,7 @@
     },
     {
       "driver": "BEA",
-      "fullName": "BEA",
+      "fullName": "Oliver Bearman",
       "team": "Haas F1 Team",
       "stints": [
         {
@@ -214,7 +214,7 @@
     },
     {
       "driver": "BOR",
-      "fullName": "BOR",
+      "fullName": "Gabriel Bortoleto",
       "team": "Audi",
       "stints": [
         {
@@ -233,7 +233,7 @@
     },
     {
       "driver": "OCO",
-      "fullName": "OCO",
+      "fullName": "Esteban Ocon",
       "team": "Haas F1 Team",
       "stints": [
         {
@@ -252,7 +252,7 @@
     },
     {
       "driver": "LIN",
-      "fullName": "LIN",
+      "fullName": "Arvid Lindblad",
       "team": "Racing Bulls",
       "stints": [
         {
@@ -271,7 +271,7 @@
     },
     {
       "driver": "ALO",
-      "fullName": "ALO",
+      "fullName": "Fernando Alonso",
       "team": "Aston Martin",
       "stints": [
         {
@@ -290,7 +290,7 @@
     },
     {
       "driver": "PER",
-      "fullName": "PER",
+      "fullName": "Sergio Perez",
       "team": "Cadillac",
       "stints": [
         {
@@ -309,7 +309,7 @@
     },
     {
       "driver": "STR",
-      "fullName": "STR",
+      "fullName": "Lance Stroll",
       "team": "Aston Martin",
       "stints": [
         {
@@ -334,7 +334,7 @@
     },
     {
       "driver": "BOT",
-      "fullName": "BOT",
+      "fullName": "Valtteri Bottas",
       "team": "Cadillac",
       "stints": [
         {
@@ -365,7 +365,7 @@
     },
     {
       "driver": "HUL",
-      "fullName": "HUL",
+      "fullName": "Nico Hulkenberg",
       "team": "Audi",
       "stints": [
         {
@@ -384,7 +384,7 @@
     },
     {
       "driver": "LAW",
-      "fullName": "LAW",
+      "fullName": "Liam Lawson",
       "team": "Racing Bulls",
       "stints": [
         {
@@ -397,7 +397,7 @@
     },
     {
       "driver": "GAS",
-      "fullName": "GAS",
+      "fullName": "Pierre Gasly",
       "team": "Alpine",
       "stints": [
         {
@@ -410,7 +410,7 @@
     },
     {
       "driver": "HAD",
-      "fullName": "HAD",
+      "fullName": "Isack Hadjar",
       "team": "Red Bull Racing",
       "stints": [
         {

@@ -143,9 +143,11 @@ def main():
             drv_laps = session.laps.pick_drivers(drv)
             if drv_laps.empty: continue
             stints = drv_laps[['Stint', 'Compound', 'LapNumber']].groupby(['Stint', 'Compound'], sort=False).count().reset_index()
+            res_row = session.results[session.results['Abbreviation'] == drv]
+            full_name = res_row['FullName'].iloc[0] if not res_row.empty else drv
             data.append({
                 'driver': drv, 
-                'fullName': drv, 
+                'fullName': full_name, 
                 'team': drv_laps['Team'].iloc[0], 
                 'stints': [
                     {
