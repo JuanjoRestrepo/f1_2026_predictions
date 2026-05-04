@@ -261,7 +261,15 @@ def main():
     # 4. AI Narratives
     if ai_model:
         print("Generating AI reports with gemini-2.5-flash...")
-        prompt = f"Expert F1 Analysis for {session.event['EventName']} 2026. Results: {session.results.head(10)[['Abbreviation', 'Position']].to_string()}"
+        prompt = (
+            f"TECHNICAL RACE ANALYSIS: {session.event['EventName']} 2026. "
+            f"Results: {session.results.head(10)[['Abbreviation', 'Position']].to_string()}. "
+            "Write a serious, high-level technical breakdown. Do not use the phrase 'Expert F1 Analysis'. "
+            "Focus on stint dynamics, aerodynamic efficiency, and driver performance deltas."
+        )
+        
+        report = call_ai_with_retry(prompt, ai_model)
+        pred_report = call_ai_with_retry("PREDICTION " + prompt, ai_model)
         
         fallback = (
             "### [STRATEGIC INTELLIGENCE] Narrative Synthesis Underway\n\n"
