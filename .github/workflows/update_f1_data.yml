@@ -24,8 +24,10 @@ jobs:
         run: uv sync
 
       - name: Run Master Pipeline
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         run: |
-          uv run python scripts/master_pipeline.py --round ${{ github.event.inputs.round }}
+          uv run scripts/master_pipeline.py --round ${{ github.event.inputs.round }}
 
       - name: Commit and Push Changes
         run: |
