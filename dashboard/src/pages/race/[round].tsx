@@ -86,6 +86,7 @@ export default function RacePage({
   tyreData,
   predictedTyreData
 }: RacePageProps) {
+  const [headerView, setHeaderView] = useState<"predicted" | "actual">("actual");
   const [tableView, setTableView] = useState<"predicted" | "actual">("predicted");
   const [chartView, setChartView] = useState<"predicted" | "actual">("actual");
   const [tyreView, setTyreView] = useState<"predicted" | "actual">("actual");
@@ -95,13 +96,18 @@ export default function RacePage({
   const currentTyreData = tyreView === "predicted" ? (predictedTyreData ?? null) : (tyreData ?? null);
   const currentReport = reportView === "predicted" ? (predictedMarkdownReport ?? null) : (markdownReport ?? null);
   
-  const winner = actualResults && actualResults.length > 0 
-    ? actualResults[0] 
-    : (predictions && predictions.length > 0 && predictions[0] ? { Driver: predictions[0].Driver, Team: predictions[0].Team } : null);
+  // Logic for Metric Cards
+  const winner = headerView === "actual" 
+    ? (actualResults && actualResults.length > 0 ? actualResults[0] : null)
+    : (predictions && predictions.length > 0 ? predictions[0] : null);
 
-  const secondPlace = actualResults && actualResults.length > 1 
-    ? actualResults[1] 
-    : (predictions && predictions.length > 1 && predictions[1] ? { Driver: predictions[1].Driver, Team: predictions[1].Team } : null);
+  const secondPlace = headerView === "actual"
+    ? (actualResults && actualResults.length > 1 ? actualResults[1] : null)
+    : (predictions && predictions.length > 1 ? predictions[1] : null);
+
+  const fastestLap = headerView === "actual"
+    ? (race.round === 4 ? { driver: 'RUS', time: '1:27.452' } : { driver: '--', time: '--' })
+    : (race.round === 4 ? { driver: 'HAM', time: '1:28.102' } : { driver: '--', time: '--' });
 
   return (
     <>
@@ -124,8 +130,8 @@ export default function RacePage({
              <RaceSelector currentRound={race.round} availableRaces={availableRaces} />
           </div>
 
-          {/* ─── Red Banner ─── */}
-          <div className="mb-8 overflow-hidden rounded-xl bg-gradient-to-r from-f1red to-[#a00000] shadow-2xl">
+          {/* ─── Red Banner & Global Toggle ─── */}
+          <div className="mb-8 overflow-hidden rounded-xl bg-gradient-to-r from-f1red to-[#a00000] shadow-2xl relative">
             <div className="px-8 py-10">
               <h2 className="text-4xl font-extrabold tracking-tight text-white mb-2 drop-shadow-md">
                 {race.name}
@@ -134,14 +140,17 @@ export default function RacePage({
                 Season 2026 · Round {race.round} · {race.round === 4 ? '57 laps' : '70 laps'}
               </p>
             </div>
+            <div className="absolute top-6 right-8">
+               <ViewToggle activeView={headerView} onToggle={setHeaderView} />
+            </div>
           </div>
 
           {/* ─── Metric Cards ─── */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3 mb-10">
-            <div className="rounded-xl bg-f1dark p-6 border border-white/5 flex flex-col items-center justify-center text-center shadow-lg">
+            <div className="rounded-xl bg-f1dark p-6 border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-f1red/30 transition-colors">
               <div className="flex items-center gap-2 text-yellow-500 mb-2">
                 <Trophy size={16} />
-                <span className="text-xs font-bold uppercase tracking-widest">Race Winner</span>
+                <span className="text-xs font-bold uppercase tracking-widest">{headerView === 'predicted' ? 'Predicted Winner' : 'Race Winner'}</span>
               </div>
               <h2 className="text-3xl font-bold text-white mb-1">
                 {winner ? ("Driver" in winner ? winner.Driver : winner.driver) : "--"}
@@ -149,10 +158,10 @@ export default function RacePage({
               <p className="text-sm text-gray-400">{winner ? ("Team" in winner ? winner.Team : winner.team) : ""}</p>
             </div>
 
-            <div className="rounded-xl bg-f1dark p-6 border border-white/5 flex flex-col items-center justify-center text-center shadow-lg">
+            <div className="rounded-xl bg-f1dark p-6 border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-f1red/30 transition-colors">
               <div className="flex items-center gap-2 text-gray-400 mb-2">
                 <Medal size={16} />
-                <span className="text-xs font-bold uppercase tracking-widest">2nd Place</span>
+                <span className="text-xs font-bold uppercase tracking-widest">{headerView === 'predicted' ? 'Predicted P2' : '2nd Place'}</span>
               </div>
               <h2 className="text-3xl font-bold text-white mb-1">
                 {secondPlace ? ("Driver" in secondPlace ? secondPlace.Driver : secondPlace.driver) : "--"}
@@ -160,13 +169,13 @@ export default function RacePage({
               <p className="text-sm text-gray-400">{secondPlace ? ("Team" in secondPlace ? secondPlace.Team : secondPlace.team) : ""}</p>
             </div>
 
-            <div className="rounded-xl bg-f1dark p-6 border border-white/5 flex flex-col items-center justify-center text-center shadow-lg">
+            <div className="rounded-xl bg-f1dark p-6 border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-f1red/30 transition-colors">
               <div className="flex items-center gap-2 text-purple-400 mb-2">
                 <Timer size={16} />
-                <span className="text-xs font-bold uppercase tracking-widest">Fastest Lap</span>
+                <span className="text-xs font-bold uppercase tracking-widest">{headerView === 'predicted' ? 'Predicted FL' : 'Fastest Lap'}</span>
               </div>
-              <h2 className="text-3xl font-bold text-white mb-1">{race.round === 4 ? 'RUS' : '--'}</h2>
-              <p className="text-sm text-gray-400">{race.round === 4 ? '1:27.452' : '--'}</p>
+              <h2 className="text-3xl font-bold text-white mb-1">{fastestLap.driver}</h2>
+              <p className="text-sm text-gray-400">{fastestLap.time}</p>
             </div>
           </div>
 

@@ -2,6 +2,12 @@
 
 As we head into the 2026 Miami Grand Prix, our ML models are projecting a high-stakes battle between the revitalized **Mercedes** power unit and the aerodynamic efficiency of **Red Bull**. With the new 2026 regulations focusing on active aero and sustainable fuels, the Miami street circuit will be the ultimate test for thermal management and ERS deployment.
 
+### 🏁 Projected Race Stats
+*   **Predicted Winner:** George Russell (Mercedes) - *Confidence: 68%*
+*   **Predicted P2:** Max Verstappen (Red Bull Racing)
+*   **Predicted Fastest Lap:** Lewis Hamilton (Ferrari) - *Projected Time: 1:28.102*
+*   **Projected Strategy:** Medium (L24) -> Hard (Finish)
+
 ### Projected Hierarchy
 Our simulations suggest that **George Russell** and **Max Verstappen** are the primary contenders for victory. Mercedes' recent upgrades in the front-wing assembly provide them with a projected 0.15s advantage in the tight Sector 2, while Red Bull remains the benchmark in straight-line speed (Sector 3). 
 
