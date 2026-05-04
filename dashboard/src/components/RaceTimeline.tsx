@@ -87,60 +87,109 @@ export function RaceTimeline({ data }: RaceTimelineProps) {
   const [activeDriver, setActiveDriver] = useState<string | null>(null);
   const chartData = buildChartData(data.drivers, data.total_laps);
 
+  // Identify who was in the top 10 at the start/end to prioritize visibility
+  // For simplicity, we can also just use the current order in the array
+  // Or check their positions record for the last lap.
+
   return (
     <div className="w-full">
-      <div className="mb-4">
-        <p className="text-xs text-gray-400 leading-relaxed">
-          Coloured lines show lap-by-lap positions for the top 10 drivers.
-          <span className="text-gray-500"> Hover a line to inspect positions.</span>
-        </p>
+      <div className="mb-4 flex justify-between items-end">
+        <div className="space-y-1">
+          <p className="text-xs text-gray-400 leading-relaxed max-w-md">
+            Interactive visualization of the full 22-driver grid. 
+            <span className="text-indigo-400 font-medium"> Top 10 focused by default.</span>
+          </p>
+        </div>
+        <div className="text-[10px] text-gray-500 font-mono uppercase tracking-wider">
+          Lap-by-Lap Telemetry
+        </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={340}>
-        <LineChart
-          data={chartData}
-          margin={{ top: 8, right: 16, left: -24, bottom: 0 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-          <XAxis
-            dataKey="lap"
-            stroke="#555"
-            tick={{ fill: "#666", fontSize: 10 }}
-            label={{ value: "Lap", position: "insideBottom", offset: -2, fill: "#555", fontSize: 11 }}
-          />
-          <YAxis
-            reversed
-            domain={[1, 22]}
-            ticks={[1, 5, 10, 15, 20, 22]}
-            stroke="#555"
-            tick={{ fill: "#666", fontSize: 10 }}
-            label={{ value: "Position", angle: -90, position: "insideLeft", fill: "#555", fontSize: 11 }}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend
-            wrapperStyle={{ fontSize: "11px", paddingTop: "12px" }}
-            formatter={(value) => (
-              <span style={{ color: "#aaa" }}>{value}</span>
-            )}
-          />
-
-          {data.drivers.map((d) => (
-            <Line
-              key={d.driver}
-              type="monotone"
-              dataKey={d.driver}
-              stroke={d.color}
-              strokeWidth={activeDriver === d.driver ? 3 : activeDriver ? 1 : 2}
-              dot={false}
-              activeDot={{ r: 5, strokeWidth: 0 }}
-              opacity={activeDriver && activeDriver !== d.driver ? 0.2 : 1}
-              onMouseEnter={() => setActiveDriver(d.driver)}
-              onMouseLeave={() => setActiveDriver(null)}
-              connectNulls
+      <div className="rounded-xl bg-black/20 p-4 border border-white/5">
+        <ResponsiveContainer width="100%" height={480}>
+          <LineChart
+            data={chartData}
+            margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
+          >
+            <CartesianGrid 
+              strokeDasharray="3 3" 
+              stroke="rgba(255,255,255,0.03)" 
+              vertical={false}
             />
-          ))}
-        </LineChart>
-      </ResponsiveContainer>
+            <XAxis
+              dataKey="lap"
+              stroke="#444"
+              tick={{ fill: "#666", fontSize: 10 }}
+              tickLine={false}
+              axisLine={false}
+              interval={4} // Show every 5 laps for clarity
+            />
+            <YAxis
+              reversed
+              domain={[1, 22]}
+              ticks={[1, 5, 10, 15, 20, 22]}
+              stroke="#444"
+              tick={{ fill: "#666", fontSize: 10 }}
+              tickLine={false}
+              axisLine={false}
+            />
+            <Tooltip 
+              content={<CustomTooltip />} 
+              cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
+            />
+            
+            <Legend
+              verticalAlign="bottom"
+              height={60}
+              iconType="circle"
+              iconSize={8}
+              wrapperStyle={{ fontSize: "10px", paddingTop: "20px", opacity: 0.8 }}
+              formatter={(value) => (
+                <span 
+                  className="cursor-pointer hover:text-white transition-colors"
+                  onMouseEnter={() => setActiveDriver(value)}
+                  onMouseLeave={() => setActiveDriver(null)}
+                >
+                  {value}
+                </span>
+              )}
+            />
+
+            {data.drivers.map((d, index) => {
+              // Get position on last lap to decide default focus
+              const lastLapPos = d.positions[data.total_laps.toString()] || 22;
+              const isTop10 = lastLapPos <= 10;
+              const isHovered = activeDriver === d.driver;
+              const hasFocus = activeDriver !== null;
+
+              // Advanced Opacity Logic
+              let opacity = 1;
+              if (hasFocus) {
+                opacity = isHovered ? 1 : 0.1;
+              } else {
+                opacity = isTop10 ? 0.8 : 0.15; // Background drivers are faint
+              }
+
+              return (
+                <Line
+                  key={d.driver}
+                  type="monotone"
+                  dataKey={d.driver}
+                  stroke={d.color || "#888"}
+                  strokeWidth={isHovered ? 3 : isTop10 ? 2 : 1.2}
+                  dot={false}
+                  activeDot={{ r: 4, strokeWidth: 0 }}
+                  opacity={opacity}
+                  onMouseEnter={() => setActiveDriver(d.driver)}
+                  onMouseLeave={() => setActiveDriver(null)}
+                  connectNulls
+                  animationDuration={800}
+                />
+              );
+            })}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }
