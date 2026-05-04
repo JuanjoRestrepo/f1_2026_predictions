@@ -261,15 +261,31 @@ def main():
     # 4. AI Narratives
     if ai_model:
         print("Generating AI reports with gemini-2.5-flash...")
-        prompt = (
+        actual_prompt = (
             f"TECHNICAL RACE ANALYSIS: {session.event['EventName']} 2026. "
             f"Results: {session.results.head(10)[['Abbreviation', 'Position']].to_string()}. "
             "Write a serious, high-level technical breakdown. Do not use the phrase 'Expert F1 Analysis'. "
             "Focus on stint dynamics, aerodynamic efficiency, and driver performance deltas."
         )
+        report = call_ai_with_retry(actual_prompt, ai_model)
         
-        report = call_ai_with_retry(prompt, ai_model)
-        pred_report = call_ai_with_retry("PREDICTION " + prompt, ai_model)
+        # Load predicted order for the predicted report
+        pred_file = REPORTS_BASE / str(args.year) / race_info['dir'] / 'results' / 'data' / 'predictions.csv'
+        pred_results_str = ""
+        if pred_file.exists():
+            import pandas as pd
+            pred_df = pd.read_csv(pred_file).sort_values('predicted_laptime_xgb_s')
+            pred_results_str = pred_df.head(10)[['Driver', 'predicted_laptime_xgb_s']].to_string()
+        else:
+            pred_results_str = "No prediction data available."
+            
+        predicted_prompt = (
+            f"PREDICTIVE ML SIMULATION ANALYSIS: {session.event['EventName']} 2026. "
+            f"AI Simulated Results: {pred_results_str}. "
+            "Write a serious, high-level technical breakdown of these simulated results. "
+            "Focus on why the ML model predicted these specific stint dynamics, aerodynamic efficiencies, and driver performance deltas compared to typical real-world expectations."
+        )
+        pred_report = call_ai_with_retry(predicted_prompt, ai_model)
         
         fallback = (
             f"### [STRATEGIC INTELLIGENCE] {session.event['EventName']} Narrative Synthesis Underway\n\n"

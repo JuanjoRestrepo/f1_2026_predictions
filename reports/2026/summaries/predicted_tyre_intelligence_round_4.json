@@ -4,7 +4,7 @@
   "total_laps": 57,
   "winning_strategy": "AI Optimal (M-H)",
   "avg_pit_stop": "2.50s (Est.)",
-  "proven_strategy_insight": "Analysis indicates a dominant one-stop Medium-Hard compound strategy is the projected optimal path for the 2026 Miami Grand Prix, leveraging the track's moderate degradation characteristics and high pit-loss delta. This M-H sequence, exemplified by NOR, BOR, ALB, ANT, and RUS, balances early race grip for track position defense with the Hard's superior longevity to manage the long second stint effectively, mitigating risk from potential safety cars or late race pace demands.",
+  "proven_strategy_insight": "Our intelligence indicates the optimal strategy for the 2026 Miami Grand Prix is a single-stop Medium to Hard compound, driven by the circuit's high thermal degradation and the Hard tyre's superior durability for the longer second stint. Successful execution will hinge on precise pit timing within the optimal window to manage front-left wear, maintaining track position, and maximizing outlap performance to capitalize on the Hard compound's consistent long-run pace.",
   "drivers": [
     {
       "driver": "NOR",
