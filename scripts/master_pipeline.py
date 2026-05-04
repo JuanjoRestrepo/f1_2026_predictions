@@ -34,11 +34,11 @@ def setup_fastf1():
     fastf1.Cache.enable_cache(CACHE_DIR)
 
 def setup_gemini():
-    # Support both naming conventions
     api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     if not api_key: return None
     genai.configure(api_key=api_key)
-    return genai.GenerativeModel('gemini-1.5-flash')
+    # Using the full model path as confirmed by diagnostic
+    return genai.GenerativeModel('models/gemini-flash-latest')
 
 def get_race_info(year, round_num):
     mapping = {
@@ -64,43 +64,25 @@ def save_artifact(data, filename, year, event_dir, is_json=True):
 def generate_lap_data(session, all_drivers, total_laps, is_predicted=False):
     drivers_lap_list = []
     laps = session.laps
-    
     for drv in all_drivers:
         drv_laps = laps.pick_drivers(drv)
         if drv_laps.empty: continue
-        
         team_name = drv_laps['Team'].iloc[0]
         pos_dict = {}
-        
         for lap in range(1, total_laps + 1):
             lap_row = drv_laps[drv_laps['LapNumber'] == lap]
             if not lap_row.empty and not np.isnan(lap_row['Position'].iloc[0]):
-                current_pos = int(lap_row['Position'].iloc[0])
-                # Mock some variation for 'predicted' if we wanted, 
-                # but for now we use official for base format
-                pos_dict[str(lap)] = current_pos
+                pos_dict[str(lap)] = int(lap_row['Position'].iloc[0])
             else:
                 pos_dict[str(lap)] = 22 # DNF Drop
-        
-        # Sync final lap
         res_row = session.results[session.results['Abbreviation'] == drv]
         if not res_row.empty:
-            official_pos = res_row['Position'].iloc[0]
-            pos_dict[str(total_laps)] = int(official_pos) if not np.isnan(official_pos) else 22
-
+            off_pos = res_row['Position'].iloc[0]
+            pos_dict[str(total_laps)] = int(off_pos) if not np.isnan(off_pos) else 22
         drivers_lap_list.append({
-            "driver": drv,
-            "team": team_name,
-            "color": TEAM_COLORS.get(team_name, "#888888"),
-            "positions": pos_dict
+            "driver": drv, "team": team_name, "color": TEAM_COLORS.get(team_name, "#888888"), "positions": pos_dict
         })
-    
-    return {
-        "event": session.event['EventName'],
-        "year": session.event['EventDate'].year,
-        "total_laps": total_laps,
-        "drivers": drivers_lap_list
-    }
+    return {"event": session.event['EventName'], "year": session.event['EventDate'].year, "total_laps": total_laps, "drivers": drivers_lap_list}
 
 def main():
     parser = argparse.ArgumentParser()
@@ -111,73 +93,55 @@ def main():
     setup_fastf1()
     ai_model = setup_gemini()
     race_info = get_race_info(args.year, args.round)
-    
     session = fastf1.get_session(args.year, args.round, 'R')
     session.load(laps=True, telemetry=False, weather=False)
-    
     all_drivers = session.results['Abbreviation'].tolist()
     total_laps = int(session.laps['LapNumber'].max())
     
     # 1. Results
-    results_data = []
-    for _, row in session.results.iterrows():
-        results_data.append({
-            "position": int(row['Position']) if not np.isnan(row['Position']) else None,
-            "driver": row['Abbreviation'],
-            "team": row['TeamName'],
-            "status": row['Status']
-        })
+    results_data = [{"position": int(r['Position']) if not np.isnan(r['Position']) else None, "driver": r['Abbreviation'], "team": r['TeamName'], "status": r['Status']} for _, r in session.results.iterrows()]
     save_artifact(results_data, f"actual_results_round_{args.round}.json", args.year, race_info['dir'])
 
-    # 2. Lap Positions (Actual AND Predicted full grid)
-    actual_laps = generate_lap_data(session, all_drivers, total_laps, False)
-    save_artifact(actual_laps, f"lap_positions_round_{args.round}.json", args.year, race_info['dir'])
+    # 2. Lap Positions
+    save_artifact(generate_lap_data(session, all_drivers, total_laps, False), f"lap_positions_round_{args.round}.json", args.year, race_info['dir'])
+    save_artifact(generate_lap_data(session, all_drivers, total_laps, True), f"predicted_lap_positions_round_{args.round}.json", args.year, race_info['dir'])
     
-    # Generate a 'predicted' version with slightly different logic if needed, 
-    # but for now we want the structure to be identical and full-grid.
-    predicted_laps = generate_lap_data(session, all_drivers, total_laps, True)
-    save_artifact(predicted_laps, f"predicted_lap_positions_round_{args.round}.json", args.year, race_info['dir'])
-    
-    # 3. Tyre Intelligence
+    # 3. Tyre
     def process_tyres(limit=18):
-        drivers_tyre = []
+        data = []
         for drv in all_drivers[:limit]:
             drv_laps = session.laps.pick_drivers(drv)
             if drv_laps.empty: continue
             stints = drv_laps[['Stint', 'Compound', 'LapNumber']].groupby(['Stint', 'Compound'], sort=False).count().reset_index()
-            drivers_tyre.append({
-                'driver': drv, 'fullName': drv, 'team': drv_laps['Team'].iloc[0], 
-                'stints': [{'stint': int(r['Stint']), 'compound': str(r['Compound']).upper(), 'laps': int(r['LapNumber']), 'color': '#888888'} for _, r in stints.iterrows()]
-            })
-        return {"gp": session.event['EventName'], "year": args.year, "drivers": drivers_tyre}
+            data.append({'driver': drv, 'fullName': drv, 'team': drv_laps['Team'].iloc[0], 'stints': [{'stint': int(r['Stint']), 'compound': str(r['Compound']).upper(), 'laps': int(r['LapNumber']), 'color': '#888888'} for _, r in stints.iterrows()]})
+        return {"gp": session.event['EventName'], "year": args.year, "drivers": data}
+    save_artifact(process_tyres(18), f"tyre_intelligence_round_{args.round}.json", args.year, race_info['dir'])
+    save_artifact(process_tyres(18), f"predicted_tyre_intelligence_round_{args.round}.json", args.year, race_info['dir'])
     
-    save_artifact(process_tyre_data := process_tyres(18), f"tyre_intelligence_round_{args.round}.json", args.year, race_info['dir'])
-    save_artifact(process_tyre_data, f"predicted_tyre_intelligence_round_{args.round}.json", args.year, race_info['dir'])
-    
-    # 4. AI Narratives (Non-blocking)
+    # 4. AI Narratives
     if ai_model:
         try:
-            print("Generating AI Narratives...")
-            prompt = f"F1 Analysis {session.event['EventName']} 2026. Results: {session.results.head(15)[['Abbreviation', 'Position']].to_string()}"
+            print("Generating AI Narratives with full model paths...")
+            prompt = f"Expert F1 Analysis for {session.event['EventName']} 2026. Top Results: {session.results.head(10)[['Abbreviation', 'Position']].to_string()}"
             
-            # Try primary model
             try:
+                # Primary: Flash Latest
                 report = ai_model.generate_content(prompt).text
                 pred_report = ai_model.generate_content("PREDICTION " + prompt).text
             except Exception:
-                # Fallback to gemini-pro if flash fails
-                fallback_model = genai.GenerativeModel('gemini-pro')
-                report = fallback_model.generate_content(prompt).text
-                pred_report = fallback_model.generate_content("PREDICTION " + prompt).text
+                # Fallback: Pro Latest
+                fallback = genai.GenerativeModel('models/gemini-pro-latest')
+                report = fallback.generate_content(prompt).text
+                pred_report = fallback.generate_content("PREDICTION " + prompt).text
 
             save_artifact(report, f"report_round_{args.round}.md", args.year, race_info['dir'], False)
             save_artifact(pred_report, f"predicted_report_round_{args.round}.md", args.year, race_info['dir'], False)
         except Exception as e:
-            print(f"AI Narrative failed but continuing: {str(e)}")
-            save_artifact(f"AI Error: {str(e)}", f"report_round_{args.round}.md", args.year, race_info['dir'], False)
-            save_artifact(f"AI Error: {str(e)}", f"predicted_report_round_{args.round}.md", args.year, race_info['dir'], False)
+            print(f"AI Failed: {str(e)}")
+            save_artifact(f"AI Unavailable: {str(e)}", f"report_round_{args.round}.md", args.year, race_info['dir'], False)
+            save_artifact(f"AI Unavailable: {str(e)}", f"predicted_report_round_{args.round}.md", args.year, race_info['dir'], False)
     
-    print(f"Round {args.round} fully processed with correct API keys and full-grid predicted data.")
+    print(f"Round {args.round} done with model fix.")
 
 if __name__ == "__main__":
     main()

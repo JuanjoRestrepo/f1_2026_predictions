@@ -167,7 +167,7 @@ export function RaceTimeline({ data }: RaceTimelineProps) {
               if (hasFocus) {
                 opacity = isHovered ? 1 : 0.1;
               } else {
-                opacity = isTop10 ? 0.8 : 0.15; // Background drivers are faint
+                opacity = isTop10 ? 0.8 : 0.35; // Increased for better visibility in Dark Mode
               }
 
               return (
@@ -176,7 +176,7 @@ export function RaceTimeline({ data }: RaceTimelineProps) {
                   type="monotone"
                   dataKey={d.driver}
                   stroke={d.color || "#888"}
-                  strokeWidth={isHovered ? 3 : isTop10 ? 2 : 1.2}
+                  strokeWidth={isHovered ? 3 : isTop10 ? 2 : 0.8} // Thinner for background lines
                   dot={false}
                   activeDot={{ r: 4, strokeWidth: 0 }}
                   opacity={opacity}
