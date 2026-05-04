@@ -17,19 +17,18 @@ AI-driven stint analysis and business question engine for optimal pit-stop windo
 ![Tyre Strategy Intelligence](images/dashboard/03_tyre_intelligence.png)
 
 ### 3. AI-Generated Race Narratives
-Gemini-powered automated reporting based on ML race residuals.
+Expert-level race reporting powered by **Gemini 2.0/2.5 Flash**, analyzing telemetry residuals and strategic outcomes with professional engineering personas.
 ![AI Race Analysis](images/dashboard/04_ai_analysis.png)
 
 ---
 
 ## 🌟 Key Features
 
-- **F1 Broadcast Aesthetics**: A high-fidelity interface with official team colors (Ferrari Red, McLaren Orange) and `Solid vs Dashed` line styles to differentiate teammates, just like professional F1 telemetry.
-- **Interactive AI Dashboard**: A modern, dark-mode web interface built with **Next.js 15**, providing real-time comparison between AI Predictions and Actual Race Telemetry for the full 22-driver grid.
-- **Gemini AI Narratives**: Automated, expert-level race reporting powered by **Gemini 1.5 Flash**, analyzing telemetry residuals and strategic outcomes.
+- **F1 Broadcast Aesthetics**: A high-fidelity interface with official team colors and `Solid vs Dashed` line styles to differentiate teammates.
+- **Differentiated Analysis**: Unique AI narratives for both **Actual Results** (post-race debrief) and **Predicted ML Simulations** (pre-race forecasting).
+- **Mission-Critical Reliability**: Integrated **AI Retry Logic** and professional **Engineering Fallbacks** that maintain a "Strategic Intelligence" persona even during API rate limits.
 - **Race Tyre Intelligence**: Deep-dive strategy analysis for all 22 drivers, featuring interactive stint timelines and "Business Question" logic.
-- **Automated MLOps Pipeline**: Orchestrated via **GitHub Actions**. Automated data ingestion from FastF1, model execution, and artifact deployment.
-- **DNF "Drop" Visualization**: Real-time visual tracking of retirements, dropping DNFs to P22 for clear contextual race attrition.
+- **Automated MLOps Pipeline**: Orchestrated via `scripts/master_pipeline.py`. Automated data ingestion from FastF1, ML model inference, and AI report generation.
 
 ---
 
@@ -38,10 +37,10 @@ Gemini-powered automated reporting based on ML race residuals.
 ```text
 ├── .github/workflows/       # CI/CD Automation (GitHub Actions)
 ├── dashboard/               # Next.js 15 Web Application
-├── scripts/                 # Master Pipeline & Generation Scripts
+├── scripts/                 # Master Pipeline (Orchestrator) & Training Scripts
 ├── reports/                 # Hierarchical Data Store (Versioned JSON/CSV)
 │   └── 2026/
-│       ├── summaries/       # Dashboard-ready JSON Artifacts (Round-based)
+│       ├── summaries/       # Dashboard-ready JSON/MD Artifacts
 │       └── {Grand_Prix}/    # Deep-dive ML Reports & Raw Predictions
 ```
 
@@ -56,10 +55,10 @@ cd dashboard && npm run dev
 ```
 
 ### 2. Update Race Data
-To ingest data for a new Grand Prix (e.g., Canada, Round 5):
+To ingest and analyze any Grand Prix (e.g., Canada Round 5, Spain Round 6):
 ```bash
-# Via GitHub Actions (Recommended)
-# Go to GitHub Actions -> "Update F1 2026 Data" -> Run Workflow
+# General orchestrator for any GP
+uv run scripts/master_pipeline.py --round [ROUND_NUM]
 ```
 
 ---
@@ -67,9 +66,10 @@ To ingest data for a new Grand Prix (e.g., Canada, Round 5):
 ## 🛠️ Technical Stack
 
 - **ML**: `XGBoost`, `LightGBM`, `Scikit-Learn`, `SHAP`
-- **Frontend**: `Next.js 15 (Pages)`, `TypeScript`, `Tailwind CSS`, `Recharts`, `Lucide React`
-- **Automation**: `GitHub Actions`, `Docker`, `uv`
-- **Data Source**: `FastF1 API`, `OpenF1`
+- **AI**: `google-genai` (Gemini 2.5 Flash)
+- **Frontend**: `Next.js 15 (Pages)`, `TypeScript`, `Tailwind CSS`, `Recharts`
+- **Automation**: `GitHub Actions`, `uv`
+- **Data Source**: `FastF1 API`
 
 ---
 

@@ -1,9 +1,18 @@
 # Project Releases & Versioning 🏁📜
 
-## v2.2.1 - Strategic Tyre Intelligence Overhaul
+## v2.2.2 - AI Robustness & Strategic Persona Engineering
 **Date**: May 2026
 
-### 🛠️ Strategic Enhancements
+### 🛠️ Strategic & Technical Enhancements
+- **Differentiated AI Duality**: Orchestrated distinct prompt engineering pipelines for **Actual** vs **Predicted** reports. Pre-race forecasting now ingests `predictions.csv` (XGBoost/LightGBM) while post-race debriefs leverage high-fidelity FastF1 telemetry.
+- **SDK Migration (Future-Proofing)**: Fully transitioned from `google.generativeai` to the modern `google.genai` SDK. This eliminates `FutureWarnings` and ensures long-term compatibility with Gemini 2.0+ models.
+- **Mission-Critical Reliability**: Implemented `call_ai_with_retry` with exponential backoff (10s delay).
+- **Engineering Fallback Personas**: Designed professional "Backup" narratives for cases where AI Quotas (429) are reached, maintaining a high-fidelity F1 Engineering persona instead of displaying raw technical errors.
+- **Environment Optimization**: Purged 13 obsolete packages through `uv sync`, reducing environment overhead and improving CI/CD performance.
+
+---
+
+## v2.2.1 - Strategic Tyre Intelligence Overhaul
 - **Proportional Stint Timeline**: Redesigned tyre bars as dynamic "loading bars" where width accurately reflects stint duration relative to total race laps.
 - **Official Compound Colors**: Fixed pipeline mapping to ensure Soft (Red), Medium (Yellow), and Hard (White) compounds use official F1 broadcast colors.
 - **Dynamic Circuit Scaling**: Implemented `total_laps` awareness, allowing the strategy timeline to scale accurately for any circuit distance.

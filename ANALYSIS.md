@@ -39,11 +39,11 @@ The "Business Question" engine validated that the **Medium-to-Hard (1-Stop)** st
 
 ## 4. Platform Conclusions
 
-### The MLOps Advantage
-The transition from static scripts to an automated **CI/CD Pipeline** has reduced "Data-to-Insight" latency by 85%. By orchestrating the master pipeline via GitHub Actions, the model now maintains a self-correcting feedback loop that improves after every Grand Prix.
+### High-Fidelity Technical Narratives
+The integration of **Gemini 2.5 Flash** now follows a strict "Engineering Persona" protocol. All reports are synthesized with a focus on stint dynamics and aerodynamic efficiency deltas, removing generic analysis in favor of high-level technical debriefs.
 
 ### 2026 Outlook
-As the 2026 season progresses, the model identifies **Engine Reliability** as the next high-variance feature. Future iterations will focus on integrating "PU Heat Maps" to predict failures in high-altitude tracks like Mexico.
+As the 2026 season progresses towards **Canada (Round 5)** and beyond, the model identifies **Engine Reliability** as the next high-variance feature. Future iterations will focus on integrating "PU Heat Maps" to predict failures in high-altitude tracks like Mexico.
 
 ---
 **Author**: Juan Jose Restrepo Rosero  

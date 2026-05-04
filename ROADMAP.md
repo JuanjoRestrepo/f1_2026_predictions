@@ -34,7 +34,8 @@ This document outlines the strategic technical evolution of the F1 2026 Predicti
 
 ## ✅ Phase 7: Multi-GP Scaling & Automation [COMPLETED]
 - **Dynamic Routing**: Transformed the dashboard into a multi-race platform via `/race/[round]` routes.
-- **Master Pipeline**: Created `master_pipeline.py` for one-click GP updates.
+- **Master Pipeline**: Created `master_pipeline.py` for one-click GP updates (Canada, Spain, etc.).
+- **AI Reliability Layer**: Integrated professional Engineering Personas and dynamic GP-aware fallback logic for mission-critical dashboard stability.
 - **CI/CD Automation**: GitHub Actions workflow for automated data ingestion and deployment.
 
 ---
