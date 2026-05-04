@@ -1,0 +1,36 @@
+name: Update F1 2026 Data
+
+on:
+  workflow_dispatch:
+    inputs:
+      round:
+        description: 'Race Round Number'
+        required: true
+        default: '4'
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Install Dependencies
+        run: uv sync
+
+      - name: Run Master Pipeline
+        run: |
+          uv run python scripts/master_pipeline.py --round ${{ github.event.inputs.round }}
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add reports/2026/summaries/
+          git commit -m "chore: update data artifacts for Round ${{ github.event.inputs.round }}" || echo "No changes to commit"
+          git push
