@@ -265,7 +265,8 @@ def main():
             f"TECHNICAL RACE ANALYSIS: {session.event['EventName']} 2026. "
             f"Results: {session.results.head(10)[['Abbreviation', 'Position']].to_string()}. "
             "Write a serious, high-level technical breakdown. Do not use the phrase 'Expert F1 Analysis'. "
-            "Focus on stint dynamics, aerodynamic efficiency, and driver performance deltas."
+            "Structure the report using professional numbered headers (1. Stint Dynamics & Tire Management, 2. Aerodynamic Efficiency & Car Performance, 3. Driver Performance Deltas) "
+            "with detailed technical bullet points. Focus on stint dynamics, aerodynamic efficiency, and driver performance deltas."
         )
         report = call_ai_with_retry(actual_prompt, ai_model)
         
@@ -283,7 +284,8 @@ def main():
             f"PREDICTIVE ML SIMULATION ANALYSIS: {session.event['EventName']} 2026. "
             f"AI Simulated Results: {pred_results_str}. "
             "Write a serious, high-level technical breakdown of these simulated results. "
-            "Focus on why the ML model predicted these specific stint dynamics, aerodynamic efficiencies, and driver performance deltas compared to typical real-world expectations."
+            "Structure the report using professional numbered headers (1. Stint Dynamics & Tire Management, 2. Aerodynamic Efficiency & Car Performance, 3. Driver Performance Deltas) "
+            "with detailed technical bullet points. Focus on why the ML model predicted these specific stint dynamics and aerodynamic efficiencies compared to typical expectations."
         )
         pred_report = call_ai_with_retry(predicted_prompt, ai_model)
         
