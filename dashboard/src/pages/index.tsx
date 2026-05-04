@@ -13,6 +13,7 @@ import {
   getPredictedLapPositions,
   getActualResults,
   getTyreIntelligence,
+  getPredictedTyreIntelligence,
   type PredictionRow,
   type LapPositionData,
   type ActualResult,
@@ -32,6 +33,7 @@ interface DashboardProps {
   lapPositions: LapPositionData | null;
   predictedLapPositions: LapPositionData | null;
   tyreData: TyreIntelligenceData | null;
+  predictedTyreData: TyreIntelligenceData | null;
 }
 
 export async function getStaticProps() {
@@ -45,9 +47,10 @@ export async function getStaticProps() {
   const lapPositions = getLapPositions(year, roundNum);
   const predictedLapPositions = getPredictedLapPositions(year, roundNum);
   const tyreData = getTyreIntelligence(year, roundNum);
+  const predictedTyreData = getPredictedTyreIntelligence(year, roundNum);
 
   return {
-    props: { markdownReport, predictions, actualResults, lapPositions, predictedLapPositions, tyreData },
+    props: { markdownReport, predictions, actualResults, lapPositions, predictedLapPositions, tyreData, predictedTyreData },
     revalidate: 3600,
   };
 }
@@ -58,13 +61,16 @@ export default function Home({
   actualResults, 
   lapPositions, 
   predictedLapPositions,
-  tyreData 
+  tyreData,
+  predictedTyreData
 }: DashboardProps) {
   const [tableView, setTableView] = useState<"predicted" | "actual">("predicted");
   const [chartView, setChartView] = useState<"predicted" | "actual">("actual");
+  const [tyreView, setTyreView] = useState<"predicted" | "actual">("actual");
 
   // Determine which data to show based on view
   const currentTableData = tableView === "predicted" ? (predictions ?? []) : (actualResults ?? []);
+  const currentTyreData = tyreView === "predicted" ? (predictedTyreData ?? null) : (tyreData ?? null);
   
   // Extract top drivers
   const winner = actualResults && actualResults.length > 0 
@@ -145,9 +151,12 @@ export default function Home({
             <div className="lg:col-span-7 flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-f1red">
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-f1red mb-1">
                     Race Timeline — Position Chart
                   </h3>
+                  <p className="text-xs text-gray-500">
+                    Coloured lines show lap-by-lap positions. Hover to inspect.
+                  </p>
                 </div>
                 <ViewToggle activeView={chartView} onToggle={setChartView} />
               </div>
@@ -174,16 +183,21 @@ export default function Home({
 
               {/* Tyre Intelligence (Below Chart) */}
               <div className="mt-auto">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-f1red mb-1">
-                  Race Tyre Intelligence
-                </h3>
-                <p className="text-xs text-gray-500 mb-4">
-                  Visual strategy analysis for all 22 drivers. Click a row to highlight and filter stint details.
-                </p>
-
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-f1red mb-1">
+                      Race Tyre Intelligence
+                    </h3>
+                    <p className="text-xs text-gray-500">
+                      Strategy analysis for all drivers. Click a row to highlight.
+                    </p>
+                  </div>
+                  <ViewToggle activeView={tyreView} onToggle={setTyreView} />
+                </div>
+                
                 <div className="rounded-xl bg-f1dark border border-white/5 p-6 shadow-xl">
-                  {tyreData ? (
-                    <TyreIntelligence data={tyreData} />
+                  {currentTyreData ? (
+                    <TyreIntelligence data={currentTyreData} />
                   ) : (
                     <p className="text-gray-500 text-sm italic">Tyre strategy data unavailable.</p>
                   )}

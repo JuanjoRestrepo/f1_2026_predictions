@@ -208,4 +208,23 @@ export function getTyreIntelligence(year: number, roundNum: number): TyreIntelli
     return null;
   }
 }
+/**
+ * Reads the predicted tyre intelligence JSON file.
+ */
+export function getPredictedTyreIntelligence(year: number, roundNum: number): TyreIntelligenceData | null {
+  try {
+    const filePath = path.join(
+      getReportsDirectory(),
+      year.toString(),
+      "summaries",
+      `predicted_tyre_intelligence_round_${roundNum}.json`
+    );
+    if (!fs.existsSync(filePath)) return null;
+    const raw = fs.readFileSync(filePath, "utf8");
+    return JSON.parse(raw) as TyreIntelligenceData;
+  } catch (error) {
+    console.error("Failed to read predicted tyre intelligence:", error);
+    return null;
+  }
+}
 
