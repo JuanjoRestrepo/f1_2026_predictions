@@ -1,58 +1,45 @@
 # 🗺️ F1 Prediction Roadmap: Towards "Full Reliability"
 
-This document outlines the strategic technical evolution of the F1 2026 Predictive Pipeline, addressing current limitations in data volume, track context, and aleatory uncertainty.
+This document outlines the strategic technical evolution of the F1 2026 Predictive Platform, from its core ML engine to its fully automated deployment architecture.
 
 ---
 
 ## ✅ Phase 1: Contextual Intelligence (Track Features) [COMPLETED]
-The model currently treats every "EventName" as a categorical label. We moved to a **Feature-Based Track Model**.
-
-### 1.1 Track Characteristics Database
-We are introducing `data/external/track_metadata.csv` with the following features:
-- **Type**: Street, Permanent, Hybrid.
-- **Downforce Level**: Low, Medium, High, Ultra-High.
-- **Abrasiveness**: 1-5 scale (affects tyre degradation).
-- **Full Throttle %**: Engine power dependency.
-- **Corner Profile**: Ratio of Low/Medium/High-speed corners.
-
-### 1.2 Integration Logic
-The `simulate_race.py` script will perform a `LEFT JOIN` on `EventName` to inject these features into the training matrix, allowing the model to generalize across similar track profiles even if it hasn't seen a specific track recently.
-
----
+- **Track Characteristics DB**: Integrated metadata (Downforce, Abrasiveness, Full Throttle %) into the training matrix.
+- **Integration Logic**: Model generalizes across similar track profiles (e.g., Jeddah and Miami).
 
 ## ✅ Phase 2: Statistical Rigor & Uncertainty [COMPLETED]
-Addressing the "Single Number" prediction fallacy.
-
-### 2.1 Quantile Regression (Aleatory Uncertainty)
-Instead of predicting the mean lap time, we will train the `LightGBM` model using the `quantile` objective:
-- **Alpha 0.05**: Optimistic pace (Qualifying/Fastest Lap potential).
-- **Alpha 0.50**: Median race pace (Current output).
-- **Alpha 0.95**: Pessimistic pace (Traffic/Degradation/Mistakes).
-
-### 2.2 Temporal Decay (Form Weighting)
-Implementation of a `sample_weight` strategy where:
-$$W_i = e^{-\lambda (T_{current} - T_{race})}$$
-This ensures that a win in Round 4 has more influence on the Round 5 prediction than a DNF in Round 1.
-
----
+- **Quantile Regression**: Predicting optimistic (P05) and pessimistic (P95) lap times.
+- **Temporal Decay**: Exponentially weighting recent race form for better predictive accuracy.
 
 ## ✅ Phase 3: Model Observability (DevOps Layer) [COMPLETED]
-Closing the feedback loop.
+- **Post-Race Residual Analysis**: Automated calculation of MAE/MAPE against real results.
+- **Feedback Loops**: Auto-triggering hyperparameter tuning based on error thresholds.
 
-### 3.1 Post-Race Residual Analysis
-A new script `scripts/analyze_residuals.py` will run after each GP:
-1. Load `standings.csv` (Predicted).
-2. Fetch real `FastF1` results (Actual).
-3. Calculate **Bias per Team**: Are we systematically overestimating Audi?
-4. **Error Distribution**: Are we failing more on Street circuits?
-
-### 3.2 Automated Re-training Trigger
-If the **MAPE (Mean Absolute Percentage Error)** exceeds 1.5%, the pipeline will trigger a high-priority re-tuning of hyperparameters.
+## ✅ Phase 4: Data Augmentation & 2026 Physics [COMPLETED]
+- **Cross-Era Normalization**: Scaling historical data (2022-2025) to physically accurate 2026 performance levels.
+- **Tire Degradation Modeling**: Integrating S/M/H compound deltas into the lap-time simulation.
 
 ---
 
-## ✅ Phase 4: Data Augmentation [COMPLETED]
-Addressing the "Small Sample" problem and preparing for the new regulations.
+## ✅ Phase 5: Interactive Full-Stack Dashboard [COMPLETED]
+- **Next.js & Tailwind Implementation**: Created a premium, dark-mode dashboard inspired by F1 TV.
+- **Dynamic Charting**: Position Chart (Recharts) allowing interactive lap-by-lap inspection.
+- **AI Narrative Integration**: Gemini-powered race analysis based on ML artifacts.
 
-- **Cross-Era Normalization**: Use 2024-2025 data but "normalize" it to 2026 performance levels using a scaling factor based on the first 3 rounds. This gives us thousands of additional training rows without the "old car" bias.
-- **Simulated Pits**: Integrate pit stop loss and tyre delta (S/M/H) as dynamic variables in the simulation.
+## ✅ Phase 6: Tyre Intelligence & Strategy Strategy [COMPLETED]
+- **Grid-wide Stint Visualization**: Interactive timeline showing tire strategy for all 22 drivers.
+- **Business Question Engine**: Answering strategy efficacy questions (e.g., "Is M-H proven for Miami?").
+- **Interactive Filtering**: Click-to-highlight and search logic for specific driver/team analysis.
+
+## ✅ Phase 7: Multi-GP Scaling & Automation [COMPLETED]
+- **Dynamic Routing**: Transformed the dashboard into a multi-race platform via `/race/[round]` routes.
+- **Master Pipeline**: Created `master_pipeline.py` for one-click GP updates.
+- **CI/CD Automation**: GitHub Actions workflow for automated data ingestion and deployment.
+
+---
+
+## 🚀 Phase 8: Future Horizon (The "Live" Era)
+- **Real-time Prediction**: Integrating live timing sockets for "In-Race" AI re-calculation.
+- **Weather Sensitivity**: Dynamic pace adjustment based on track temperature and rainfall probability.
+- **Advanced Explainability**: SHAP visualization per driver in the dashboard to show *why* the AI predicts a certain rank.

@@ -1,107 +1,90 @@
-# F1 2026 Season Predictions Pipeline 🏎️💨
+# F1 2026 Season Predictive Platform 🏎️📊🤖
 
 ![F1 Prediction Dashboard](images/f1_prediction_dashboard_hero.png)
 
-An automated, elite machine learning pipeline designed to predict Formula 1 race pace and season outcomes. Leveraging historical data from the Ground Effect era (2022-present) with a professional DevOps orchestration layer.
+A production-grade, end-to-end MLOps platform designed to predict Formula 1 race dynamics for the 2026 regulation era. This system combines state-of-the-art Gradient Boosting (XGBoost/LightGBM) with a high-fidelity interactive dashboard inspired by F1 TV telemetry.
 
 ---
 
 ## 🌟 Key Features
 
-- **Automated Data Ingestion**: Seamless integration with the `FastF1` API. Supports chunked ingestion to prevent memory overhead.
-- **Virtual Race Simulation**: General-purpose race simulator that predicts performance hierarchies for any GP based on current season form, applying temporal decay (Exponential Weighting) to emphasize recent results.
-- **Track-Aware Modeling**: Integrates circuit-specific metadata (Downforce, Abrasiveness, Speed Profiles) to provide context-aware predictions across different track archetypes.
-- **Probabilistic Forecasting**: Uses Quantile Regression to output 90% Confidence Intervals (P05/P95) instead of brittle point estimates, visualizing uncertainty.
-- **Multi-Era Normalization**: Dynamically penalizes historical lap times (2022-2025) based on aerodynamic profiles to construct a physically accurate "Virtual 2026" training set.
-- **Automated Observability**: Closed-loop MLOps architecture (`main.py validate`) that measures Mean Absolute Error (MAE) against real telemetry and auto-triggers model retraining if error thresholds are exceeded.
-- **Dual-Model Architecture**: Benchmarks **XGBoost** and **LightGBM**. Current 2026 MAE: **0.185s** (LightGBM).
-- **Professional DevOps**: Orchestrated via `main.py` and `uv`, ensuring reproducibility and high performance.
+- **Interactive AI Dashboard**: A modern, dark-mode web interface built with **Next.js 15** and **Tailwind CSS**, providing real-time comparison between AI Predictions and Actual Race Telemetry.
+- **Race Tyre Intelligence**: Deep-dive strategy analysis for all 22 drivers, featuring interactive stint timelines and "Business Question" logic to identify winning strategies.
+- **Automated MLOps Pipeline**: Orchestrated via **GitHub Actions** and `master_pipeline.py`. Automated data ingestion from FastF1, model execution, and artifact deployment.
+- **Virtual Race Simulation**: Simulates lap-by-lap position changes based on predicted race pace, visualizing the "Predicted vs Actual" delta in real-time charts.
+- **Track-Aware Modeling**: Integrates circuit-specific metadata (Downforce, Abrasiveness, Speed Profiles) to provide context-aware predictions.
+- **Professional Tooling**: Powered by `uv` for lightning-fast dependency management and `Ruff` for strict code quality enforcement.
 
 ---
 
-## 🏗️ Hierarchical Structure (Elite Reporting)
+## 🏗️ Platform Architecture
 
-The pipeline organizes all outputs into a versioned, multi-dimensional hierarchy:
+The project follows a **Medallion Architecture** (Bronze/Silver/Gold) for data processing, delivering artifacts to a dynamic web frontend:
 
 ```text
-reports/
-└── {Year}/
-    ├── {Grand_Prix_Name}/
-    │   └── results/
-    │       ├── standings.csv                        <-- Base prediction data
-    │       ├── report_{Year}_{GP}.html              <-- Professional HTML Report
-    │       └── visual_ranking_{Year}_{GP}.png       <-- High-fidelity Infographic
-    └── predictions/                                 <-- Seasonal aggregate data
+├── .github/workflows/       # CI/CD Automation (GitHub Actions)
+├── dashboard/               # Next.js 15 Web Application
+├── scripts/                 # Master Pipeline & Generation Scripts
+├── reports/                 # Hierarchical Data Store (Versioned JSON/CSV)
+│   └── 2026/
+│       ├── summaries/       # Dashboard-ready JSON Artifacts (Round-based)
+│       └── {Grand_Prix}/    # Deep-dive ML Reports & Raw Predictions
+└── src/                     # Core ML Engine (XGBoost/LightGBM)
 ```
 
 ---
 
-## 🚀 Execution Workflow (Standard Operating Procedure)
+## 🚀 Execution Workflow
 
-The entire pipeline is now orchestrated through a single entry point for maximum efficiency.
-
-### 1. Project Setup
-Ensure you have `uv` installed and the environment configured.
+### 1. Local Development
 ```bash
-# Sync dependencies
+# Sync environment
 uv sync
+
+# Run dashboard locally
+cd dashboard && npm run dev
 ```
 
-### 2. End-to-End Race Simulation (Recommended)
-The fastest way to simulate a race and generate all visual reports in one go:
+### 2. Update Race Data (The "Master Pipeline")
+To ingest data for a new Grand Prix (e.g., Canada, Round 5):
 ```bash
-# Run simulation and visualization for Miami GP
-uv run main.py --round 4 --event "Miami Grand Prix"
+# Manually via CLI
+uv run scripts/master_pipeline.py --round 5
+
+# OR via GitHub Actions (Recommended)
+# Go to GitHub Actions -> "Update F1 2026 Data" -> Run Workflow
 ```
-
-### 3. Granular Execution (Modular Steps)
-If you need to run specific parts of the pipeline:
-
-#### A. Virtual Race Simulation
-Generates the predicted race pace data (CSV).
-```bash
-uv run scripts/simulate_race.py --year 2026 --round 4 --event "Miami Grand Prix"
-```
-
-#### B. Visual Report Generation
-Generates the HTML and PNG artifacts from existing CSV data.
-```bash
-uv run scripts/visualize_results.py --year 2026 --event "Miami Grand Prix"
-```
-
-### 4. Observability & Auto-Retraining
-Validate predictions against real telemetry and trigger re-training if MAE > 0.300s.
-```bash
-uv run main.py validate --year 2026 --round 4 --event "Miami Grand Prix"
-```
-
-### 5. Technical Seasonal Reporting
-Generate deep-dive technical reports for the entire season.
-```bash
-# Full Season Report
-uv run scripts/generate_reports.py --train-years 2022 2023 2024 2025 --test-year 2026
-```
-
-## 🗺️ Project Roadmap Status
-
-The predictive engine has evolved from a static script to a full MLOps framework.
-- ✅ **Phase 1 (Contextual Intelligence)**: Track characteristic DB injection completed.
-- ✅ **Phase 2 (Statistical Rigor)**: Quantile Regression & Temporal Decay implemented.
-- ✅ **Phase 3 (Model Observability)**: Automated residual analysis and MLOps feedback loops completed.
-- ✅ **Phase 4 (Data Normalization)**: Cross-Era aerodynamic scaling implemented for 2026 physics.
-
-See the detailed [ROADMAP.md](ROADMAP.md) for technical implementation history.
 
 ---
 
-## 📊 Technical Stack
+## 📊 Interactive Intelligence
 
-- **ML**: `scikit-learn`, `xgboost`, `lightgbm`, `shap`
-- **Data**: `pandas`, `polars`, `pyarrow`, `fastf1`
-- **Quality**: `mypy` (Strict), `ruff`, `pytest`
-- **Infra**: `uv`, `main.py` Orchestrator, `Docker`, `Makefile`
+The dashboard features several high-fidelity modules:
+- **Predicted vs Actual Finishing Order**: Validating the AI's ranking against real results.
+- **Position Timeline**: Interactive Recharts-based visualization of lap-by-lap positions.
+- **Tyre Stint Map**: Visual breakdown of tire compounds and pit stop efficiency for the entire grid.
+- **AI Narrative Analysis**: Auto-generated race reports using LLMs (Gemini) based on ML output.
+
+---
+
+## 🗺️ Roadmap Status
+
+- ✅ **Phase 1-4**: Core ML Predictive Engine & MLOps Feedback Loops.
+- ✅ **Phase 5 (Interactive Visualization)**: Full-stack Dashboard implementation.
+- ✅ **Phase 6 (Strategy Intelligence)**: Interactive Tyre and Pit Stop analysis.
+- ✅ **Phase 7 (Multi-GP Scaling)**: Dynamic routing and automated cloud ingestion via GitHub Actions.
+- 🚀 **Phase 8 (Real-time Prediction)**: Integrating live timing sockets for "In-Race" AI re-calculation (Experimental).
+
+---
+
+## 🛠️ Technical Stack
+
+- **ML**: `XGBoost`, `LightGBM`, `Scikit-Learn`, `SHAP`
+- **Frontend**: `Next.js 15 (Pages)`, `TypeScript`, `Tailwind CSS`, `Recharts`, `Lucide React`
+- **Automation**: `GitHub Actions`, `Docker`, `uv`
+- **Data Source**: `FastF1 API`, `OpenF1`
 
 ---
 
 **Author**: Juan Jose Restrepo Rosero  
-**Rationale**: Tree-based models consistently outperform deep learning on structured/tabular problems (Grinsztajn et al., 2022). This project prioritizes GBM architectures for maximum predictive accuracy in F1 race dynamics.
+**Philosophy**: "Data is just noise without strategy." This platform focuses on converting complex ML residuals into actionable racing intelligence.
