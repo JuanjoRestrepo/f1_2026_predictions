@@ -24,11 +24,12 @@ Gemini-powered automated reporting based on ML race residuals.
 
 ## 🌟 Key Features
 
-- **Interactive AI Dashboard**: A modern, dark-mode web interface built with **Next.js 15** and **Tailwind CSS**, providing real-time comparison between AI Predictions and Actual Race Telemetry.
+- **F1 Broadcast Aesthetics**: A high-fidelity interface with official team colors (Ferrari Red, McLaren Orange) and `Solid vs Dashed` line styles to differentiate teammates, just like professional F1 telemetry.
+- **Interactive AI Dashboard**: A modern, dark-mode web interface built with **Next.js 15**, providing real-time comparison between AI Predictions and Actual Race Telemetry for the full 22-driver grid.
+- **Gemini AI Narratives**: Automated, expert-level race reporting powered by **Gemini 1.5 Flash**, analyzing telemetry residuals and strategic outcomes.
 - **Race Tyre Intelligence**: Deep-dive strategy analysis for all 22 drivers, featuring interactive stint timelines and "Business Question" logic.
-- **Automated MLOps Pipeline**: Orchestrated via **GitHub Actions** and `master_pipeline.py`. Automated data ingestion from FastF1, model execution, and artifact deployment.
-- **Virtual Race Simulation**: Simulates lap-by-lap position changes based on predicted race pace, visualizing the "Predicted vs Actual" delta.
-- **Track-Aware Modeling**: Integrates circuit-specific metadata (Downforce, Abrasiveness, Speed Profiles).
+- **Automated MLOps Pipeline**: Orchestrated via **GitHub Actions**. Automated data ingestion from FastF1, model execution, and artifact deployment.
+- **DNF "Drop" Visualization**: Real-time visual tracking of retirements, dropping DNFs to P22 for clear contextual race attrition.
 
 ---
 
