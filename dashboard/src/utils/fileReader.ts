@@ -83,6 +83,25 @@ export function getRaceSummary(year: number, eventDirName: string, roundNum: num
 }
 
 /**
+ * Reads the predicted race summary markdown file.
+ */
+export function getPredictedRaceSummary(year: number, roundNum: number): string | null {
+  try {
+    const filePath = path.join(
+      getReportsDirectory(),
+      year.toString(),
+      "summaries",
+      `predicted_report_round_${roundNum}.md`
+    );
+    if (!fs.existsSync(filePath)) return null;
+    return fs.readFileSync(filePath, "utf8");
+  } catch (error) {
+    console.error("Failed to read predicted race summary:", error);
+    return null;
+  }
+}
+
+/**
  * Reads the predictions CSV file.
  */
 export function getRacePredictions(year: number, eventDirName: string): PredictionRow[] | null {

@@ -9,6 +9,7 @@ import { TyreIntelligence } from "../../components/TyreIntelligence";
 import { RaceSelector } from "../../components/RaceSelector";
 import {
   getRaceSummary,
+  getPredictedRaceSummary,
   getRacePredictions,
   getLapPositions,
   getPredictedLapPositions,
@@ -32,6 +33,7 @@ interface RacePageProps {
   race: RaceInfo;
   availableRaces: RaceInfo[];
   markdownReport: string | null;
+  predictedMarkdownReport: string | null;
   predictions: PredictionRow[] | null;
   actualResults: ActualResult[] | null;
   lapPositions: LapPositionData | null;
@@ -58,6 +60,7 @@ export async function getStaticProps({ params }: { params: { round: string } }) 
   if (!race) return { notFound: true };
 
   const markdownReport = getRaceSummary(year, race.dirName, roundNum);
+  const predictedMarkdownReport = getPredictedRaceSummary(year, roundNum);
   const predictions = getRacePredictions(year, race.dirName) ?? [];
   const actualResults = getActualResults(year, roundNum) ?? [];
   const lapPositions = getLapPositions(year, roundNum);
@@ -66,7 +69,7 @@ export async function getStaticProps({ params }: { params: { round: string } }) 
   const predictedTyreData = getPredictedTyreIntelligence(year, roundNum);
 
   return {
-    props: { race, availableRaces, markdownReport, predictions, actualResults, lapPositions, predictedLapPositions, tyreData, predictedTyreData },
+    props: { race, availableRaces, markdownReport, predictedMarkdownReport, predictions, actualResults, lapPositions, predictedLapPositions, tyreData, predictedTyreData },
     revalidate: 3600,
   };
 }
@@ -74,7 +77,8 @@ export async function getStaticProps({ params }: { params: { round: string } }) 
 export default function RacePage({ 
   race,
   availableRaces,
-  markdownReport, 
+  markdownReport,
+  predictedMarkdownReport,
   predictions, 
   actualResults, 
   lapPositions, 
@@ -85,9 +89,11 @@ export default function RacePage({
   const [tableView, setTableView] = useState<"predicted" | "actual">("predicted");
   const [chartView, setChartView] = useState<"predicted" | "actual">("actual");
   const [tyreView, setTyreView] = useState<"predicted" | "actual">("actual");
+  const [reportView, setReportView] = useState<"predicted" | "actual">("actual");
 
   const currentTableData = tableView === "predicted" ? (predictions ?? []) : (actualResults ?? []);
   const currentTyreData = tyreView === "predicted" ? (predictedTyreData ?? null) : (tyreData ?? null);
+  const currentReport = reportView === "predicted" ? (predictedMarkdownReport ?? null) : (markdownReport ?? null);
   
   const winner = actualResults && actualResults.length > 0 
     ? actualResults[0] 
@@ -208,9 +214,12 @@ export default function RacePage({
           </div>
 
           <div>
-            <h3 className="text-xs font-bold uppercase tracking-widest text-f1red mb-4">AI Race Analysis</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-f1red">AI Race Analysis</h3>
+              <ViewToggle activeView={reportView} onToggle={setReportView} />
+            </div>
             <div className="rounded-xl bg-f1dark border border-white/5 p-6 shadow-2xl">
-              {markdownReport ? <RaceReport markdownContent={markdownReport} /> : <p className="text-gray-500 text-sm italic">Analysis pending.</p>}
+              {currentReport ? <RaceReport markdownContent={currentReport} /> : <p className="text-gray-500 text-sm italic">Analysis pending.</p>}
             </div>
           </div>
 
