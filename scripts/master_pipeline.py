@@ -237,7 +237,7 @@ def main():
             data.sort(key=lambda x: predicted_order.index(x['driver']) if x['driver'] in predicted_order else 99)
 
         insight = (
-            "Strategic Intelligence Report: Telemetry analysis of stint-loading and compound degradation is currently being synchronized with AI predictive models. "
+            f"Strategic Intelligence Report: Telemetry analysis of stint-loading and compound degradation for the {session.event['EventName']} is currently being synchronized with AI predictive models. "
             "Full strategic narrative will be available shortly."
         )
         if ai_model:
@@ -272,8 +272,8 @@ def main():
         pred_report = call_ai_with_retry("PREDICTION " + prompt, ai_model)
         
         fallback = (
-            "### [STRATEGIC INTELLIGENCE] Narrative Synthesis Underway\n\n"
-            "Technical analysis of the delta between **Actual Race Telemetry** and **Predictive ML Simulations** is currently being synthesized. "
+            f"### [STRATEGIC INTELLIGENCE] {session.event['EventName']} Narrative Synthesis Underway\n\n"
+            f"Technical analysis of the delta between **Actual Race Telemetry** and **Predictive ML Simulations** for the {session.event['EventName']} is currently being synthesized. "
             "Our engineering team is validating stint-loading data, track-specific degradation curves, and overtake-probability maps. "
             "The full strategic narrative will be published once the cross-verification between real-world results and AI simulations is complete."
         )
