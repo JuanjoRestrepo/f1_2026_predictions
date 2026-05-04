@@ -1,0 +1,14 @@
+{
+  "gp": "Miami Grand Prix",
+  "year": 2026,
+  "winning_strategy": "Medium to Hard (Optimal)",
+  "avg_pit_stop": "2.50s (Est.)",
+  "proven_strategy_insight": "AI MODEL PREDICTION: The most efficient strategy for the 2026 technical regulations in Miami involves a 1-stop strategy. We recommend the Medium compound for the first stint to manage high lateral loads in Sector 1. Pit window opens at Lap 22. Switching to Hard compound is critical to maintain thermal stability during the final 30 laps under Miami's humidity.",
+  "drivers": [
+    { "driver": "ANT", "team": "Mercedes", "fullName": "Kimi Antonelli", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 24, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 33, "color": "#ffffff" }] },
+    { "driver": "NOR", "team": "McLaren", "fullName": "Lando Norris", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 22, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 35, "color": "#ffffff" }] },
+    { "driver": "VER", "team": "Red Bull Racing", "fullName": "Max Verstappen", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 26, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 31, "color": "#ffffff" }] },
+    { "driver": "RUS", "team": "Mercedes", "fullName": "George Russell", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 23, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 34, "color": "#ffffff" }] },
+    { "driver": "LEC", "team": "Ferrari", "fullName": "Charles Leclerc", "stints": [{ "stint": 1, "compound": "MEDIUM", "laps": 24, "color": "#f0f20d" }, { "stint": 2, "compound": "HARD", "laps": 33, "color": "#ffffff" }] }
+  ]
+}
