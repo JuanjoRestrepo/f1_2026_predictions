@@ -1,6 +1,6 @@
 AI Unavailable: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
 * Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3-flash
-Please retry in 29.343471387s. [links {
+Please retry in 5.420422249s. [links {
   description: "Learn more about Gemini API quotas"
   url: "https://ai.google.dev/gemini-api/docs/rate-limits"
 }
@@ -18,6 +18,6 @@ Please retry in 29.343471387s. [links {
   quota_value: 20
 }
 , retry_delay {
-  seconds: 29
+  seconds: 5
 }
 ]
