@@ -10,12 +10,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 26
+          "laps": 26,
+          "color": "#888888"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 31
+          "laps": 31,
+          "color": "#888888"
         }
       ]
     },
@@ -27,12 +29,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27
+          "laps": 27,
+          "color": "#888888"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 30
+          "laps": 30,
+          "color": "#888888"
         }
       ]
     },
@@ -44,12 +48,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 28
+          "laps": 28,
+          "color": "#888888"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 29
+          "laps": 29,
+          "color": "#888888"
         }
       ]
     },
@@ -61,12 +67,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 20
+          "laps": 20,
+          "color": "#888888"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 37
+          "laps": 37,
+          "color": "#888888"
         }
       ]
     },
@@ -78,12 +86,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 6
+          "laps": 6,
+          "color": "#888888"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 51
+          "laps": 51,
+          "color": "#888888"
         }
       ]
     },
@@ -95,12 +105,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27
+          "laps": 27,
+          "color": "#888888"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 30
+          "laps": 30,
+          "color": "#888888"
         }
       ]
     },
@@ -112,12 +124,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 31
+          "laps": 31,
+          "color": "#888888"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 26
+          "laps": 26,
+          "color": "#888888"
         }
       ]
     },
@@ -129,12 +143,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 21
+          "laps": 21,
+          "color": "#888888"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 36
+          "laps": 36,
+          "color": "#888888"
         }
       ]
     },
@@ -146,12 +162,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 28
+          "laps": 28,
+          "color": "#888888"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 29
+          "laps": 29,
+          "color": "#888888"
         }
       ]
     },
@@ -163,12 +181,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27
+          "laps": 27,
+          "color": "#888888"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 30
+          "laps": 30,
+          "color": "#888888"
         }
       ]
     },
@@ -180,12 +200,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 26
+          "laps": 26,
+          "color": "#888888"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 30
+          "laps": 30,
+          "color": "#888888"
         }
       ]
     },
@@ -197,12 +219,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 32
+          "laps": 32,
+          "color": "#888888"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 24
+          "laps": 24,
+          "color": "#888888"
         }
       ]
     },
@@ -214,12 +238,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 31
+          "laps": 31,
+          "color": "#888888"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 25
+          "laps": 25,
+          "color": "#888888"
         }
       ]
     },
@@ -231,12 +257,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 28
+          "laps": 28,
+          "color": "#888888"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 28
+          "laps": 28,
+          "color": "#888888"
         }
       ]
     },
@@ -248,12 +276,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 41
+          "laps": 41,
+          "color": "#888888"
         },
         {
           "stint": 2,
           "compound": "SOFT",
-          "laps": 15
+          "laps": 15,
+          "color": "#888888"
         }
       ]
     },
@@ -265,12 +295,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 29
+          "laps": 29,
+          "color": "#888888"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 27
+          "laps": 27,
+          "color": "#888888"
         }
       ]
     },
@@ -282,17 +314,20 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 21
+          "laps": 21,
+          "color": "#888888"
         },
         {
           "stint": 2,
           "compound": "SOFT",
-          "laps": 16
+          "laps": 16,
+          "color": "#888888"
         },
         {
           "stint": 3,
           "compound": "SOFT",
-          "laps": 19
+          "laps": 19,
+          "color": "#888888"
         }
       ]
     },
@@ -304,22 +339,26 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 6
+          "laps": 6,
+          "color": "#888888"
         },
         {
           "stint": 2,
           "compound": "SOFT",
-          "laps": 15
+          "laps": 15,
+          "color": "#888888"
         },
         {
           "stint": 3,
           "compound": "MEDIUM",
-          "laps": 9
+          "laps": 9,
+          "color": "#888888"
         },
         {
           "stint": 4,
           "compound": "MEDIUM",
-          "laps": 25
+          "laps": 25,
+          "color": "#888888"
         }
       ]
     }

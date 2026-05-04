@@ -110,8 +110,8 @@ export function RaceTimeline({ data }: RaceTimelineProps) {
           />
           <YAxis
             reversed
-            domain={[1, 10]}
-            ticks={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+            domain={[1, 22]}
+            ticks={[1, 5, 10, 15, 20, 22]}
             stroke="#555"
             tick={{ fill: "#666", fontSize: 10 }}
             label={{ value: "Position", angle: -90, position: "insideLeft", fill: "#555", fontSize: 11 }}

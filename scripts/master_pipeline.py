@@ -13,6 +13,22 @@ CACHE_DIR = "fastf1_cache"
 REPORTS_BASE = Path("reports")
 SUMMARY_SUBDIR = "summaries"
 
+# Official F1 2026 Team Colors
+TEAM_COLORS = {
+    "Mercedes": "#27F4D2",
+    "Red Bull Racing": "#3671C6",
+    "Ferrari": "#E80020",
+    "McLaren": "#FF8000",
+    "Aston Martin": "#229971",
+    "Alpine": "#0093CC",
+    "Williams": "#64C4FF",
+    "Racing Bulls": "#6692FF",
+    "Sauber": "#52E252",
+    "Haas": "#B6BABD",
+    "Audi": "#f50531",
+    "Cadillac": "#ffffff"
+}
+
 def setup_fastf1():
     if not os.path.exists(CACHE_DIR):
         os.makedirs(CACHE_DIR)
@@ -73,58 +89,61 @@ def main():
         })
     save_artifact(results_data, f"actual_results_round_{args.round}.json", args.year, race_info['dir'])
 
-    # 2. Lap Positions with DNF Drop Logic
-    lap_data = []
-    # Track the DNF status of each driver
-    driver_dnf_status = {drv: False for drv in all_drivers}
-    
-    for lap in range(1, total_laps + 1):
-        lap_entry = {"lap": lap}
-        for drv in all_drivers:
-            pos_row = laps[(laps['Driver'] == drv) & (laps['LapNumber'] == lap)]
-            if not pos_row.empty:
-                val = pos_row['Position'].iloc[0]
-                if not np.isnan(val):
-                    lap_entry[drv] = int(val)
-                else:
-                    # Driver is DNF in this lap
-                    driver_dnf_status[drv] = True
-                    lap_entry[drv] = 22 # Drop to the bottom
+    # 2. Lap Positions - HIERARCHICAL FORMAT (Expected by Frontend)
+    drivers_lap_list = []
+    for drv in all_drivers:
+        drv_laps = laps.pick_drivers(drv)
+        if drv_laps.empty: continue
+        
+        team_name = drv_laps['Team'].iloc[0]
+        pos_dict = {}
+        last_pos = 22
+        is_retired = False
+        
+        for lap in range(1, total_laps + 1):
+            lap_row = drv_laps[drv_laps['LapNumber'] == lap]
+            if not lap_row.empty and not np.isnan(lap_row['Position'].iloc[0]):
+                current_pos = int(lap_row['Position'].iloc[0])
+                pos_dict[str(lap)] = current_pos
+                last_pos = current_pos
             else:
-                # No data for this lap = DNF drop
-                driver_dnf_status[drv] = True
-                lap_entry[drv] = 22
-                
-            # If they previously DNF'd, keep them at the bottom
-            if driver_dnf_status[drv]:
-                lap_entry[drv] = 22
-                
-        lap_data.append(lap_entry)
+                # DNF Drop logic
+                is_retired = True
+                pos_dict[str(lap)] = 22
+        
+        # Sync final lap with official results
+        res_row = session.results[session.results['Abbreviation'] == drv]
+        if not res_row.empty:
+            official_pos = res_row['Position'].iloc[0]
+            pos_dict[str(total_laps)] = int(official_pos) if not np.isnan(official_pos) else 22
 
-    # Force last lap sync
-    last_lap_idx = len(lap_data) - 1
-    for _, row in session.results.iterrows():
-        drv = row['Abbreviation']
-        if drv in lap_data[last_lap_idx]:
-             if not np.isnan(row['Position']):
-                 lap_data[last_lap_idx][drv] = int(row['Position'])
-             else:
-                 lap_data[last_lap_idx][drv] = 22
+        drivers_lap_list.append({
+            "driver": drv,
+            "team": team_name,
+            "color": TEAM_COLORS.get(team_name, "#888888"),
+            "positions": pos_dict
+        })
 
-    save_artifact(lap_data, f"lap_positions_round_{args.round}.json", args.year, race_info['dir'])
+    lap_positions_payload = {
+        "event": race_info['name'],
+        "year": args.year,
+        "total_laps": total_laps,
+        "drivers": drivers_lap_list
+    }
+    save_artifact(lap_positions_payload, f"lap_positions_round_{args.round}.json", args.year, race_info['dir'])
     
-    # 3. Tyre Intelligence & 4. AI Reports (Keeping same logic)
-    print("Generating remaining artifacts...")
-    # ... tyre logic (simplified for brevity here but keeping the core)
+    # 3. Tyre Intelligence (Hierarchical as well)
     def process_tyre(is_pred):
-        drivers = []
+        drivers_tyre = []
         for drv in all_drivers[:18]:
             drv_laps = laps.pick_drivers(drv)
             if drv_laps.empty: continue
             stints = drv_laps[['Stint', 'Compound', 'LapNumber']].groupby(['Stint', 'Compound'], sort=False).count().reset_index()
-            drivers.append({'driver': drv, 'fullName': drv, 'team': drv_laps['Team'].iloc[0], 
-                            'stints': [{'stint': int(r['Stint']), 'compound': str(r['Compound']).upper(), 'laps': int(r['LapNumber'])} for _, r in stints.iterrows()]})
-        return {"gp": session.event['EventName'], "year": args.year, "drivers": drivers}
+            drivers_tyre.append({
+                'driver': drv, 'fullName': drv, 'team': drv_laps['Team'].iloc[0], 
+                'stints': [{'stint': int(r['Stint']), 'compound': str(r['Compound']).upper(), 'laps': int(r['LapNumber']), 'color': '#888888'} for _, r in stints.iterrows()]
+            })
+        return {"gp": session.event['EventName'], "year": args.year, "drivers": drivers_tyre}
     
     save_artifact(process_tyre(False), f"tyre_intelligence_round_{args.round}.json", args.year, race_info['dir'])
     save_artifact(process_tyre(True), f"predicted_tyre_intelligence_round_{args.round}.json", args.year, race_info['dir'])
@@ -134,7 +153,7 @@ def main():
         save_artifact(ai_model.generate_content(prompt).text, f"report_round_{args.round}.md", args.year, race_info['dir'], False)
         save_artifact(ai_model.generate_content("PREDICTION " + prompt).text, f"predicted_report_round_{args.round}.md", args.year, race_info['dir'], False)
     
-    print(f"Round {args.round} done with DNF Drop logic.")
+    print(f"Round {args.round} done with correct data structures.")
 
 if __name__ == "__main__":
     main()
