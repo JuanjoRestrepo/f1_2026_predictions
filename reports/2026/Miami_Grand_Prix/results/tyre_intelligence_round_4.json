@@ -4,7 +4,7 @@
   "total_laps": 57,
   "winning_strategy": "Medium to Hard",
   "avg_pit_stop": "2.45s",
-  "proven_strategy_insight": "The 2026 Miami Grand Prix exhibited total strategic convergence among the leaders, where the uniform transition from Medium to Hard compounds neutralized potential tactical offsets and prioritized track position over tire-age advantages. Data correlates peak performance to thermal management in Sector 2, with the top five finishers utilizing identical pit windows to mitigate undercutting risks in a high-track-temperature environment.",
+  "proven_strategy_insight": "Uniform execution of the Medium-Hard one-stop across the top five underscores the high thermal sensitivity of the Miami surface, with the transition window optimized to avoid the C3 degradation cliff while leveraging the Hard compound's durability in high-energy traction zones. Ultimately, the lack of strategic divergence shifted the performance burden to aerodynamic efficiency and tyre lifecycle management, where marginal gains in the second stint proved decisive for the final classification.",
   "drivers": [
     {
       "driver": "ANT",

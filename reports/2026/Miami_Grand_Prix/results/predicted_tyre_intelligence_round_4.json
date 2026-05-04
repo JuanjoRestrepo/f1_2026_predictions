@@ -4,27 +4,8 @@
   "total_laps": 57,
   "winning_strategy": "AI Optimal (M-H)",
   "avg_pit_stop": "2.50s (Est.)",
-  "proven_strategy_insight": "The convergence on a Medium-Hard one-stop strategy across the lead quintet of ANT, NOR, PIA, RUS, and VER reflects a calculated prioritization of track position over Miami\u2019s high-degradation surface while managing the complex energy recovery cycles of the 2026 power units. Success depends on precise execution of the pit window between laps 18 and 23 to negate the significant undercut threat, specifically targeting a transition to the Hard compound as track temperatures stabilize to ensure late-stint thermal stability.",
+  "proven_strategy_insight": "Simulations identify a one-stop Medium-to-Hard transition as the statistically optimal strategy to mitigate thermal degradation and maximize track position across Miami\u2019s high-evolution surface. The leading strategy profiles for NOR (M-H), BOR (M-H), ALB (M-H), ANT (M-H), and RUS (M-H) prioritize a calculated opening window on the Medium compound to ensure the Hard tire maintains structural integrity through the final high-intensity laps.",
   "drivers": [
-    {
-      "driver": "ANT",
-      "fullName": "Kimi Antonelli",
-      "team": "Mercedes",
-      "stints": [
-        {
-          "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 26,
-          "color": "#facc15"
-        },
-        {
-          "stint": 2,
-          "compound": "HARD",
-          "laps": 31,
-          "color": "#f8fafc"
-        }
-      ]
-    },
     {
       "driver": "NOR",
       "fullName": "Lando Norris",
@@ -33,184 +14,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 23,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 30,
-          "color": "#f8fafc"
-        }
-      ]
-    },
-    {
-      "driver": "PIA",
-      "fullName": "Oscar Piastri",
-      "team": "McLaren",
-      "stints": [
-        {
-          "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 28,
-          "color": "#facc15"
-        },
-        {
-          "stint": 2,
-          "compound": "HARD",
-          "laps": 29,
-          "color": "#f8fafc"
-        }
-      ]
-    },
-    {
-      "driver": "RUS",
-      "fullName": "George Russell",
-      "team": "Mercedes",
-      "stints": [
-        {
-          "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 20,
-          "color": "#facc15"
-        },
-        {
-          "stint": 2,
-          "compound": "HARD",
-          "laps": 37,
-          "color": "#f8fafc"
-        }
-      ]
-    },
-    {
-      "driver": "VER",
-      "fullName": "Max Verstappen",
-      "team": "Red Bull Racing",
-      "stints": [
-        {
-          "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 6,
-          "color": "#facc15"
-        },
-        {
-          "stint": 2,
-          "compound": "HARD",
-          "laps": 51,
-          "color": "#f8fafc"
-        }
-      ]
-    },
-    {
-      "driver": "HAM",
-      "fullName": "Lewis Hamilton",
-      "team": "Ferrari",
-      "stints": [
-        {
-          "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 27,
-          "color": "#facc15"
-        },
-        {
-          "stint": 2,
-          "compound": "HARD",
-          "laps": 30,
-          "color": "#f8fafc"
-        }
-      ]
-    },
-    {
-      "driver": "COL",
-      "fullName": "Franco Colapinto",
-      "team": "Alpine",
-      "stints": [
-        {
-          "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 31,
-          "color": "#facc15"
-        },
-        {
-          "stint": 2,
-          "compound": "HARD",
-          "laps": 26,
-          "color": "#f8fafc"
-        }
-      ]
-    },
-    {
-      "driver": "LEC",
-      "fullName": "Charles Leclerc",
-      "team": "Ferrari",
-      "stints": [
-        {
-          "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 21,
-          "color": "#facc15"
-        },
-        {
-          "stint": 2,
-          "compound": "HARD",
-          "laps": 36,
-          "color": "#f8fafc"
-        }
-      ]
-    },
-    {
-      "driver": "SAI",
-      "fullName": "Carlos Sainz",
-      "team": "Williams",
-      "stints": [
-        {
-          "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 28,
-          "color": "#facc15"
-        },
-        {
-          "stint": 2,
-          "compound": "HARD",
-          "laps": 29,
-          "color": "#f8fafc"
-        }
-      ]
-    },
-    {
-      "driver": "ALB",
-      "fullName": "Alexander Albon",
-      "team": "Williams",
-      "stints": [
-        {
-          "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 27,
-          "color": "#facc15"
-        },
-        {
-          "stint": 2,
-          "compound": "HARD",
-          "laps": 30,
-          "color": "#f8fafc"
-        }
-      ]
-    },
-    {
-      "driver": "BEA",
-      "fullName": "Oliver Bearman",
-      "team": "Haas F1 Team",
-      "stints": [
-        {
-          "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 26,
-          "color": "#facc15"
-        },
-        {
-          "stint": 2,
-          "compound": "HARD",
-          "laps": 30,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -223,13 +33,165 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 32,
+          "laps": 23,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 24,
+          "laps": 34,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "ALB",
+      "fullName": "Alexander Albon",
+      "team": "Williams",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 23,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 34,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "ANT",
+      "fullName": "Kimi Antonelli",
+      "team": "Mercedes",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 23,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 34,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "RUS",
+      "fullName": "George Russell",
+      "team": "Mercedes",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 23,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 34,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "LEC",
+      "fullName": "Charles Leclerc",
+      "team": "Ferrari",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 23,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 34,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "PIA",
+      "fullName": "Oscar Piastri",
+      "team": "McLaren",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 23,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 34,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "VER",
+      "fullName": "Max Verstappen",
+      "team": "Red Bull Racing",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 23,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 34,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "HAM",
+      "fullName": "Lewis Hamilton",
+      "team": "Ferrari",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 23,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 34,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "GAS",
+      "fullName": "Pierre Gasly",
+      "team": "Alpine",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 23,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -242,13 +204,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 31,
+          "laps": 23,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 25,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -261,33 +223,71 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 28,
+          "laps": 23,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 28,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
     },
     {
-      "driver": "ALO",
-      "fullName": "Fernando Alonso",
-      "team": "Aston Martin",
+      "driver": "LAW",
+      "fullName": "Liam Lawson",
+      "team": "Racing Bulls",
       "stints": [
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 41,
+          "laps": 23,
           "color": "#facc15"
         },
         {
           "stint": 2,
-          "compound": "SOFT",
-          "laps": 15,
-          "color": "#ef4444"
+          "compound": "HARD",
+          "laps": 34,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "COL",
+      "fullName": "Franco Colapinto",
+      "team": "Alpine",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 23,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 34,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "SAI",
+      "fullName": "Carlos Sainz",
+      "team": "Williams",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 23,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 34,
+          "color": "#f8fafc"
         }
       ]
     },
@@ -299,13 +299,70 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 29,
+          "laps": 23,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 27,
+          "laps": 34,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "BEA",
+      "fullName": "Oliver Bearman",
+      "team": "Haas F1 Team",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 23,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 34,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "HUL",
+      "fullName": "Nico Hulkenberg",
+      "team": "Audi",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 23,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 34,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "HAD",
+      "fullName": "Isack Hadjar",
+      "team": "Red Bull Racing",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 23,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -318,20 +375,33 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 21,
+          "laps": 23,
           "color": "#facc15"
         },
         {
           "stint": 2,
-          "compound": "SOFT",
-          "laps": 16,
-          "color": "#ef4444"
+          "compound": "HARD",
+          "laps": 34,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "ALO",
+      "fullName": "Fernando Alonso",
+      "team": "Aston Martin",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 23,
+          "color": "#facc15"
         },
         {
-          "stint": 3,
-          "compound": "SOFT",
-          "laps": 19,
-          "color": "#ef4444"
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 34,
+          "color": "#f8fafc"
         }
       ]
     },
@@ -343,83 +413,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 6,
+          "laps": 23,
           "color": "#facc15"
         },
         {
           "stint": 2,
-          "compound": "SOFT",
-          "laps": 15,
-          "color": "#ef4444"
-        },
-        {
-          "stint": 3,
-          "compound": "MEDIUM",
-          "laps": 9,
-          "color": "#facc15"
-        },
-        {
-          "stint": 4,
-          "compound": "MEDIUM",
-          "laps": 25,
-          "color": "#facc15"
-        }
-      ]
-    },
-    {
-      "driver": "HUL",
-      "fullName": "Nico Hulkenberg",
-      "team": "Audi",
-      "stints": [
-        {
-          "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 1,
-          "color": "#facc15"
-        },
-        {
-          "stint": 2,
-          "compound": "MEDIUM",
-          "laps": 6,
-          "color": "#facc15"
-        }
-      ]
-    },
-    {
-      "driver": "LAW",
-      "fullName": "Liam Lawson",
-      "team": "Racing Bulls",
-      "stints": [
-        {
-          "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 6,
-          "color": "#facc15"
-        }
-      ]
-    },
-    {
-      "driver": "GAS",
-      "fullName": "Pierre Gasly",
-      "team": "Alpine",
-      "stints": [
-        {
-          "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 5,
-          "color": "#facc15"
-        }
-      ]
-    },
-    {
-      "driver": "HAD",
-      "fullName": "Isack Hadjar",
-      "team": "Red Bull Racing",
-      "stints": [
-        {
-          "stint": 1,
           "compound": "HARD",
-          "laps": 5,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
