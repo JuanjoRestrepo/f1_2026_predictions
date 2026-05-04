@@ -252,6 +252,7 @@ export interface DriverTyreData {
 export interface TyreIntelligenceData {
   gp: string;
   year: number;
+  total_laps?: number;
   winning_strategy: string;
   avg_pit_stop: string;
   proven_strategy_insight: string;
