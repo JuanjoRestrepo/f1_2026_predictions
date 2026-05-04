@@ -174,9 +174,13 @@ export default function Home({
 
               {/* Tyre Intelligence (Below Chart) */}
               <div className="mt-auto">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-f1red mb-4">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-f1red mb-1">
                   Race Tyre Intelligence
                 </h3>
+                <p className="text-xs text-gray-500 mb-4">
+                  Visual strategy analysis for all 22 drivers. Click a row to highlight and filter stint details.
+                </p>
+
                 <div className="rounded-xl bg-f1dark border border-white/5 p-6 shadow-xl">
                   {tyreData ? (
                     <TyreIntelligence data={tyreData} />
