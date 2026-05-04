@@ -7,6 +7,7 @@ export interface RaceInfo {
   name: string;
   year: number;
   dirName: string;
+  date: string;
 }
 
 /**
@@ -30,24 +31,25 @@ export function getAvailableRaces(year: number): RaceInfo[] {
   });
 
   // Map rounds to names (Full 2026 Season Mapping)
-  const roundNames: Record<number, { name: string; dir: string }> = {
-    1: { name: "Bahrain Grand Prix", dir: "Bahrain_Grand_Prix" },
-    2: { name: "Saudi Arabian Grand Prix", dir: "Saudi_Arabian_Grand_Prix" },
-    3: { name: "Australian Grand Prix", dir: "Australian_Grand_Prix" },
-    4: { name: "Miami Grand Prix", dir: "Miami_Grand_Prix" },
-    5: { name: "Canadian Grand Prix", dir: "Canadian_Grand_Prix" },
-    6: { name: "Spanish Grand Prix", dir: "Spanish_Grand_Prix" },
-    7: { name: "Austrian Grand Prix", dir: "Austrian_Grand_Prix" },
-    8: { name: "British Grand Prix", dir: "British_Grand_Prix" },
-    9: { name: "Hungarian Grand Prix", dir: "Hungarian_Grand_Prix" },
-    10: { name: "Belgian Grand Prix", dir: "Belgian_Grand_Prix" },
+  const roundNames: Record<number, { name: string; dir: string; date: string }> = {
+    1: { name: "Bahrain Grand Prix", dir: "Bahrain_Grand_Prix", date: "March 01, 2026" },
+    2: { name: "Saudi Arabian Grand Prix", dir: "Saudi_Arabian_Grand_Prix", date: "March 08, 2026" },
+    3: { name: "Australian Grand Prix", dir: "Australian_Grand_Prix", date: "March 22, 2026" },
+    4: { name: "Miami Grand Prix", dir: "Miami_Grand_Prix", date: "May 03, 2026" },
+    5: { name: "Canadian Grand Prix", dir: "Canadian_Grand_Prix", date: "June 07, 2026" },
+    6: { name: "Spanish Grand Prix", dir: "Spanish_Grand_Prix", date: "June 21, 2026" },
+    7: { name: "Austrian Grand Prix", dir: "Austrian_Grand_Prix", date: "July 05, 2026" },
+    8: { name: "British Grand Prix", dir: "British_Grand_Prix", date: "July 19, 2026" },
+    9: { name: "Hungarian Grand Prix", dir: "Hungarian_Grand_Prix", date: "August 02, 2026" },
+    10: { name: "Belgian Grand Prix", dir: "Belgian_Grand_Prix", date: "August 30, 2026" },
   };
 
   return Array.from(rounds).sort((a, b) => a - b).map(r => ({
     round: r,
     name: roundNames[r]?.name || `Round ${r}`,
     year,
-    dirName: roundNames[r]?.dir || `Round_${r}`
+    dirName: roundNames[r]?.dir || `Round_${r}`,
+    date: roundNames[r]?.date || "TBD"
   }));
 }
 

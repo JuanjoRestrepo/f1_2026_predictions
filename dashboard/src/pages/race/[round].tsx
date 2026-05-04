@@ -140,6 +140,9 @@ export default function RacePage({
                 <p className="text-red-100 text-sm sm:text-base font-medium tracking-wide">
                   Season 2026 · Round {race.round} · {race.round === 4 ? '57 laps' : '70 laps'}
                 </p>
+                <p className="text-red-200/80 text-[11px] sm:text-xs uppercase tracking-[0.2em] font-bold mt-1">
+                  {race.date}
+                </p>
               </div>
               <div className="self-start">
                  <ViewToggle activeView={headerView} onToggle={setHeaderView} />
