@@ -2,6 +2,47 @@ import fs from "fs";
 import path from "path";
 import Papa from "papaparse";
 
+export interface RaceInfo {
+  round: number;
+  name: string;
+  year: number;
+  dirName: string;
+}
+
+/**
+ * Scans the reports directory to find all available races.
+ */
+export function getAvailableRaces(year: number): RaceInfo[] {
+  const yearDir = path.join(getReportsDirectory(), year.toString());
+  if (!fs.existsSync(yearDir)) return [];
+
+  // In our structure, Miami is a folder, and summaries are in another folder.
+  // We'll define a mapping or look for specific markers.
+  // For this project, let's look at the summaries folder and extract round numbers.
+  const summariesDir = path.join(yearDir, "summaries");
+  if (!fs.existsSync(summariesDir)) return [];
+
+  const files = fs.readdirSync(summariesDir);
+  const rounds = new Set<number>();
+  files.forEach(f => {
+    const match = f.match(/round_(\d+)/);
+    if (match && match[1]) rounds.add(parseInt(match[1]));
+  });
+
+  // Map rounds to names (we can automate this more later)
+  const roundNames: Record<number, { name: string; dir: string }> = {
+    4: { name: "Miami Grand Prix", dir: "Miami_Grand_Prix" },
+    5: { name: "Canadian Grand Prix", dir: "Canadian_Grand_Prix" },
+  };
+
+  return Array.from(rounds).sort((a, b) => a - b).map(r => ({
+    round: r,
+    name: roundNames[r]?.name || `Round ${r}`,
+    year,
+    dirName: roundNames[r]?.dir || `Round_${r}`
+  }));
+}
+
 /**
  * Returns the absolute path to the reports directory.
  * Works both locally and on Vercel.
