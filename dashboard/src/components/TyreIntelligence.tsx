@@ -41,6 +41,7 @@ export function TyreIntelligence({ data }: TyreIntelligenceProps) {
     const s = search.toLowerCase();
     return (
       d.driver.toLowerCase().includes(s) || 
+      (d.fullName || '').toLowerCase().includes(s) ||
       d.team.toLowerCase().includes(s)
     );
   });
