@@ -131,17 +131,19 @@ export default function RacePage({
           </div>
 
           {/* ─── Red Banner & Global Toggle ─── */}
-          <div className="mb-8 overflow-hidden rounded-xl bg-gradient-to-r from-f1red to-[#a00000] shadow-2xl relative">
-            <div className="px-8 py-10">
-              <h2 className="text-4xl font-extrabold tracking-tight text-white mb-2 drop-shadow-md">
-                {race.name}
-              </h2>
-              <p className="text-red-100 font-medium tracking-wide">
-                Season 2026 · Round {race.round} · {race.round === 4 ? '57 laps' : '70 laps'}
-              </p>
-            </div>
-            <div className="absolute top-6 right-8">
-               <ViewToggle activeView={headerView} onToggle={setHeaderView} />
+          <div className="mb-8 overflow-hidden rounded-xl bg-gradient-to-r from-f1red to-[#a00000] shadow-2xl">
+            <div className="px-6 py-8 sm:px-8 sm:py-10 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-5">
+              <div>
+                <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-2 drop-shadow-md">
+                  {race.name}
+                </h2>
+                <p className="text-red-100 text-sm sm:text-base font-medium tracking-wide">
+                  Season 2026 · Round {race.round} · {race.round === 4 ? '57 laps' : '70 laps'}
+                </p>
+              </div>
+              <div className="self-start">
+                 <ViewToggle activeView={headerView} onToggle={setHeaderView} />
+              </div>
             </div>
           </div>
 
