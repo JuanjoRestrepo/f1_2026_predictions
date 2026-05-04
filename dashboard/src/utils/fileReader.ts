@@ -29,10 +29,18 @@ export function getAvailableRaces(year: number): RaceInfo[] {
     if (match && match[1]) rounds.add(parseInt(match[1]));
   });
 
-  // Map rounds to names (we can automate this more later)
+  // Map rounds to names (Full 2026 Season Mapping)
   const roundNames: Record<number, { name: string; dir: string }> = {
+    1: { name: "Bahrain Grand Prix", dir: "Bahrain_Grand_Prix" },
+    2: { name: "Saudi Arabian Grand Prix", dir: "Saudi_Arabian_Grand_Prix" },
+    3: { name: "Australian Grand Prix", dir: "Australian_Grand_Prix" },
     4: { name: "Miami Grand Prix", dir: "Miami_Grand_Prix" },
     5: { name: "Canadian Grand Prix", dir: "Canadian_Grand_Prix" },
+    6: { name: "Spanish Grand Prix", dir: "Spanish_Grand_Prix" },
+    7: { name: "Austrian Grand Prix", dir: "Austrian_Grand_Prix" },
+    8: { name: "British Grand Prix", dir: "British_Grand_Prix" },
+    9: { name: "Hungarian Grand Prix", dir: "Hungarian_Grand_Prix" },
+    10: { name: "Belgian Grand Prix", dir: "Belgian_Grand_Prix" },
   };
 
   return Array.from(rounds).sort((a, b) => a - b).map(r => ({
@@ -111,6 +119,7 @@ export function getRacePredictions(year: number, eventDirName: string): Predicti
       year.toString(),
       eventDirName,
       "results",
+      "data",
       "predictions.csv"
     );
     
