@@ -17,6 +17,7 @@ interface DriverData {
   driver: string;
   team: string;
   color: string;
+  lineStyle?: "solid" | "dashed";
   positions: Record<string, number>;
 }
 
@@ -57,7 +58,7 @@ const CustomTooltip = ({
   label,
 }: {
   active?: boolean;
-  payload?: Array<{ name: string; value: number; color: string }>;
+  payload?: Array<{ name: string; value: number; color: string; strokeDasharray?: string | number }>;
   label?: number;
 }) => {
   if (!active || !payload || payload.length === 0) return null;
@@ -73,7 +74,10 @@ const CustomTooltip = ({
         <div key={entry.name} className="flex items-center gap-2 py-0.5">
           <span
             className="h-2 w-2 flex-shrink-0 rounded-full"
-            style={{ backgroundColor: entry.color }}
+            style={{ 
+              backgroundColor: entry.color,
+              border: entry.strokeDasharray && entry.strokeDasharray !== "0" ? "1px dashed white" : "none" 
+            }}
           />
           <span className="text-gray-300 w-8 font-mono">{entry.name}</span>
           <span className="text-white font-bold">P{entry.value}</span>
@@ -87,17 +91,13 @@ export function RaceTimeline({ data }: RaceTimelineProps) {
   const [activeDriver, setActiveDriver] = useState<string | null>(null);
   const chartData = buildChartData(data.drivers, data.total_laps);
 
-  // Identify who was in the top 10 at the start/end to prioritize visibility
-  // For simplicity, we can also just use the current order in the array
-  // Or check their positions record for the last lap.
-
   return (
     <div className="w-full">
       <div className="mb-4 flex justify-between items-end">
         <div className="space-y-1">
           <p className="text-xs text-gray-400 leading-relaxed max-w-md">
             Interactive visualization of the full 22-driver grid. 
-            <span className="text-indigo-400 font-medium"> Top 10 focused by default.</span>
+            <span className="text-indigo-400 font-medium"> Solid/Dashed lines differentiate teammates.</span>
           </p>
         </div>
         <div className="text-[10px] text-gray-500 font-mono uppercase tracking-wider">
@@ -122,7 +122,7 @@ export function RaceTimeline({ data }: RaceTimelineProps) {
               tick={{ fill: "#666", fontSize: 10 }}
               tickLine={false}
               axisLine={false}
-              interval={4} // Show every 5 laps for clarity
+              interval={4}
             />
             <YAxis
               reversed
@@ -155,19 +155,17 @@ export function RaceTimeline({ data }: RaceTimelineProps) {
               )}
             />
 
-            {data.drivers.map((d, index) => {
-              // Get position on last lap to decide default focus
+            {data.drivers.map((d) => {
               const lastLapPos = d.positions[data.total_laps.toString()] || 22;
               const isTop10 = lastLapPos <= 10;
               const isHovered = activeDriver === d.driver;
               const hasFocus = activeDriver !== null;
 
-              // Advanced Opacity Logic
               let opacity = 1;
               if (hasFocus) {
                 opacity = isHovered ? 1 : 0.1;
               } else {
-                opacity = isTop10 ? 0.8 : 0.35; // Increased for better visibility in Dark Mode
+                opacity = isTop10 ? 0.8 : 0.35;
               }
 
               return (
@@ -176,7 +174,8 @@ export function RaceTimeline({ data }: RaceTimelineProps) {
                   type="monotone"
                   dataKey={d.driver}
                   stroke={d.color || "#888"}
-                  strokeWidth={isHovered ? 3 : isTop10 ? 2 : 0.8} // Thinner for background lines
+                  strokeDasharray={d.lineStyle === "dashed" ? "5 5" : "0"}
+                  strokeWidth={isHovered ? 3 : isTop10 ? 2 : 0.8}
                   dot={false}
                   activeDot={{ r: 4, strokeWidth: 0 }}
                   opacity={opacity}

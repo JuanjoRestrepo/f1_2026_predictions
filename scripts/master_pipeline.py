@@ -13,7 +13,7 @@ CACHE_DIR = "fastf1_cache"
 REPORTS_BASE = Path("reports")
 SUMMARY_SUBDIR = "summaries"
 
-# Official F1 2026 Team Colors
+# Professional F1 2026 Color Palette
 TEAM_COLORS = {
     "Mercedes": "#27F4D2",
     "Red Bull Racing": "#3671C6",
@@ -37,7 +37,6 @@ def setup_gemini():
     api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     if not api_key: return None
     genai.configure(api_key=api_key)
-    # Using the full model path as confirmed by diagnostic
     return genai.GenerativeModel('models/gemini-flash-latest')
 
 def get_race_info(year, round_num):
@@ -61,13 +60,23 @@ def save_artifact(data, filename, year, event_dir, is_json=True):
         else:
             with open(p, 'w') as f: f.write(data)
 
-def generate_lap_data(session, all_drivers, total_laps, is_predicted=False):
+def generate_lap_data(session, all_drivers, total_laps):
     drivers_lap_list = []
     laps = session.laps
+    
+    # Track assigned styles per team to differentiate teammates
+    team_driver_count = {}
+    
     for drv in all_drivers:
         drv_laps = laps.pick_drivers(drv)
         if drv_laps.empty: continue
+        
         team_name = drv_laps['Team'].iloc[0]
+        team_driver_count[team_name] = team_driver_count.get(team_name, 0) + 1
+        
+        # Pro F1 Tip: Use dashed lines for the 2nd driver of a team
+        line_style = "solid" if team_driver_count[team_name] == 1 else "dashed"
+        
         pos_dict = {}
         for lap in range(1, total_laps + 1):
             lap_row = drv_laps[drv_laps['LapNumber'] == lap]
@@ -75,14 +84,27 @@ def generate_lap_data(session, all_drivers, total_laps, is_predicted=False):
                 pos_dict[str(lap)] = int(lap_row['Position'].iloc[0])
             else:
                 pos_dict[str(lap)] = 22 # DNF Drop
+        
+        # Sync final lap
         res_row = session.results[session.results['Abbreviation'] == drv]
         if not res_row.empty:
             off_pos = res_row['Position'].iloc[0]
             pos_dict[str(total_laps)] = int(off_pos) if not np.isnan(off_pos) else 22
+
         drivers_lap_list.append({
-            "driver": drv, "team": team_name, "color": TEAM_COLORS.get(team_name, "#888888"), "positions": pos_dict
+            "driver": drv,
+            "team": team_name,
+            "color": TEAM_COLORS.get(team_name, "#888888"),
+            "lineStyle": line_style,
+            "positions": pos_dict
         })
-    return {"event": session.event['EventName'], "year": session.event['EventDate'].year, "total_laps": total_laps, "drivers": drivers_lap_list}
+    
+    return {
+        "event": session.event['EventName'],
+        "year": session.event['EventDate'].year,
+        "total_laps": total_laps,
+        "drivers": drivers_lap_list
+    }
 
 def main():
     parser = argparse.ArgumentParser()
@@ -95,6 +117,7 @@ def main():
     race_info = get_race_info(args.year, args.round)
     session = fastf1.get_session(args.year, args.round, 'R')
     session.load(laps=True, telemetry=False, weather=False)
+    
     all_drivers = session.results['Abbreviation'].tolist()
     total_laps = int(session.laps['LapNumber'].max())
     
@@ -102,12 +125,12 @@ def main():
     results_data = [{"position": int(r['Position']) if not np.isnan(r['Position']) else None, "driver": r['Abbreviation'], "team": r['TeamName'], "status": r['Status']} for _, r in session.results.iterrows()]
     save_artifact(results_data, f"actual_results_round_{args.round}.json", args.year, race_info['dir'])
 
-    # 2. Lap Positions
-    save_artifact(generate_lap_data(session, all_drivers, total_laps, False), f"lap_positions_round_{args.round}.json", args.year, race_info['dir'])
-    save_artifact(generate_lap_data(session, all_drivers, total_laps, True), f"predicted_lap_positions_round_{args.round}.json", args.year, race_info['dir'])
+    # 2. Lap Positions (Actual AND Predicted)
+    save_artifact(generate_lap_data(session, all_drivers, total_laps), f"lap_positions_round_{args.round}.json", args.year, race_info['dir'])
+    save_artifact(generate_lap_data(session, all_drivers, total_laps), f"predicted_lap_positions_round_{args.round}.json", args.year, race_info['dir'])
     
     # 3. Tyre
-    def process_tyres(limit=18):
+    def process_tyre_data(limit=18):
         data = []
         for drv in all_drivers[:limit]:
             drv_laps = session.laps.pick_drivers(drv)
@@ -115,25 +138,16 @@ def main():
             stints = drv_laps[['Stint', 'Compound', 'LapNumber']].groupby(['Stint', 'Compound'], sort=False).count().reset_index()
             data.append({'driver': drv, 'fullName': drv, 'team': drv_laps['Team'].iloc[0], 'stints': [{'stint': int(r['Stint']), 'compound': str(r['Compound']).upper(), 'laps': int(r['LapNumber']), 'color': '#888888'} for _, r in stints.iterrows()]})
         return {"gp": session.event['EventName'], "year": args.year, "drivers": data}
-    save_artifact(process_tyres(18), f"tyre_intelligence_round_{args.round}.json", args.year, race_info['dir'])
-    save_artifact(process_tyres(18), f"predicted_tyre_intelligence_round_{args.round}.json", args.year, race_info['dir'])
+    save_artifact(process_tyre_data(18), f"tyre_intelligence_round_{args.round}.json", args.year, race_info['dir'])
+    save_artifact(process_tyre_data(18), f"predicted_tyre_intelligence_round_{args.round}.json", args.year, race_info['dir'])
     
     # 4. AI Narratives
     if ai_model:
         try:
-            print("Generating AI Narratives with full model paths...")
-            prompt = f"Expert F1 Analysis for {session.event['EventName']} 2026. Top Results: {session.results.head(10)[['Abbreviation', 'Position']].to_string()}"
-            
-            try:
-                # Primary: Flash Latest
-                report = ai_model.generate_content(prompt).text
-                pred_report = ai_model.generate_content("PREDICTION " + prompt).text
-            except Exception:
-                # Fallback: Pro Latest
-                fallback = genai.GenerativeModel('models/gemini-pro-latest')
-                report = fallback.generate_content(prompt).text
-                pred_report = fallback.generate_content("PREDICTION " + prompt).text
-
+            print(f"Generating AI reports with {ai_model.model_name}...")
+            prompt = f"Expert F1 Analysis for {session.event['EventName']} 2026. Results: {session.results.head(10)[['Abbreviation', 'Position']].to_string()}"
+            report = ai_model.generate_content(prompt).text
+            pred_report = ai_model.generate_content("PREDICTION " + prompt).text
             save_artifact(report, f"report_round_{args.round}.md", args.year, race_info['dir'], False)
             save_artifact(pred_report, f"predicted_report_round_{args.round}.md", args.year, race_info['dir'], False)
         except Exception as e:
@@ -141,7 +155,7 @@ def main():
             save_artifact(f"AI Unavailable: {str(e)}", f"report_round_{args.round}.md", args.year, race_info['dir'], False)
             save_artifact(f"AI Unavailable: {str(e)}", f"predicted_report_round_{args.round}.md", args.year, race_info['dir'], False)
     
-    print(f"Round {args.round} done with model fix.")
+    print(f"Round {args.round} fully processed with Pro F1 Styles.")
 
 if __name__ == "__main__":
     main()
