@@ -16,6 +16,9 @@ The Miami Grand Prix served as the primary validation gate for the 2026 Predicti
 - **XGBoost Dominance**: Decision trees accurately captured the high-speed braking zones of Miami where car stability is non-linear.
 - **Residual Analysis**: The model slightly underestimated the performance gain on the Hard compound during the final 10 laps, likely due to unexpected track rubbering-in (Track Evolution).
 
+![Residual Analysis](reports/2026/Miami_Grand_Prix/analysis_visuals/modeling/fig_07_residuals.png)
+> [Interactive Report: Predicted vs Actual](reports/2026/Miami_Grand_Prix/analysis_visuals/modeling/fig_05_predicted_vs_actual.html)
+
 ---
 
 ## 2. Feature Importance (SHAP Analysis)
@@ -26,9 +29,27 @@ Our SHAP values identify the primary drivers of the 2026 performance hierarchy:
 2.  **Aero-Efficiency (`2026_Aero_Profile`)**: Captures the reduced downforce of the new regulations, correctly penalizing teams with high drag in the long straights.
 3.  **Historical Form (`WeightedForm_4R`)**: Exponential weighting of the last 4 rounds proved superior to season-averages for capturing Mercedes' recent development surge.
 
+![SHAP Summary](reports/2026/Miami_Grand_Prix/analysis_visuals/modeling/fig_07_shap_summary.png)
+![SHAP Bar](reports/2026/Miami_Grand_Prix/analysis_visuals/modeling/fig_08_shap_bar.png)
+> [Interactive Report: Feature Importance Explorer](reports/2026/Miami_Grand_Prix/analysis_visuals/modeling/fig_06_feature_importance.html)
+
 ---
 
-## 3. Strategy Intelligence (Tyre Logic)
+## 3. Exploratory Data Analysis (EDA)
+
+Before modeling, a comprehensive EDA was performed to validate the data distribution and feature correlations for the Miami circuit.
+
+| Distribution | Tyre Degradation |
+|---|---|
+| ![Laptime Distribution](reports/2026/Miami_Grand_Prix/analysis_visuals/eda/fig_01_laptime_distribution.png) | ![Tyre Degradation](reports/2026/Miami_Grand_Prix/analysis_visuals/eda/fig_02_tyre_degradation.png) |
+
+| Correlation Matrix | Points vs Laptime |
+|---|---|
+| ![Correlation Matrix](reports/2026/Miami_Grand_Prix/analysis_visuals/eda/fig_03_correlation_matrix.png) | ![Points vs Laptime](reports/2026/Miami_Grand_Prix/analysis_visuals/eda/fig_04_points_vs_laptime.png) |
+
+---
+
+## 4. Strategy Intelligence (Tyre Logic)
 
 The "Business Question" engine validated that the **Medium-to-Hard (1-Stop)** strategy was the mathematically optimal solution. 
 - **AI Recommendation**: Pit at Lap 24 for optimal traffic window.
@@ -37,7 +58,7 @@ The "Business Question" engine validated that the **Medium-to-Hard (1-Stop)** st
 
 ---
 
-## 4. Platform Conclusions
+## 5. Platform Conclusions
 
 ### High-Fidelity Technical Narratives
 The integration of **Gemini 2.5 Flash** now follows a strict "Engineering Persona" protocol. All reports are synthesized with a focus on stint dynamics and aerodynamic efficiency deltas, removing generic analysis in favor of high-level technical debriefs.
@@ -48,3 +69,4 @@ As the 2026 season progresses towards **Canada (Round 5)** and beyond, the model
 ---
 **Author**: Juan Jose Restrepo Rosero  
 **Date**: May 2026
+
