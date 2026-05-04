@@ -32,16 +32,19 @@ Expert-level race reporting powered by **Gemini 2.0/2.5 Flash**, analyzing telem
 
 ---
 
-## 🏗️ Platform Architecture
+### 🏗️ Platform Architecture
 
 ```text
 ├── .github/workflows/       # CI/CD Automation (GitHub Actions)
 ├── dashboard/               # Next.js 15 Web Application
 ├── scripts/                 # Master Pipeline (Orchestrator) & Training Scripts
-├── reports/                 # Hierarchical Data Store (Versioned JSON/CSV)
+├── models/                  # Trained XGBoost/LightGBM Model Artifacts
+├── data/                    # Raw Historical Telemetry & Datasets (Bronze Layer)
+├── images/                  # Documentation Assets & UI Screenshots
+├── reports/                 # Hierarchical Data Store (Medallion Architecture)
 │   └── 2026/
-│       ├── summaries/       # Dashboard-ready JSON/MD Artifacts
-│       └── {Grand_Prix}/    # Deep-dive ML Reports & Raw Predictions
+│       ├── summaries/       # Dashboard-ready JSON/MD Artifacts (Gold Layer)
+│       └── {Grand_Prix}/    # Deep-dive ML Reports & Raw Predictions (Silver Layer)
 ```
 
 ---
