@@ -4,6 +4,7 @@
 **Date**: May 2026
 
 ### 🛠️ Strategic & Technical Enhancements
+- **High-Fidelity Structured Narratives**: Standardized AI prompt engineering to enforce a professional numbered-list format (Stints, Aero, Driver Deltas) with technical bullet points, ensuring visual excellence across all future race reports.
 - **Differentiated AI Duality**: Orchestrated distinct prompt engineering pipelines for **Actual** vs **Predicted** reports. Pre-race forecasting now ingests `predictions.csv` (XGBoost/LightGBM) while post-race debriefs leverage high-fidelity FastF1 telemetry.
 - **SDK Migration (Future-Proofing)**: Fully transitioned from `google.generativeai` to the modern `google.genai` SDK. This eliminates `FutureWarnings` and ensures long-term compatibility with Gemini 2.0+ models.
 - **Mission-Critical Reliability**: Implemented `call_ai_with_retry` with exponential backoff (10s delay).
