@@ -114,6 +114,10 @@ models/artifacts/
 *.pkl
 *.pickle
 *.joblib
+
+# Exception: allow our production model
+!data/outputs/models/
+!data/outputs/models/*.joblib
 *.h5
 *.hdf5
 *.pt
