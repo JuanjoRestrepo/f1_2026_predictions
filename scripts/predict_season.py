@@ -431,6 +431,10 @@ def run_prediction_pipeline(
     predict_dir = reports_root / str(predict_year) / "predictions"
     predict_dir.mkdir(parents=True, exist_ok=True)
     logger.info("Predictions will be saved to: %s", predict_dir)
+    
+    # Save the trained XGBoost model for API deployment
+    model_path = Path(settings.data_outputs_dir) / "models" / "xgb_pace_model.joblib"
+    xgb_model.save(model_path)
 
     # ── 3. Predict ─────────────────────────────────────────────────────────
     y_pred_xgb, y_pred_lgb, _ = predict_season(xgb_model, lgb_model, df_predict)

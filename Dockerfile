@@ -40,6 +40,9 @@ COPY pyproject.toml ./
 RUN mkdir -p data/raw data/processed data/outputs reports logs cache && \
     chown -R f1user:f1user /app
 
+# Bake the trained models into the image
+COPY data/outputs/models/ ./data/outputs/models/
+
 # Set environment variables
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONPATH="/app/src:$PYTHONPATH" \
@@ -47,5 +50,10 @@ ENV PATH="/app/.venv/bin:$PATH" \
 
 USER f1user
 
-# Default command (can be overridden by docker-compose or CLI)
-CMD ["python", "scripts/predict_season.py", "--help"]
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD curl -f http://localhost:8000/health || exit 1
+
+# Default command to run the FastAPI server
+CMD ["uvicorn", "f1_predictions.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

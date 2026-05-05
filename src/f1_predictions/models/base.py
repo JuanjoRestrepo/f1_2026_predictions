@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, cast
+from pathlib import Path
+from typing import Any, Self, cast
+
+import joblib
 
 import numpy as np
 import pandas as pd
@@ -99,3 +102,38 @@ class BasePaceRegressor(ABC):
         x = x.reindex(columns=self.features, fill_value=np.nan)
         model = cast(Any, self.model)
         return cast(np.ndarray, model.predict(x))
+
+    def save(self, path: Path | str) -> None:
+        """Serialize the fitted model and feature order to disk."""
+        if not self.features:
+            msg = "Cannot save an untrained model."
+            raise RuntimeError(msg)
+        
+        path_obj = Path(path)
+        path_obj.parent.mkdir(parents=True, exist_ok=True)
+        
+        state = {
+            "model": self.model,
+            "features": self.features,
+            "random_state": self.random_state,
+        }
+        joblib.dump(state, path_obj)
+        logger.info("Model saved to %s", path_obj)
+
+    @classmethod
+    def load_from_path(cls, path: Path | str) -> Self:
+        """Load a serialized model from disk."""
+        path_obj = Path(path)
+        if not path_obj.exists():
+            msg = f"Model file not found at {path_obj}"
+            raise FileNotFoundError(msg)
+            
+        state = joblib.load(path_obj)
+        
+        # Instantiate class and overwrite state
+        instance = cls(random_state=state["random_state"])
+        instance.model = state["model"]
+        instance.features = state["features"]
+        
+        logger.info("Model loaded from %s (Features: %d)", path_obj, len(instance.features))
+        return instance

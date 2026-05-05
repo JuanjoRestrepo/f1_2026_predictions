@@ -1,0 +1,33 @@
+# Git
+.git
+.gitignore
+
+# Environments
+.venv/
+venv/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Data & Logs (Exclude raw and processed data, keep only baked models)
+data/raw/
+data/processed/
+data/external/
+logs/
+reports/
+cache/
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# User-specific
+.env
