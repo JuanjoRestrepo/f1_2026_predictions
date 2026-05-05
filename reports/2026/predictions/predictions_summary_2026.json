@@ -10,54 +10,54 @@
     {
       "rank": 1,
       "Driver": "NOR",
-      "median_predicted_s": 92.51385498046875
+      "median_predicted_s": 92.51726531982422
     },
     {
       "rank": 2,
       "Driver": "ANT",
-      "median_predicted_s": 92.99284362792969
+      "median_predicted_s": 93.01912689208984
     },
     {
       "rank": 3,
       "Driver": "LEC",
-      "median_predicted_s": 93.38616943359375
+      "median_predicted_s": 93.39796447753906
     },
     {
       "rank": 4,
       "Driver": "PIA",
-      "median_predicted_s": 93.47897338867188
+      "median_predicted_s": 93.51625061035156
     },
     {
       "rank": 5,
       "Driver": "RUS",
-      "median_predicted_s": 93.51813507080078
+      "median_predicted_s": 93.53889465332031
     }
   ],
   "top5_drivers_lgb": [
     {
       "rank": 1,
       "Driver": "NOR",
-      "median_predicted_s": 92.43270765079147
+      "median_predicted_s": 92.52455863275203
     },
     {
       "rank": 2,
       "Driver": "ANT",
-      "median_predicted_s": 93.00598661118798
+      "median_predicted_s": 92.98738009082146
     },
     {
       "rank": 3,
       "Driver": "LEC",
-      "median_predicted_s": 93.48510413546396
+      "median_predicted_s": 93.44266266719605
     },
     {
       "rank": 4,
       "Driver": "PIA",
-      "median_predicted_s": 93.52714599279692
+      "median_predicted_s": 93.50695993787416
     },
     {
       "rank": 5,
       "Driver": "RUS",
-      "median_predicted_s": 93.60112784467351
+      "median_predicted_s": 93.58053240423214
     }
   ]
 }

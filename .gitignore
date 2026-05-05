@@ -187,6 +187,9 @@ cache/
 
 # pytest
 .pytest_cache/
+.pytest_runtime/
+.pytest_tmp/
+.pytest_work/
 .cache/
 
 # ruff
@@ -259,6 +262,7 @@ logs/
 *.bak
 *.orig
 .~lock.*
+scratch/
 
 # =============================================================================
 # 10. Agent-specific files
