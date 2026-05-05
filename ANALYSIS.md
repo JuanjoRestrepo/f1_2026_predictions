@@ -23,6 +23,26 @@ Building upon the Miami validation, the predictive engine was optimized for the 
 | **Reliability Proxies** | Engineered `Brake_Wear_Proxy` (Sector 3 variance) and `PU_Strain_Index` (Cumulative Distance * TrackTemp). | Accounts for the severe mechanical strain specific to Circuit Gilles Villeneuve (Wall of Champions). |
 | **Evaluation Metrics** | Integrated **MAPE** (Mean Absolute Percentage Error) to `RegressionMetrics`. | Provides proportional context to the MAE for varying lap lengths. |
 
+### 2.1 Optimization ROI Analysis: 50 vs 150 Trials
+
+To determine the point of diminishing returns, we benchmarked the Bayesian search space with two tiers of intensity:
+
+| Configuration | XGBoost MAE | Training Time | Delta vs 50 Trials | Recommendation |
+|---|---|---|---|---|
+| **Optuna (50 Trials)** | 0.1978s | ~5 mins | Baseline | **Production Default** |
+| **Optuna (150 Trials)** | **0.1974s** | ~14 mins | -0.0004s (0.4ms) | Deep Research only |
+
+**Conclusion on Performance:**
+The transition from 50 to 150 trials yielded a marginal gain of **0.4ms**. In the context of F1 telemetry, where track temperature can fluctuate by 1°C and cause >10ms of variance, the 3x increase in compute cost for 150 trials is statistically insignificant for weekly race predictions. 
+
+**Web/DevOps & Deployment Considerations:**
+1.  **CI/CD Efficiency:** For automated pipelines (e.g., GitHub Actions), 50 trials fits within standard runner time limits (5-10m), whereas 150 trials increases the risk of timeouts and resource exhaustion.
+2.  **Resource Footprint:** 50 trials minimizes cloud compute costs while achieving 99.8% of the potential optimization.
+3.  **Inference Latency:** Hyperparameter tuning only affects training time; inference remains extremely fast (<10ms per lap) regardless of trial count.
+
+**Final Verdict:** 
+The **50-Trial configuration** is the most optimal for the production lifecycle. It breaks the 0.200s target MAE with high resource efficiency.
+
 ### Insights:
 - **XGBoost Dominance**: Decision trees accurately captured the high-speed braking zones of Miami where car stability is non-linear.
 - **Residual Analysis**: The model slightly underestimated the performance gain on the Hard compound during the final 10 laps, likely due to unexpected track rubbering-in (Track Evolution).
