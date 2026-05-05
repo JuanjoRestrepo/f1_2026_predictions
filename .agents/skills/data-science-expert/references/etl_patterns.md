@@ -1,6 +1,7 @@
 # ETL Design Patterns & Pipeline Templates
 
 ## Table of Contents
+
 0. [PySpark vs. dbt — Architectural Decision Guide](#decision-guide)
 1. [Environment Setup (uv + pyproject.toml)](#environment)
 2. [Pandas / Polars Pipeline](#pandas-polars)
@@ -15,29 +16,29 @@
 
 > **Core premise**: PySpark and dbt are not competing tools — they solve fundamentally
 > different problems at different layers of the data architecture. The engineering decision
-> is not *which one*, but *which one at which layer*, and whether the project warrants both.
+> is not _which one_, but _which one at which layer_, and whether the project warrants both.
 
 ### Strengths & Failure Modes
 
-| Dimension | PySpark | dbt |
-|---|---|---|
-| **Primary layer** | Ingestion, raw processing, Data Lake | Transformation, modeling, Data Warehouse |
-| **Data scale** | Petabyte-scale distributed processing | GB → low-TB structured data in a Warehouse |
-| **Data structure** | Raw, semi-structured, unstructured, nested JSON, images, text, streaming | Clean, structured, relational data already in the Warehouse |
-| **Execution engine** | Distributed cluster (YARN, Kubernetes, Databricks) | Delegates to the Warehouse engine (Snowflake, BigQuery, Redshift) |
-| **Streaming** | Native (Structured Streaming, Kafka integration) | Not designed for streaming or near-real-time |
-| **Complex joins** | Handles multi-TB joins via partitioning and broadcast | Struggles with massive cross-table scans — saturates the Warehouse |
-| **Business logic** | Low-level; verbose for pure SQL transformations | First-class SQL + Jinja; ideal for business rules, metrics, and Data Marts |
-| **Testing & lineage** | Manual; requires custom test harness | Built-in: `dbt test`, DAG lineage, documentation auto-generation |
-| **Team profile** | Data engineers, ML engineers (Python/Scala) | Analytics engineers, data analysts (SQL-first) |
+| Dimension             | PySpark                                                                  | dbt                                                                        |
+| --------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| **Primary layer**     | Ingestion, raw processing, Data Lake                                     | Transformation, modeling, Data Warehouse                                   |
+| **Data scale**        | Petabyte-scale distributed processing                                    | GB → low-TB structured data in a Warehouse                                 |
+| **Data structure**    | Raw, semi-structured, unstructured, nested JSON, images, text, streaming | Clean, structured, relational data already in the Warehouse                |
+| **Execution engine**  | Distributed cluster (YARN, Kubernetes, Databricks)                       | Delegates to the Warehouse engine (Snowflake, BigQuery, Redshift)          |
+| **Streaming**         | Native (Structured Streaming, Kafka integration)                         | Not designed for streaming or near-real-time                               |
+| **Complex joins**     | Handles multi-TB joins via partitioning and broadcast                    | Struggles with massive cross-table scans — saturates the Warehouse         |
+| **Business logic**    | Low-level; verbose for pure SQL transformations                          | First-class SQL + Jinja; ideal for business rules, metrics, and Data Marts |
+| **Testing & lineage** | Manual; requires custom test harness                                     | Built-in: `dbt test`, DAG lineage, documentation auto-generation           |
+| **Team profile**      | Data engineers, ML engineers (Python/Scala)                              | Analytics engineers, data analysts (SQL-first)                             |
 
 ### Data Volume Decision Thresholds
 
-| Zone | Data Range | Recommendation |
-|---|---|---|
-| 🟢 **dbt Sweet Spot** | GBs → a few TBs of clean, structured data | dbt only — incremental models, warehouse-native execution |
-| 🟡 **Warning Zone** | Multi-TB joins, full-table scans, unoptimized models | Audit dbt model design; consider pre-aggregating with PySpark upstream |
-| 🔴 **PySpark Territory** | Raw TB → PB scale; semi/unstructured; queries exceeding 30 min | PySpark for ingestion and heavy lifting; dbt for downstream modeling |
+| Zone                     | Data Range                                                     | Recommendation                                                         |
+| ------------------------ | -------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| 🟢 **dbt Sweet Spot**    | GBs → a few TBs of clean, structured data                      | dbt only — incremental models, warehouse-native execution              |
+| 🟡 **Warning Zone**      | Multi-TB joins, full-table scans, unoptimized models           | Audit dbt model design; consider pre-aggregating with PySpark upstream |
+| 🔴 **PySpark Territory** | Raw TB → PB scale; semi/unstructured; queries exceeding 30 min | PySpark for ingestion and heavy lifting; dbt for downstream modeling   |
 
 **Rule of thumb**: If your dbt model scans billions of rows on every run, you are not
 scaling — you are surviving. Move that computation upstream to PySpark.
@@ -103,23 +104,25 @@ PySpark jobs run first, dbt models run after warehouse load completes.
 
 **Storage format per layer** — always align format to the layer's access pattern and guarantees required:
 
-| Layer | Recommended Format | Rationale |
-|---|---|---|
-| 🥉 **Bronze (Raw)** | Avro (streaming) / Parquet (batch) / JSON (API) | Preserve source structure; Avro for Kafka; Parquet for batch files |
-| 🥈 **Silver (Cleaned)** | Delta Lake or Apache Iceberg | ACID guarantees for upserts/deduplication; schema enforcement; time travel for rollback |
-| 🥇 **Gold (Business-ready)** | Delta Lake / Iceberg (via dbt) | Schema-enforced, versioned, BI-consumable; never CSV or raw JSON at this layer |
+| Layer                        | Recommended Format                              | Rationale                                                                               |
+| ---------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------- |
+| 🥉 **Bronze (Raw)**          | Avro (streaming) / Parquet (batch) / JSON (API) | Preserve source structure; Avro for Kafka; Parquet for batch files                      |
+| 🥈 **Silver (Cleaned)**      | Delta Lake or Apache Iceberg                    | ACID guarantees for upserts/deduplication; schema enforcement; time travel for rollback |
+| 🥇 **Gold (Business-ready)** | Delta Lake / Iceberg (via dbt)                  | Schema-enforced, versioned, BI-consumable; never CSV or raw JSON at this layer          |
 
 See `references/data_formats.md` for the full format decision guide and read/write code.
 
 ### When to Use Only One Tool
 
 **dbt only** — appropriate when:
+
 - All source data already resides in a mature Warehouse
 - Data volumes are manageable within Warehouse compute budgets
 - The team is SQL-first with no distributed compute infrastructure
 - The project is analytics-focused: reporting, dashboards, Data Marts
 
 **PySpark only** — appropriate when:
+
 - The project is a pure Data Lake / Lakehouse architecture (no Warehouse)
 - All transformations are engineering-heavy (streaming, ML pipelines, unstructured data)
 - The output is consumed directly by ML models or operational systems, not BI tools
@@ -153,8 +156,6 @@ uv sync
 
 **Standard `pyproject.toml` for ETL projects** — include `[tool.ruff]` and `[tool.mypy]`
 sections as defined in the main SKILL.md Code Quality & Environment Standards section.
-
-
 
 ---
 

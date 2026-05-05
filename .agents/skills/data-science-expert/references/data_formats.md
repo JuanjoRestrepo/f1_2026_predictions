@@ -46,27 +46,27 @@ uv sync
 
 ## 1. Format Comparison Matrix {#matrix}
 
-| Format | Type | Encoding | Schema | Compression | Splittable | Best Access Pattern |
-|---|---|---|---|---|---|---|
-| **CSV** | Text | Row-based | None | None / Gzip | ✅ Yes | Small datasets, human-readable exchange |
-| **JSON** | Text | Row-based | None | None / Gzip | ⚠️ Partial | APIs, semi-structured, config files |
-| **Parquet** | Binary | Columnar | Embedded | Snappy / Zstd | ✅ Yes | Analytics, OLAP, Data Lakes |
-| **ORC** | Binary | Columnar | Embedded | Zlib / Snappy | ✅ Yes | Hive/Hadoop ecosystems, OLAP |
-| **Avro** | Binary | Row-based | External (JSON) | Snappy / Deflate | ✅ Yes | Streaming, schema evolution, Kafka |
-| **Delta Lake** | Binary + JSON log | Columnar (Parquet) | Enforced + versioned | Snappy / Zstd | ✅ Yes | Lakehouse, ACID transactions, time travel |
-| **Apache Iceberg** | Binary + metadata | Columnar (Parquet/ORC/Avro) | Enforced + versioned | Snappy / Zstd | ✅ Yes | Open Lakehouse, multi-engine, cloud-native |
+| Format             | Type              | Encoding                    | Schema               | Compression      | Splittable | Best Access Pattern                        |
+| ------------------ | ----------------- | --------------------------- | -------------------- | ---------------- | ---------- | ------------------------------------------ |
+| **CSV**            | Text              | Row-based                   | None                 | None / Gzip      | ✅ Yes     | Small datasets, human-readable exchange    |
+| **JSON**           | Text              | Row-based                   | None                 | None / Gzip      | ⚠️ Partial | APIs, semi-structured, config files        |
+| **Parquet**        | Binary            | Columnar                    | Embedded             | Snappy / Zstd    | ✅ Yes     | Analytics, OLAP, Data Lakes                |
+| **ORC**            | Binary            | Columnar                    | Embedded             | Zlib / Snappy    | ✅ Yes     | Hive/Hadoop ecosystems, OLAP               |
+| **Avro**           | Binary            | Row-based                   | External (JSON)      | Snappy / Deflate | ✅ Yes     | Streaming, schema evolution, Kafka         |
+| **Delta Lake**     | Binary + JSON log | Columnar (Parquet)          | Enforced + versioned | Snappy / Zstd    | ✅ Yes     | Lakehouse, ACID transactions, time travel  |
+| **Apache Iceberg** | Binary + metadata | Columnar (Parquet/ORC/Avro) | Enforced + versioned | Snappy / Zstd    | ✅ Yes     | Open Lakehouse, multi-engine, cloud-native |
 
 ### Performance Characteristics
 
-| Format | Write Speed | Read Speed (full) | Read Speed (filtered) | Storage Efficiency | Schema Evolution |
-|---|---|---|---|---|---|
-| **CSV** | ⚡ Fast | 🐢 Slow | 🐢 Slow (full scan) | ❌ Poor | ❌ None |
-| **JSON** | ⚡ Fast | 🐢 Slow | 🐢 Slow (full scan) | ❌ Poor | ⚠️ Manual |
-| **Parquet** | 🔶 Moderate | ⚡ Fast | ⚡ Fast (predicate pushdown) | ✅ Excellent | ✅ Additive columns |
-| **ORC** | 🔶 Moderate | ⚡ Fast | ⚡ Fast | ✅ Excellent | ✅ Additive columns |
-| **Avro** | ⚡ Fast | 🔶 Moderate | 🐢 Slow (row scan) | ✅ Good | ✅ Full (reader/writer schema) |
-| **Delta Lake** | 🔶 Moderate | ⚡ Fast | ⚡ Fast | ✅ Excellent | ✅ Full + enforced |
-| **Apache Iceberg** | 🔶 Moderate | ⚡ Fast | ⚡ Fast | ✅ Excellent | ✅ Full + enforced |
+| Format             | Write Speed | Read Speed (full) | Read Speed (filtered)        | Storage Efficiency | Schema Evolution               |
+| ------------------ | ----------- | ----------------- | ---------------------------- | ------------------ | ------------------------------ |
+| **CSV**            | ⚡ Fast     | 🐢 Slow           | 🐢 Slow (full scan)          | ❌ Poor            | ❌ None                        |
+| **JSON**           | ⚡ Fast     | 🐢 Slow           | 🐢 Slow (full scan)          | ❌ Poor            | ⚠️ Manual                      |
+| **Parquet**        | 🔶 Moderate | ⚡ Fast           | ⚡ Fast (predicate pushdown) | ✅ Excellent       | ✅ Additive columns            |
+| **ORC**            | 🔶 Moderate | ⚡ Fast           | ⚡ Fast                      | ✅ Excellent       | ✅ Additive columns            |
+| **Avro**           | ⚡ Fast     | 🔶 Moderate       | 🐢 Slow (row scan)           | ✅ Good            | ✅ Full (reader/writer schema) |
+| **Delta Lake**     | 🔶 Moderate | ⚡ Fast           | ⚡ Fast                      | ✅ Excellent       | ✅ Full + enforced             |
+| **Apache Iceberg** | 🔶 Moderate | ⚡ Fast           | ⚡ Fast                      | ✅ Excellent       | ✅ Full + enforced             |
 
 ---
 
@@ -101,15 +101,15 @@ Apply this decision tree when selecting a format for any new dataset or pipeline
 
 ### Categorical Summary
 
-| Scenario | Recommended Format | Reason |
-|---|---|---|
-| Small dataset, quick share | CSV | Simplicity, universal compatibility |
-| REST API response / config | JSON | Native structure, flexible schema |
-| Kafka messaging, schema versioning | Avro | Row serialization, schema registry support |
-| Data Lake analytics, OLAP queries | Parquet | Columnar, compressed, predicate pushdown |
-| Hadoop/Hive-centric warehouse | ORC | Optimized for Hive execution engine |
-| Databricks Lakehouse, ACID pipelines | Delta Lake | Parquet + transaction log + time travel |
-| Multi-engine / AWS / open Lakehouse | Apache Iceberg | Engine-agnostic, hidden partitioning, branching |
+| Scenario                             | Recommended Format | Reason                                          |
+| ------------------------------------ | ------------------ | ----------------------------------------------- |
+| Small dataset, quick share           | CSV                | Simplicity, universal compatibility             |
+| REST API response / config           | JSON               | Native structure, flexible schema               |
+| Kafka messaging, schema versioning   | Avro               | Row serialization, schema registry support      |
+| Data Lake analytics, OLAP queries    | Parquet            | Columnar, compressed, predicate pushdown        |
+| Hadoop/Hive-centric warehouse        | ORC                | Optimized for Hive execution engine             |
+| Databricks Lakehouse, ACID pipelines | Delta Lake         | Parquet + transaction log + time travel         |
+| Multi-engine / AWS / open Lakehouse  | Apache Iceberg     | Engine-agnostic, hidden partitioning, branching |
 
 ---
 
@@ -119,11 +119,11 @@ Align format selection with the Medallion Architecture layers already defined in
 `etl_patterns.md`. Format choice must match the processing stage and access pattern
 of each layer.
 
-| Layer | Purpose | Recommended Format | Rationale |
-|---|---|---|---|
-| 🥉 **Bronze (Raw)** | Exact copy of source data, no transformation | **Avro** (streaming sources) / **Parquet** (batch files) / **JSON** (API dumps) | Preserve original structure and schema. Avro for Kafka ingestion; Parquet for batch; JSON for semi-structured APIs |
-| 🥈 **Silver (Cleaned)** | Deduplicated, typed, validated data | **Delta Lake** or **Apache Iceberg** | ACID guarantees for upserts and deduplication jobs. Schema enforcement prevents data quality drift. Time travel enables rollback on bad runs |
-| 🥇 **Gold (Business-ready)** | Aggregated, modeled, BI-ready tables | **Delta Lake** or **Apache Iceberg** (underlying) via **dbt** | dbt transforms read from Silver Delta/Iceberg tables; output Gold tables consumed by BI tools. Parquet acceptable for static, non-updated exports |
+| Layer                        | Purpose                                      | Recommended Format                                                              | Rationale                                                                                                                                         |
+| ---------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🥉 **Bronze (Raw)**          | Exact copy of source data, no transformation | **Avro** (streaming sources) / **Parquet** (batch files) / **JSON** (API dumps) | Preserve original structure and schema. Avro for Kafka ingestion; Parquet for batch; JSON for semi-structured APIs                                |
+| 🥈 **Silver (Cleaned)**      | Deduplicated, typed, validated data          | **Delta Lake** or **Apache Iceberg**                                            | ACID guarantees for upserts and deduplication jobs. Schema enforcement prevents data quality drift. Time travel enables rollback on bad runs      |
+| 🥇 **Gold (Business-ready)** | Aggregated, modeled, BI-ready tables         | **Delta Lake** or **Apache Iceberg** (underlying) via **dbt**                   | dbt transforms read from Silver Delta/Iceberg tables; output Gold tables consumed by BI tools. Parquet acceptable for static, non-updated exports |
 
 **Key rule**: Never keep Gold-layer data in CSV or raw JSON. By the time data reaches
 Gold, it must be stored in a format that enforces schema, supports efficient column
@@ -522,6 +522,7 @@ schema enforcement, and time travel (data versioning) on top of a Data Lake. The
 default table format in Databricks. Ideal for Silver and Gold layers.
 
 **Key features not available in plain Parquet**:
+
 - **ACID transactions**: Concurrent reads and writes without corruption
 - **Time travel**: Query any previous version of a table by timestamp or version number
 - **Merge/Upsert**: `MERGE INTO` semantics — insert new, update existing, delete stale records
@@ -697,6 +698,7 @@ vendor lock-in. AWS Glue, AWS Athena, and Snowflake have native Iceberg support.
 The open-source alternative to Delta Lake.
 
 **Key features vs. Delta Lake**:
+
 - **Engine-agnostic**: Native support across Spark, Trino, Flink, Athena, Hive, Snowflake
 - **Hidden partitioning**: Iceberg computes partition values automatically — no partition
   column transforms needed in queries
@@ -835,18 +837,18 @@ spark.sql(\"\"\"
 
 ### Delta Lake vs. Apache Iceberg — Head-to-Head
 
-| Dimension | Delta Lake | Apache Iceberg |
-|---|---|---|
-| **Primary ecosystem** | Databricks, Azure | AWS, multi-cloud, open-source |
-| **Engine support** | Spark (native), Trino (connector), Flink (connector) | Spark, Trino, Flink, Athena, Snowflake, Hive (all native) |
-| **Vendor lock-in risk** | Moderate (Databricks-originated) | Low (Apache Foundation) |
-| **Hidden partitioning** | ❌ Manual partition columns | ✅ Automatic, query-transparent |
-| **Partition evolution** | ⚠️ Limited | ✅ Full, no data rewrite required |
-| **Branching / tagging** | ❌ Not supported | ✅ Native |
-| **Row-level deletes** | ✅ Supported | ✅ Supported (more efficient) |
-| **AWS Glue / Athena native** | ⚠️ Connector needed | ✅ Native support |
-| **Maturity** | ✅ Production-proven at massive scale | ✅ Rapidly maturing, Netflix/Apple/LinkedIn scale |
-| **Community** | Linux Foundation Delta | Apache Software Foundation |
+| Dimension                    | Delta Lake                                           | Apache Iceberg                                            |
+| ---------------------------- | ---------------------------------------------------- | --------------------------------------------------------- |
+| **Primary ecosystem**        | Databricks, Azure                                    | AWS, multi-cloud, open-source                             |
+| **Engine support**           | Spark (native), Trino (connector), Flink (connector) | Spark, Trino, Flink, Athena, Snowflake, Hive (all native) |
+| **Vendor lock-in risk**      | Moderate (Databricks-originated)                     | Low (Apache Foundation)                                   |
+| **Hidden partitioning**      | ❌ Manual partition columns                          | ✅ Automatic, query-transparent                           |
+| **Partition evolution**      | ⚠️ Limited                                           | ✅ Full, no data rewrite required                         |
+| **Branching / tagging**      | ❌ Not supported                                     | ✅ Native                                                 |
+| **Row-level deletes**        | ✅ Supported                                         | ✅ Supported (more efficient)                             |
+| **AWS Glue / Athena native** | ⚠️ Connector needed                                  | ✅ Native support                                         |
+| **Maturity**                 | ✅ Production-proven at massive scale                | ✅ Rapidly maturing, Netflix/Apple/LinkedIn scale         |
+| **Community**                | Linux Foundation Delta                               | Apache Software Foundation                                |
 
 **Decision rule**: Choose **Delta Lake** if your primary compute is Databricks or Azure Synapse.
 Choose **Apache Iceberg** if you need multi-engine compatibility, are on AWS, or want to

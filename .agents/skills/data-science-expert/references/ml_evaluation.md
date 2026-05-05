@@ -3,12 +3,13 @@
 ## Table of Contents
 
 0. [Environment Setup (uv)](#environment)
-1. [Gradient Boosting Selection Guide — XGBoost vs LightGBM vs CatBoost](#gbm-guide)
-2. [Classification Metrics](#classification)
-3. [Regression Metrics](#regression)
-4. [Clustering Metrics](#clustering)
-5. [Model Explainability](#explainability)
-6. [Evaluation Checklist](#checklist)
+1. [ML Algorithm Taxonomy — Selection Reference](#algorithm-taxonomy)
+2. [Gradient Boosting Selection Guide — XGBoost vs LightGBM vs CatBoost](#gbm-guide)
+3. [Classification Metrics](#classification)
+4. [Regression Metrics](#regression)
+5. [Clustering Metrics](#clustering)
+6. [Model Explainability](#explainability)
+7. [Evaluation Checklist](#checklist)
 
 ---
 
@@ -34,7 +35,139 @@ uv sync
 
 ---
 
-## 1. Gradient Boosting Selection Guide — XGBoost vs LightGBM vs CatBoost {#gbm-guide}
+## 1. ML Algorithm Taxonomy — Selection Reference {#algorithm-taxonomy}
+
+> **Authoritative basis**: This taxonomy follows the classification established in
+> Bishop (2006) _Pattern Recognition and Machine Learning_, Hastie et al. (2009)
+> _The Elements of Statistical Learning_, Murphy (2012) _Machine Learning: A Probabilistic
+> Perspective_, and Goodfellow et al. (2016) _Deep Learning_. It represents the
+> consensus categorization used across academic and industry practice.
+
+This section provides a structured reference for algorithm selection by learning paradigm
+and task type. Use it at Step 1 of the Workflow Decision Logic in SKILL.md:
+"Understand the problem type."
+
+### 1.1 Supervised Learning
+
+Supervised learning requires labeled training data — each observation has a known output.
+The model learns a mapping from input features to output labels or values.
+
+#### Classification — predicting discrete class labels
+
+| Algorithm                     | Key Characteristics                                                  | When to Use                                                             |
+| ----------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Logistic Regression           | Linear decision boundary; probabilistic output; L1/L2 regularization | Baseline for binary/multiclass; interpretable; sparse features          |
+| Naive Bayes                   | Assumes feature independence; fast; works well at small n            | Text classification, NLP, high-dimensional sparse data                  |
+| K-Nearest Neighbors (KNN)     | Instance-based; no training phase; sensitive to scale                | Small datasets; non-linear boundaries; interpretable locally            |
+| Support Vector Machine (SVM)  | Maximum-margin classifier; kernel trick for non-linearity            | High-dimensional spaces; small-to-medium datasets; text/image           |
+| Decision Tree                 | Hierarchical splits; interpretable; prone to overfitting             | Rule extraction; interpretability requirement; feature interaction      |
+| Random Forest                 | Ensemble of decorrelated trees; robust; handles missing values       | General-purpose; feature importance; tabular data at moderate scale     |
+| XGBoost / LightGBM / CatBoost | Gradient boosting ensembles; state-of-the-art on tabular data        | Production tabular classification — see GBM Selection Guide (Section 2) |
+
+#### Regression — predicting continuous values
+
+| Algorithm                     | Key Characteristics                                    | When to Use                                                  |
+| ----------------------------- | ------------------------------------------------------ | ------------------------------------------------------------ |
+| Simple Linear Regression      | Single predictor; OLS closed-form solution             | Baseline; interpretable; linearity assumption holds          |
+| Multiple Linear Regression    | Multiple predictors; OLS; assumes no multicollinearity | Linear relationships; low-dimensional; inference required    |
+| Ridge Regression (L2)         | Shrinks all coefficients; handles multicollinearity    | Many correlated features; all features likely relevant       |
+| Lasso Regression (L1)         | Sparse solution; performs feature selection            | Many features; expect only a subset to be predictive         |
+| Elastic Net                   | L1 + L2 combined; balances sparsity and grouping       | Correlated features + sparsity needed simultaneously         |
+| XGBoost / LightGBM / CatBoost | Gradient boosting for regression; non-linear; robust   | Non-linear relationships; tabular data; production pipelines |
+
+### 1.2 Unsupervised Learning
+
+Unsupervised learning operates on unlabeled data. The model discovers inherent
+structure, patterns, or compact representations.
+
+#### Clustering — grouping similar observations
+
+| Algorithm                     | Key Characteristics                                           | When to Use                                                        |
+| ----------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------ |
+| K-Means                       | Centroid-based; assumes spherical clusters; requires k        | Well-separated, roughly equal-sized clusters; large datasets       |
+| DBSCAN                        | Density-based; finds arbitrary shapes; detects noise/outliers | Irregular cluster shapes; unknown number of clusters; spatial data |
+| Hierarchical Clustering       | Builds a dendrogram; no k required; deterministic             | Small datasets; cluster hierarchy matters; interpretability needed |
+| Gaussian Mixture Models (GMM) | Probabilistic; soft assignments; assumes Gaussian components  | Overlapping clusters; probabilistic cluster membership needed      |
+
+#### Dimensionality Reduction — compressing feature space
+
+| Algorithm                            | Key Characteristics                                        | When to Use                                                           |
+| ------------------------------------ | ---------------------------------------------------------- | --------------------------------------------------------------------- |
+| Principal Component Analysis (PCA)   | Linear; maximizes variance; orthogonal components          | High-dimensional tabular data; preprocessing before ML; visualization |
+| Independent Component Analysis (ICA) | Finds statistically independent components; non-Gaussian   | Signal separation (e.g., EEG, audio); latent source recovery          |
+| t-SNE                                | Non-linear; 2D/3D visualization; preserves local structure | Visualization only — not suitable as a preprocessing step for ML      |
+| UMAP                                 | Non-linear; faster than t-SNE; better global structure     | Visualization + preprocessing; large datasets; cluster inspection     |
+
+#### Association Rule Mining — finding co-occurrence patterns
+
+| Algorithm | Key Characteristics                                      | When to Use                                            |
+| --------- | -------------------------------------------------------- | ------------------------------------------------------ |
+| Apriori   | Breadth-first search; generates candidate itemsets       | Small-to-medium item sets; market basket analysis      |
+| FP-Growth | Tree-based; no candidate generation; faster than Apriori | Large transaction datasets; scales better than Apriori |
+
+#### Anomaly Detection — identifying unusual observations
+
+| Algorithm                  | Key Characteristics                                                      | When to Use                                                                       |
+| -------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| Z-score                    | Univariate; assumes normality; flags points beyond N standard deviations | Simple univariate outlier detection; normally distributed features                |
+| Isolation Forest           | Ensemble of random trees; model-free; scales well                        | Multivariate anomaly detection; high-dimensional data; no distribution assumption |
+| Local Outlier Factor (LOF) | Density-based; detects local anomalies                                   | Anomalies in regions of varying density; spatial data                             |
+| One-Class SVM              | Boundary-based; trained on normal class only                             | When only normal examples are available during training                           |
+
+### 1.3 Semi-Supervised Learning
+
+Semi-supervised learning uses a small labeled dataset combined with a large unlabeled
+dataset. Applicable when labeling is expensive or time-consuming.
+
+| Algorithm         | Task           | Key Characteristics                                                                                              | When to Use                                                                     |
+| ----------------- | -------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Self-Training     | Classification | Trains on labeled data; iteratively labels high-confidence unlabeled examples                                    | Simple baseline; any classifier can be wrapped                                  |
+| Co-Training       | Classification | Two classifiers trained on two independent feature views; each labels data for the other (Blum & Mitchell, 1998) | Natural feature splits exist (e.g., text + metadata); redundant views available |
+| Label Propagation | Classification | Graph-based; propagates labels through similarity graph                                                          | Graph-structured data; local cluster assumption holds                           |
+
+Note: Co-Training is a classification method — not a regression technique. Its
+theoretical guarantee requires two conditionally independent, sufficient feature views.
+
+### 1.4 Reinforcement Learning
+
+Reinforcement learning trains an agent to take actions in an environment to maximize
+cumulative reward. No labeled dataset — the signal comes from environmental feedback.
+
+| Paradigm                         | Algorithm                             | Key Characteristics                                             | When to Use                                                         |
+| -------------------------------- | ------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Model-Free / Policy Optimization | Policy Gradient (REINFORCE, PPO, A3C) | Directly optimizes the policy; handles continuous action spaces | Robotics, game playing, continuous control                          |
+| Model-Free / Value-Based         | Q-Learning, Deep Q-Network (DQN)      | Learns a value function; off-policy; discrete action spaces     | Game playing (Atari); discrete decision problems                    |
+| Model-Based                      | World Model + Planner                 | Learns environment dynamics; uses model for planning            | Data-efficient learning; environments where simulation is available |
+
+### Algorithm Selection Decision Logic
+
+Apply this as Step 1 of the Workflow Decision Logic defined in SKILL.md:
+
+```
+1. Is the target variable known for training examples?
+   YES → Supervised Learning
+   NO  → Unsupervised Learning
+   PARTIAL (some labeled, mostly unlabeled) → Semi-Supervised Learning
+   NONE (reward signal only) → Reinforcement Learning
+
+2. For Supervised Learning — what type is the target?
+   Discrete categories → Classification
+   Continuous value    → Regression
+
+3. For Unsupervised Learning — what is the goal?
+   Group similar observations       → Clustering
+   Reduce feature dimensionality    → Dimensionality Reduction
+   Find co-occurrence patterns      → Association Rule Mining
+   Detect anomalies / outliers      → Anomaly Detection
+
+4. For tabular data (Classification or Regression):
+   Always benchmark XGBoost, LightGBM, and CatBoost first.
+   See Section 2 (GBM Selection Guide) for detailed criteria.
+```
+
+---
+
+## 2. Gradient Boosting Selection Guide — XGBoost vs LightGBM vs CatBoost {#gbm-guide}
 
 > **Scientific basis**: Gradient Boosting was formalized by Friedman (2001). Modern
 > implementations (XGBoost, LightGBM, CatBoost) dominate tabular ML.
