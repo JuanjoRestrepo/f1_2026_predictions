@@ -1,0 +1,65 @@
+name: Docker Build and Publish
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+# Permisos requeridos para publicar en GHCR
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # QEMU permite compilar para múltiples arquitecturas (ej. ARM64 para Mac M1)
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # Buildx es el motor avanzado de Docker que permite caché y multi-arquitectura
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Autenticación automática en GitHub Container Registry usando el token seguro
+      - name: Log in to the Container registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Genera automáticamente los tags (ej. latest, v1.0.0, sha)
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'master') }}
+            type=semver,pattern={{version}}
+            type=sha,format=short
+
+      # Construye y empuja la imagen al registro
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          # Construimos para procesadores estándar (amd64) y Apple Silicon / ARM (arm64)
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Caché de capas súper optimizada nativa de GitHub Actions
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
