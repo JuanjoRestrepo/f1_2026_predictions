@@ -33,22 +33,22 @@ def add_track_evolution_factor(df: pd.DataFrame, window: int = 5) -> pd.DataFram
         .apply(lambda x: x.nsmallest(3).median())
         .reset_index(name="lap_potential_s")
     )
-    
+
     # Calculate rolling delta (current lap potential vs window laps ago)
     # Negative means track is getting faster (rubbering in)
-    lap_pace["Track_Evolution_Factor"] = lap_pace["lap_potential_s"].diff(periods=window)
-    
+    lap_pace["Track_Evolution_Factor"] = lap_pace["lap_potential_s"].diff(
+        periods=window
+    )
+
     # Fill early laps with 0 (no evolution context yet)
     lap_pace["Track_Evolution_Factor"] = lap_pace["Track_Evolution_Factor"].fillna(0.0)
 
     # Merge back
     df = df.merge(
-        lap_pace[["LapNumber", "Track_Evolution_Factor"]], 
-        on="LapNumber", 
-        how="left"
+        lap_pace[["LapNumber", "Track_Evolution_Factor"]], on="LapNumber", how="left"
     )
-    
+
     # Forward fill any missing values just in case
     df["Track_Evolution_Factor"] = df["Track_Evolution_Factor"].ffill().fillna(0.0)
-    
+
     return df

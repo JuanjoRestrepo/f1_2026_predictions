@@ -86,7 +86,8 @@ share/python-wheels/
 # Raw FastF1 downloads and intermediate DataFrames
 data/raw/
 data/processed/
-data/outputs/
+data/outputs/*
+!data/outputs/models/
 
 # Parquet, CSV, JSON data files anywhere in the project
 *.parquet

@@ -1,3 +1,6 @@
+"""FastAPI entry point for the F1 2026 Pace Predictor."""
+
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -16,23 +19,25 @@ model: BasePaceRegressor | None = None
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Load the ML model on startup and clean up on shutdown."""
     global model
     settings = get_settings()
     model_path = settings.data_outputs_dir / "models" / "xgb_pace_model.joblib"
-    
+
     try:
-        # We know XGBoost was saved, so we can instantiate the base class using classmethod
-        from f1_predictions.models.xgboost_pipeline import F1PaceRegressor
+        # Load the base class using classmethod
+        from f1_predictions.models.xgboost_pipeline import (
+            F1PaceRegressor,
+        )
+
         model = F1PaceRegressor.load_from_path(model_path)
         logger.info("Successfully loaded XGBoost model for API serving.")
     except Exception as e:
-        logger.error("Failed to load model from %s: %s", model_path, e)
-        # We don't raise here so the API can start and /health can report failure if needed,
-        # or we could raise to crash the container. MLOps standard: Crash if model is missing.
+        logger.exception("Failed to load model from %s", model_path)
+        # Crash the container if model is missing (MLOps standard)
         raise RuntimeError(f"CRITICAL: ML Model not found at {model_path}") from e
-        
+
     yield
     # Cleanup on shutdown (if any)
     logger.info("Shutting down API. Cleaning up resources.")
@@ -40,18 +45,22 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="F1 2026 Pace Predictor API",
-    description="REST API for predicting F1 lap times based on telemetric and environmental features.",
+    description=(
+        "REST API for predicting F1 lap times based on "
+        "telemetric and environmental features."
+    ),
     version="1.0.0",
     lifespan=lifespan,
 )
 
 
 class PredictionRequest(BaseModel):
+    """Payload containing lap features.
+
+    Accepts arbitrary extra fields to accommodate all one-hot encoded
+    and engineered columns present in the Gold layer.
     """
-    Payload containing lap features.
-    Accepts arbitrary extra fields to accommodate all one-hot encoded and engineered columns
-    present in the Gold layer.
-    """
+
     features: list[dict[str, Any]] = Field(
         ...,
         description="List of feature dictionaries. Each dictionary represents one lap.",
@@ -67,21 +76,27 @@ class PredictionRequest(BaseModel):
                     "Brake_Wear_Proxy": 0.02,
                 }
             ]
-        }
+        },
     )
 
 
 class PredictionResponse(BaseModel):
+    """Response containing the list of predicted lap times."""
+
     predictions: list[float]
     model_features_expected: int
 
 
 @app.get("/health")
-async def health_check() -> dict[str, str]:
+async def health_check() -> dict[str, Any]:
     """Check API and Model health."""
     if model is None:
         raise HTTPException(status_code=503, detail="Model is not loaded")
-    return {"status": "ok", "model_loaded": True, "features_count": str(len(model.features))}
+    return {
+        "status": "ok",
+        "model_loaded": True,
+        "features_count": str(len(model.features)),
+    }
 
 
 @app.post("/predict", response_model=PredictionResponse)
@@ -89,19 +104,19 @@ async def predict(payload: PredictionRequest) -> PredictionResponse:
     """Predict lap times for a batch of feature sets."""
     if model is None:
         raise HTTPException(status_code=503, detail="Model is not loaded")
-        
+
     try:
         # Convert incoming JSON dicts to a pandas DataFrame
         df = pd.DataFrame(payload.features)
-        
+
         # Predict using the loaded model wrapper
         # The wrapper's predict() method handles feature reindexing and missing columns
         predictions = model.predict(df)
-        
+
         return PredictionResponse(
             predictions=predictions.tolist(),
-            model_features_expected=len(model.features)
+            model_features_expected=len(model.features),
         )
     except Exception as e:
-        logger.error("Prediction failed: %s", e)
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.exception("Prediction failed")
+        raise HTTPException(status_code=400, detail=str(e)) from e

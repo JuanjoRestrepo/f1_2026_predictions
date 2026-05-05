@@ -25,16 +25,19 @@ import pandas as pd
 from f1_predictions.cleaning.pipeline import load_clean_laps
 from f1_predictions.features.encoding import CategoricalFeatureEncoder
 from f1_predictions.features.historical_performance import add_historical_points
+from f1_predictions.features.reliability import (
+    add_brake_wear_proxy,
+    add_pu_strain_index,
+)
 from f1_predictions.features.rolling_pace import (
     add_lap_delta_to_fastest,
     add_rolling_pace_features,
 )
+from f1_predictions.features.track_evolution import add_track_evolution_factor
 from f1_predictions.features.tyre_degradation import (
     add_normalised_tyre_life,
     add_tyre_degradation_slope,
 )
-from f1_predictions.features.track_evolution import add_track_evolution_factor
-from f1_predictions.features.reliability import add_brake_wear_proxy, add_pu_strain_index
 from f1_predictions.features.weather import add_weather_features
 from f1_predictions.ingestion.fastf1_client import SessionKey
 from f1_predictions.ingestion.parquet_writer import (
@@ -161,7 +164,7 @@ def run_feature_pipeline(
     df = add_tyre_degradation_slope(df)
     df = add_normalised_tyre_life(df)
     df = add_track_evolution_factor(df)
-    
+
     # Add reliability proxies
     df = add_brake_wear_proxy(df)
     df = add_pu_strain_index(df)

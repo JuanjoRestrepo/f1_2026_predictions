@@ -9,7 +9,7 @@ import pandas as pd
 
 def add_brake_wear_proxy(df: pd.DataFrame, window: int = 3) -> pd.DataFrame:
     """Calculate a Brake Wear Proxy using Sector 3 time variance.
-    
+
     Sector 3 often contains heavy braking zones (e.g., Wall of Champions in Canada).
     Increased variance or degradation in Sector 3 times relative to overall pace
     can indicate brake fading or wear.
@@ -23,7 +23,7 @@ def add_brake_wear_proxy(df: pd.DataFrame, window: int = 3) -> pd.DataFrame:
     """
     # Try to resolve Sector 3 numeric time
     s3_col = "Sector3Time_s" if "Sector3Time_s" in df.columns else "Sector3Time"
-    
+
     if s3_col not in df.columns or "Driver" not in df.columns:
         df["Brake_Wear_Proxy"] = 0.0
         return df
@@ -37,29 +37,29 @@ def add_brake_wear_proxy(df: pd.DataFrame, window: int = 3) -> pd.DataFrame:
 
     # Calculate rolling variance of Sector 3 times per driver
     df["_s3_seconds"] = s3_seconds
-    
+
     # Sort to ensure rolling applies chronologically
     if "LapNumber" in df.columns:
         df = df.sort_values(["Driver", "LapNumber"])
-        
+
     df["Brake_Wear_Proxy"] = (
         df.groupby("Driver")["_s3_seconds"]
         .rolling(window=window, min_periods=1)
         .var()
         .reset_index(level=0, drop=True)
     )
-    
+
     # Fill NAs and drop temp column
     df["Brake_Wear_Proxy"] = df["Brake_Wear_Proxy"].fillna(0.0)
     df = df.drop(columns=["_s3_seconds"])
-    
+
     return df
 
 
 def add_pu_strain_index(df: pd.DataFrame) -> pd.DataFrame:
     """Calculate Power Unit (PU) Strain Index.
-    
-    Approximates engine strain combining cumulative distance/laps and 
+
+    Approximates engine strain combining cumulative distance/laps and
     environmental factors (TrackTemp) which stress cooling.
 
     Args:
@@ -74,7 +74,7 @@ def add_pu_strain_index(df: pd.DataFrame) -> pd.DataFrame:
 
     # Base strain increases with laps
     base_strain = df["LapNumber"]
-    
+
     # Multiplier for track temperature if available
     if "TrackTemp" in df.columns:
         # Normalize around 30C
@@ -83,8 +83,8 @@ def add_pu_strain_index(df: pd.DataFrame) -> pd.DataFrame:
         temp_multiplier = 1.0
 
     df["PU_Strain_Index"] = base_strain * temp_multiplier
-    
+
     # Fill NAs
     df["PU_Strain_Index"] = df["PU_Strain_Index"].fillna(0.0)
-    
+
     return df
