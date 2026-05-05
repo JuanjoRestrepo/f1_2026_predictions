@@ -9,6 +9,7 @@
 5. [Time Series Tests](#time-series)
 6. [Power Analysis](#power)
 7. [Reporting Standards](#reporting)
+8. [Variance and Standard Deviation — Foundations and ML Applications](#variance-std)
 
 ---
 
@@ -303,3 +304,207 @@ Every statistical result MUST be reported with the following components:
 
 **Critical reminder**: Statistical significance (p < α) does NOT imply practical significance.
 Always report and interpret the effect size alongside the p-value.
+
+---
+
+## 8. Variance and Standard Deviation — Foundations and ML Applications {#variance-std}
+
+> **References**: Fisher, R. A. (1925). _Statistical Methods for Research Workers_. Oliver & Boyd.
+> Montgomery, D. C., & Runger, G. C. (2014). _Applied Statistics and Probability for Engineers_ (6th ed.). Wiley.
+> Hastie, T., Tibshirani, R., & Friedman, J. (2009). _The Elements of Statistical Learning_ (2nd ed.). Springer.
+> Goodfellow, I., Bengio, Y., & Courville, A. (2016). _Deep Learning_. MIT Press.
+
+### Conceptual Foundation
+
+Both variance and standard deviation quantify dispersion — how far observations spread
+around the mean. They measure the same underlying property but serve different purposes
+in practice.
+
+**Population variance** (σ²):
+
+    σ² = Σ(xᵢ - μ)² / n
+
+**Sample variance** (s²) — used when estimating from a sample (n-1 in denominator, Bessel's correction):
+
+    s² = Σ(xᵢ - x̄)² / (n - 1)
+
+**Standard deviation** (σ or s): the square root of variance, restoring the original unit of measurement.
+
+### Key Distinction: Units and Purpose
+
+| Property                | Variance (σ²)                                                               | Standard Deviation (σ)                                                    |
+| ----------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Unit of measurement     | Squared (e.g., USD², hours²)                                                | Original (e.g., USD, hours)                                               |
+| Human interpretability  | Low — squared units are not intuitive                                       | High — directly comparable to the data scale                              |
+| Primary use             | Mathematical optimization, PCA, ANOVA, loss functions                       | Business communication, outlier detection (Z-score), confidence intervals |
+| Sensitivity to outliers | Very high — squaring amplifies extreme deviations                           | High, but more moderate                                                   |
+| Additivity              | Variances of independent variables are additive: Var(X+Y) = Var(X) + Var(Y) | Standard deviations are NOT directly additive                             |
+
+**Rule of thumb for communication**: Use variance when operating inside mathematical
+machinery (algorithms, proofs, optimization). Use standard deviation when reporting
+results to stakeholders or interpreting model uncertainty in original units.
+
+Example: if a model predicts delivery time with mean = 10 hours and σ = 2 hours,
+report "10 ± 2 hours" — not "variance = 4 hours²."
+
+### The Empirical Rule (68-95-99.7 Rule)
+
+For a normally distributed variable with mean μ and standard deviation σ:
+
+| Interval | Probability | Practical Interpretation                               |
+| -------- | ----------- | ------------------------------------------------------ | --- | ---- |
+| μ ± 1σ   | 68.27%      | The central majority of observations                   |
+| μ ± 2σ   | 95.45%      | Standard threshold for "unusual" values in many fields |
+| μ ± 3σ   | 99.73%      | Basis for the Z-score outlier detection rule (         | Z   | > 3) |
+
+This rule applies strictly to normal distributions. For non-normal data (skewed,
+heavy-tailed, bimodal), apply Chebyshev's inequality instead: at least 1 - 1/k²
+of observations fall within k standard deviations of the mean for any distribution.
+
+### Variance in Machine Learning
+
+Variance has two distinct roles in ML that must not be confused:
+
+**Role 1 — Descriptive statistic**: Quantifies the spread of a feature or target.
+Features with near-zero variance carry no information and should be removed
+(use `VarianceThreshold` in scikit-learn). PCA finds the directions of maximum
+variance in the feature space because variance represents the information content.
+
+**Role 2 — Bias-Variance Tradeoff (generalization error)**: In the context of model
+evaluation, variance refers to the sensitivity of a model's predictions to fluctuations
+in the training set. The expected prediction error decomposes as:
+
+    E[(y - ŷ)²] = Bias² + Variance + Irreducible Noise
+
+| Term              | Definition                                                     | Symptom                               |
+| ----------------- | -------------------------------------------------------------- | ------------------------------------- |
+| Bias²             | Error from incorrect assumptions in the model (underfitting)   | High training error + high test error |
+| Variance          | Error from over-sensitivity to training data (overfitting)     | Low training error + high test error  |
+| Irreducible noise | Error from inherent randomness in the data — cannot be reduced | Persists regardless of model          |
+
+Strategies to reduce **high variance** (overfitting):
+
+- Regularization: L1 (Lasso), L2 (Ridge), Elastic Net — penalize large coefficient magnitudes
+- Ensemble methods: Random Forests, gradient boosting — average over many trees
+- Dropout (neural networks): randomly deactivate neurons during training
+- Reduce model complexity: fewer parameters, shallower trees, smaller networks
+- Increase training data: more data reduces variance by providing more signal
+
+### Decision Guide: Variance vs Standard Deviation
+
+```
+Is the operation inside a mathematical algorithm or optimization?
+  YES → Use variance (σ²): PCA, ANOVA, loss functions, feature selection
+  NO  → Continue
+
+Will the result be communicated to stakeholders or interpreted in original units?
+  YES → Use standard deviation (σ): reports, confidence intervals, outlier flagging
+  NO  → Continue
+
+Are you combining the spread of two independent variables?
+  YES → Use variance: Var(X + Y) = Var(X) + Var(Y)
+  NO  → Either is valid; prefer standard deviation for interpretability
+```
+
+### Implementation
+
+```python
+from __future__ import annotations
+
+import logging
+
+import numpy as np
+import pandas as pd
+from scipy import stats
+
+logger = logging.getLogger(__name__)
+
+# --- Constants ---
+OUTLIER_ZSCORE_THRESHOLD: float = 3.0  # Based on empirical 99.73% rule
+
+
+def descriptive_spread(series: pd.Series) -> dict:
+    """
+    Compute variance, standard deviation, and related spread statistics.
+
+    Returns both population and sample estimates. Uses sample (ddof=1) by default
+    for inferential contexts; use ddof=0 for population-level descriptive summaries.
+
+    Args:
+        series: Numeric column to analyze.
+
+    Returns:
+        Dictionary of spread statistics with units noted.
+    """
+    data = series.dropna()
+    mean = data.mean()
+
+    return {
+        "mean": round(mean, 4),
+        "sample_variance": round(data.var(ddof=1), 4),       # s² — use for inference
+        "population_variance": round(data.var(ddof=0), 4),   # σ² — use for full population
+        "sample_std": round(data.std(ddof=1), 4),            # s
+        "population_std": round(data.std(ddof=0), 4),        # σ
+        "cv_pct": round(data.std(ddof=1) / mean * 100, 2) if mean != 0 else None,  # Coefficient of variation
+        "skewness": round(data.skew(), 4),
+        "kurtosis": round(data.kurtosis(), 4),  # Excess kurtosis; 0 = normal
+    }
+
+
+def detect_outliers_zscore(
+    series: pd.Series,
+    threshold: float = OUTLIER_ZSCORE_THRESHOLD,
+) -> pd.Series:
+    """
+    Flag outliers using Z-score method (assumes approximate normality).
+
+    Z-score = (x - mean) / std. Points with |Z| > threshold are flagged.
+    The threshold of 3.0 corresponds to the 99.73% empirical rule boundary.
+
+    Args:
+        threshold: Z-score magnitude above which a point is considered an outlier.
+                   Standard: 3.0. Stricter: 2.5. More lenient: 3.5.
+
+    Returns:
+        Boolean Series: True where the observation is an outlier.
+
+    Note:
+        For non-normal distributions, use IQR-based detection (box plot method)
+        or Isolation Forest instead.
+    """
+    z_scores = np.abs(stats.zscore(series.dropna()))
+    outlier_mask = pd.Series(z_scores > threshold, index=series.dropna().index)
+    n_outliers = outlier_mask.sum()
+    logger.info(
+        "Z-score outlier detection (threshold=%.1f): %d outliers detected (%.2f%%)",
+        threshold, n_outliers, 100 * n_outliers / len(series)
+    )
+    return outlier_mask
+
+
+def variance_threshold_filter(
+    df: pd.DataFrame,
+    threshold: float = 0.01,
+) -> pd.DataFrame:
+    """
+    Remove features with variance below threshold.
+
+    Near-zero variance features carry negligible information and should be
+    removed before ML model training. This is the statistical basis for
+    scikit-learn's VarianceThreshold transformer.
+
+    Args:
+        threshold: Minimum variance to retain a feature.
+
+    Returns:
+        DataFrame with low-variance columns removed.
+    """
+    variances = df.var(ddof=1)
+    retained = variances[variances >= threshold].index.tolist()
+    dropped = variances[variances < threshold].index.tolist()
+    logger.info(
+        "Variance threshold filter (%.4f): retained %d features, dropped %d: %s",
+        threshold, len(retained), len(dropped), dropped
+    )
+    return df[retained]
+```

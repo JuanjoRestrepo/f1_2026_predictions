@@ -244,19 +244,94 @@ def plot_distribution_comparison(
 
 Apply this table when choosing any EDA visualization — not just for distributions:
 
-| Data structure                   | Analysis goal          | Recommended plot                                                 |
-| -------------------------------- | ---------------------- | ---------------------------------------------------------------- |
-| One continuous variable          | Distribution shape     | Histogram + KDE (small n); violin (large n)                      |
-| One continuous variable          | Outlier detection      | Box plot                                                         |
-| One continuous variable          | Full picture           | Hybrid violin                                                    |
-| One continuous + one categorical | Group comparison       | Box plot (many groups) / Hybrid violin (few groups)              |
-| Two continuous variables         | Relationship           | Scatter plot + regression line                                   |
-| Two continuous variables         | Density at scale       | Hex bin or 2D KDE (when n > 10k and scatter overplotting occurs) |
-| Many continuous variables        | Pairwise relationships | `seaborn.pairplot()`                                             |
-| Many continuous variables        | Correlation structure  | Heatmap (Pearson or Spearman)                                    |
-| One categorical variable         | Frequency              | Bar chart (never pie chart in analytics contexts)                |
-| Time series                      | Trend + seasonality    | Line chart; decomposition plot                                   |
-| High-dimensional data            | Structure / clusters   | PCA scatter (2D projection)                                      |
+| Data structure                   | Analysis goal          | Recommended plot                                                                |
+| -------------------------------- | ---------------------- | ------------------------------------------------------------------------------- |
+| One continuous variable          | Distribution shape     | Histogram + KDE (small n); violin (large n)                                     |
+| One continuous variable          | Outlier detection      | Box plot                                                                        |
+| One continuous variable          | Full picture           | Hybrid violin                                                                   |
+| One continuous + one categorical | Group comparison       | Box plot (many groups) / Hybrid violin (few groups)                             |
+| Two continuous variables         | Relationship           | Scatter plot + regression line                                                  |
+| Two continuous variables         | Density at scale       | Hex bin or 2D KDE (when n > 10k and scatter overplotting occurs)                |
+| Many continuous variables        | Pairwise relationships | `seaborn.pairplot()`                                                            |
+| Many continuous variables        | Correlation structure  | Heatmap (Pearson or Spearman)                                                   |
+| One categorical variable         | Frequency              | Horizontal bar chart, ordered by value (never pie chart in analytical contexts) |
+| Time series                      | Trend + seasonality    | Line chart; decomposition plot                                                  |
+| High-dimensional data            | Structure / clusters   | PCA scatter (2D projection)                                                     |
+
+### Visualization Integrity Rules — Anti-patterns and Corrections
+
+The credibility of a data analysis depends on the accuracy of its visual communication.
+Each rule below addresses a documented cognitive bias or perceptual limitation.
+
+> **Reference**: Cairo, A. (2016). _The Truthful Art: Data, Charts, and Maps for Communication_.
+> New Riders Press. Wilke, C. O. (2019). _Fundamentals of Data Visualization_. O'Reilly.
+> Tufte, E. R. (2001). _The Visual Display of Quantitative Information_ (2nd ed.). Graphics Press.
+
+**Rule 1 — Categorical comparison: use ordered horizontal bar charts, not pie charts.**
+The human visual system compares lengths along a common baseline with high precision.
+It compares angles and circular arc areas with low precision. Pie charts become
+unreadable beyond four categories when proportions are similar. Horizontal bar charts
+ordered from largest to smallest allow immediate rank identification without reading labels.
+
+**Rule 2 — Temporal trends: use line charts, not bar charts.**
+Bar charts treat each time period as a discrete, independent event. Line charts connect
+observations, making acceleration, deceleration, volatility, and directional change
+visible as continuous phenomena. For time series with more than six periods, use a line
+chart. A shaded area variant (area chart) adds emphasis to cumulative magnitude.
+
+**Rule 3 — Distribution: never summarize with the mean alone.**
+Two datasets can share an identical mean while having diametrically opposite distributional
+structures — one unimodal symmetric, another bimodal or heavily skewed. Reporting only
+the mean conceals this. Always accompany a mean with at minimum: standard deviation,
+sample size, and a distribution visualization (histogram or box plot).
+
+**Rule 4 — Y-axis integrity: bar charts must start at zero.**
+Truncating the Y-axis of a bar chart (starting at a value above zero) distorts perceived
+magnitude. A 1% difference can appear as a 10× difference visually when the axis is
+truncated. This rule applies specifically to bar charts where bar length encodes
+magnitude. Line charts may use a non-zero baseline when showing fine-grained variation
+within a narrow range, provided the axis range is clearly labeled.
+
+**Rule 5 — Scatter plots: always include a trend line and correlation statistic.**
+A scatter plot without a regression line invites subjective pattern attribution. Always
+overlay the OLS trend line and annotate with the Pearson r (or Spearman ρ for
+non-normal data) and R². This quantifies the relationship mathematically, eliminates
+visual ambiguity, and prevents incorrect causal inference from visual noise.
+
+**Rule 6 — 3D charts: never use for statistical data.**
+3D perspective introduces systematic optical distortion: elements in the foreground
+appear larger than elements of identical magnitude in the background. This is not
+a stylistic issue — it is a perceptual bias that produces incorrect magnitude
+estimates. Use flat 2D charts exclusively. For proportions requiring a circular
+form, use a 2D donut chart (ring chart), which allows the center to display a KPI.
+
+**Rule 7 — Heatmaps for correlation: use divergent color scales.**
+A sequential (single-color) scale maps both positive and negative correlation values
+onto the same color progression. This makes it impossible to visually distinguish a
+strong negative correlation from a near-zero correlation if they produce similar color
+intensity. Use a divergent scale (e.g., blue–white–red) centered at zero. This
+immediately reveals polarity: strong positive, strong negative, and neutral correlations
+are each visually distinct.
+
+**Rule 8 — Subgroup comparison: use grouped bar charts over 100% stacked bars.**
+In a 100% stacked bar chart, only the bottom segment has a stable zero baseline.
+Every higher segment floats on a shifting baseline, requiring the viewer to perform
+mental subtraction to compare values. For comparing absolute magnitudes across
+subgroups, use grouped (side-by-side) bar charts. Use 100% stacked bars only when
+the explicit goal is showing part-to-whole composition across categories.
+
+#### Anti-pattern Quick Reference
+
+| Anti-pattern                                  | Correct alternative              | Reason                                          |
+| --------------------------------------------- | -------------------------------- | ----------------------------------------------- |
+| Pie chart with > 4 categories                 | Horizontal bar chart, ordered    | Length comparison is more accurate than angle   |
+| Bar chart for time series trends              | Line chart                       | Bars fragment continuity; lines show flow       |
+| Mean reported alone                           | Mean + std dev + histogram       | Mean conceals distributional shape              |
+| Y-axis not starting at zero (bar chart)       | Y-axis from 0                    | Truncation exaggerates magnitude differences    |
+| Scatter plot with no trend line               | Scatter + OLS line + r/R²        | Prevents subjective pattern attribution         |
+| 3D chart                                      | 2D flat equivalent               | 3D perspective introduces perceptual distortion |
+| Sequential color scale on correlation heatmap | Divergent scale (blue–white–red) | Sequential scale hides polarity                 |
+| 100% stacked bars for magnitude comparison    | Grouped bar chart                | Floating baselines prevent accurate comparison  |
 
 ```python
 import pandas as pd
