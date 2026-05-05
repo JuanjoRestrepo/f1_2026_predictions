@@ -50,6 +50,7 @@ from f1_predictions.models import (
     LightGBMPaceRegressor,
     prepare_feature_matrix,
 )
+from f1_predictions.modeling.tuning import OptunaTuner
 from f1_predictions.utils.config import get_settings
 from f1_predictions.utils.logging_setup import (
     configure_root_pipeline_logger,
@@ -153,6 +154,7 @@ def train_models(
     train_years: list[int],
     predict_year: int,
     random_seed: int,
+    tune_trials: int = 0,
 ) -> tuple[F1PaceRegressor, LightGBMPaceRegressor]:
     """Train XGBoost and LightGBM on the specified training seasons.
 
@@ -180,12 +182,20 @@ def train_models(
         )
         raise ValueError(msg)
 
+    xgb_params = None
+    lgb_params = None
+    if tune_trials > 0:
+        logger.info("Running hyperparameter tuning for %d trials...", tune_trials)
+        tuner = OptunaTuner(random_state=random_seed, n_trials=tune_trials)
+        xgb_params = tuner.tune_xgboost(df_all, train_years, predict_year)
+        lgb_params = tuner.tune_lightgbm(df_all, train_years, predict_year)
+
     logger.info("Training XGBoost on seasons %s...", train_years)
-    xgb_model = F1PaceRegressor(random_state=random_seed)
+    xgb_model = F1PaceRegressor(random_state=random_seed, model_params=xgb_params)
     xgb_model.train_evaluate_chronological(df_all, train_years, predict_year)
 
     logger.info("Training LightGBM on seasons %s...", train_years)
-    lgb_model = LightGBMPaceRegressor(random_state=random_seed)
+    lgb_model = LightGBMPaceRegressor(random_state=random_seed, model_params=lgb_params)
     lgb_model.train_evaluate_chronological(df_all, train_years, predict_year)
 
     return xgb_model, lgb_model
@@ -379,6 +389,7 @@ def save_outputs(
 def run_prediction_pipeline(
     train_years: list[int],
     predict_year: int,
+    tune_trials: int = 0,
 ) -> None:
     """Execute the full prediction pipeline.
 
@@ -412,7 +423,7 @@ def run_prediction_pipeline(
 
     # ── 2. Train ───────────────────────────────────────────────────────────
     xgb_model, lgb_model = train_models(
-        df_all, train_years, predict_year, settings.random_seed
+        df_all, train_years, predict_year, settings.random_seed, tune_trials=tune_trials
     )
 
     # ── 1. Setup versioned output directories ─────────────────────────────
@@ -493,6 +504,12 @@ def parse_args() -> argparse.Namespace:
         help="Season to predict (must NOT be in --train-years).",
     )
     parser.add_argument(
+        "--tune-trials",
+        type=int,
+        default=0,
+        help="Number of Optuna tuning trials to run (0 to disable).",
+    )
+    parser.add_argument(
         "--log-level",
         default="INFO",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
@@ -515,6 +532,7 @@ if __name__ == "__main__":
         run_prediction_pipeline(
             train_years=args.train_years,
             predict_year=args.predict_year,
+            tune_trials=args.tune_trials,
         )
     except (FileNotFoundError, ValueError):
         logger.exception("Prediction pipeline failed.")

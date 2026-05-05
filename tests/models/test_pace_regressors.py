@@ -66,9 +66,10 @@ def test_tree_regressors_train_predict(
         test_year=2024,
     )
 
-    assert set(metrics) == {"MAE", "RMSE"}
+    assert set(metrics) == {"MAE", "RMSE", "MAPE"}
     assert metrics["MAE"] >= 0.0
     assert metrics["RMSE"] >= 0.0
+    assert metrics["MAPE"] >= 0.0
     assert regressor.features
 
     inference_df = sample_model_df.drop(columns=["LapTime_s"])

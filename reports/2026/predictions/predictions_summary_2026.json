@@ -1,64 +1,63 @@
 {
   "predict_year": 2026,
   "train_years": [
-    2022,
     2023,
     2024,
     2025
   ],
-  "total_laps_predicted": 2418,
+  "total_laps_predicted": 3223,
   "top5_drivers_xgb": [
     {
       "rank": 1,
       "Driver": "NOR",
-      "median_predicted_s": 85.76032257080078
+      "median_predicted_s": 92.51385498046875
     },
     {
       "rank": 2,
-      "Driver": "BOR",
-      "median_predicted_s": 86.65744018554688
+      "Driver": "ANT",
+      "median_predicted_s": 92.99284362792969
     },
     {
       "rank": 3,
-      "Driver": "ALB",
-      "median_predicted_s": 87.46165466308594
+      "Driver": "LEC",
+      "median_predicted_s": 93.38616943359375
     },
     {
       "rank": 4,
-      "Driver": "ANT",
-      "median_predicted_s": 93.37503814697266
+      "Driver": "PIA",
+      "median_predicted_s": 93.47897338867188
     },
     {
       "rank": 5,
-      "Driver": "PIA",
-      "median_predicted_s": 93.61531066894531
+      "Driver": "RUS",
+      "median_predicted_s": 93.51813507080078
     }
   ],
   "top5_drivers_lgb": [
     {
       "rank": 1,
       "Driver": "NOR",
-      "median_predicted_s": 85.50117230650436
+      "median_predicted_s": 92.43270765079147
     },
     {
       "rank": 2,
-      "Driver": "BOR",
-      "median_predicted_s": 86.48944897099172
+      "Driver": "ANT",
+      "median_predicted_s": 93.00598661118798
     },
     {
       "rank": 3,
-      "Driver": "ALB",
-      "median_predicted_s": 87.45446356205349
+      "Driver": "LEC",
+      "median_predicted_s": 93.48510413546396
     },
     {
       "rank": 4,
-      "Driver": "ANT",
-      "median_predicted_s": 93.38368562286514
+      "Driver": "PIA",
+      "median_predicted_s": 93.52714599279692
     },
     {
       "rank": 5,
-      "Driver": "PIA",
-      "median_predicted_s": 93.6588045412036
+      "Driver": "RUS",
+      "median_predicted_s": 93.60112784467351
     }
   ]
 }

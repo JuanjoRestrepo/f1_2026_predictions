@@ -13,7 +13,11 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import mean_absolute_error, root_mean_squared_error  # type: ignore[import-untyped]
+from sklearn.metrics import (  # type: ignore[import-untyped]
+    mean_absolute_error,
+    mean_absolute_percentage_error,
+    root_mean_squared_error,
+)
 
 DEFAULT_TARGET_COLUMN: str = "LapTime_s"
 DEFAULT_SEASON_COLUMN: str = "Season"
@@ -49,10 +53,11 @@ class RegressionMetrics:
 
     mae: float
     rmse: float
+    mape: float
 
     def as_dict(self) -> dict[str, float]:
         """Convert the metrics into the notebook-friendly dict shape."""
-        return {"MAE": self.mae, "RMSE": self.rmse}
+        return {"MAE": self.mae, "RMSE": self.rmse, "MAPE": self.mape}
 
 
 def prepare_feature_matrix(
@@ -181,7 +186,8 @@ def evaluate_regression(
     y_true: pd.Series | np.ndarray,
     y_pred: np.ndarray,
 ) -> RegressionMetrics:
-    """Calculate MAE and RMSE for regression predictions."""
+    """Calculate MAE, RMSE, and MAPE for regression predictions."""
     mae = mean_absolute_error(y_true, y_pred)
     rmse = root_mean_squared_error(y_true, y_pred)
-    return RegressionMetrics(mae=mae, rmse=rmse)
+    mape = mean_absolute_percentage_error(y_true, y_pred)
+    return RegressionMetrics(mae=mae, rmse=rmse, mape=mape)
