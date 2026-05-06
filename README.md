@@ -34,10 +34,17 @@ Expert-level race reporting powered by **Gemini 2.0/2.5 Flash**, analyzing telem
 ## 🌟 Key Features
 
 - **Industrialized Inference API**: High-performance FastAPI microservice for real-time lap time predictions.
+- **Autonomous Event-Driven Sync**: GitHub Actions triggers race detection and reporting every Monday/Wednesday.
+- **Multi-Channel Intelligence Dispatch**: Automated race briefings delivered via F1-branded HTML emails and Discord cards.
 - **Multi-Platform Docker Infrastructure**: Automated builds for `amd64` (servers) and `arm64` (Apple Silicon) using parallel GitHub Actions pipelines.
 - **2026 Regulation Awareness**: Custom feature engineering including `Era Normalization` (adjusting historical times to 2026 rules) and `PU Strain Index`.
 - **Track Evolution Intelligence**: Captures "rubbering-in" effects through rolling pace potential analysis.
 - **Differentiated Analysis**: Unique AI narratives for both **Actual Results** (post-race debrief) and **Predicted ML Simulations** (pre-race forecasting).
+
+### 🛠️ Technical Retrospective & Lessons Learned
+- **The "Headless" Dependency Trap**: Encountered a build failure where `kaleido` (the static chart engine) required Linux system libraries (`libnss3`, `libatk`, etc.) that were missing in the slim Docker image. Resolved by adding a dedicated graphics-dep layer to the `Dockerfile`.
+- **CI Linting Granularity**: Discovered that `ruff check` passes don't guarantee `ruff format --check` passes. Standardized the local development workflow to always run `uv run ruff format` before pushing to avoid CI blocking.
+- **Strategy Pattern Payoff**: The decision to use the Strategy Pattern for notifications allowed us to pivot from a simple print statement to a full Gmail/Discord integration in under an hour without touching core business logic.
 
 ---
 
