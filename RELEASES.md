@@ -1,5 +1,26 @@
 # Project Releases & Versioning 🏁📜
 
+## v4.0.0 - Autonomous Intelligence & Scheduled Reporting
+**Date**: May 2026
+
+### 🤖 The "Proactive" Era
+This major release transforms the platform from a reactive tool into a **proactive, event-driven intelligence system**. It introduces automated race detection, scheduled reporting pipelines, and multi-channel notification delivery.
+
+- **Automated Race Detection**: Implemented a "Smart Gate" detector using FastF1 metadata to autonomously trigger pipelines only when a race weekend concludes.
+- **Scheduled Synchronization Workflow**: New GitHub Actions pipeline (`scheduled_sync.yml`) runs every Monday/Wednesday at 09:00 UTC to sync data and generate reports.
+- **"Monday Verdict" Engine**: Introduced a post-race evaluation module that computes Mean Absolute Error (MAE) and positional accuracy (Winner, Podium, Top-10) against official results.
+- **Premium Multi-Channel Notifications**:
+  - **Strategy Pattern Dispatcher**: Modular architecture for delivering briefings across multiple platforms.
+  - **High-Fidelity HTML Emails**: Dark-mode, F1-branded briefings sent via Gmail SMTP.
+  - **Discord Race Cards**: Structured embeds for real-time team alerts.
+- **Static Chart Exporter**: Integrated Plotly + Kaleido for server-side generation of high-quality race position charts embedded directly in reports.
+- **Enhanced Quality Standards**:
+  - **Coverage > 80%**: Maintained strict 80% coverage threshold with comprehensive tests for notification and detection modules.
+  - **Mypy Strict Compliance**: Full type safety across the new automation layer.
+
+---
+
+
 ## v3.0.0 - Industrial MLOps Inception
 **Date**: May 2026
 

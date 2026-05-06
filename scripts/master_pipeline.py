@@ -164,6 +164,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--year", type=int, default=2026)
     parser.add_argument("--round", type=int, required=True)
+    parser.add_argument(
+        "--auto",
+        action="store_true",
+        default=False,
+        help="Non-interactive mode for CI/CD. Skips all confirmation prompts.",
+    )
     args = parser.parse_args()
 
     setup_fastf1()
