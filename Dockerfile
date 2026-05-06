@@ -39,7 +39,7 @@ COPY --link data/outputs/models/ ./data/outputs/models/
 
 # Set environment variables
 ENV PATH="/app/.venv/bin:${PATH}" \
-    PYTHONPATH="/app/src:${PYTHONPATH:-}" \
+    PYTHONPATH="/app/src" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
