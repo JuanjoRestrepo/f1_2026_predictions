@@ -12,8 +12,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  # Image name MUST be lowercase for Docker registries
-  IMAGE_NAME: juanjorestrepo/f1_2026_predictions
+  IMAGE_NAME: ${{ github.repository }}
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
@@ -28,6 +27,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Lowercase image name
+        run: |
+          echo "IMAGE_NAME_LC=${IMAGE_NAME,,}" >> ${GITHUB_ENV}
 
       - name: Set up QEMU
         if: matrix.platform == 'linux/arm64'
@@ -47,7 +50,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LC }}
 
       - name: Build and push by digest
         id: build
@@ -56,7 +59,7 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
-          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LC }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -79,13 +82,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Download digests
-        uses: actions/cache@v4
-        with:
-          path: /tmp/digests
-          key: digests-${{ github.sha }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # Alternative to cache: download-artifact
+      - name: Lowercase image name
+        run: |
+          echo "IMAGE_NAME_LC=${IMAGE_NAME,,}" >> ${GITHUB_ENV}
+
       - name: Download all digests
         uses: actions/download-artifact@v4
         with:
@@ -107,7 +110,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LC }}
           tags: |
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'master') }}
             type=semver,pattern={{version}}
@@ -117,8 +120,8 @@ jobs:
         working-directory: /tmp/digests
         run: |
           docker buildx imagetools create $(echo "${{ steps.meta.outputs.tags }}" | xargs -I {} echo "--tag {}") \
-            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
+            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LC }}@sha256:%s ' *)
 
       - name: Inspect image
         run: |
-          docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LC }}:${{ steps.meta.outputs.version }}
