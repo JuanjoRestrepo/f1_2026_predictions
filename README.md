@@ -121,3 +121,11 @@ uv run scripts/master_pipeline.py --round [ROUND_NUM]
 
 **Author**: Juan Jose Restrepo Rosero  
 **Philosophy**: "Data is just noise without strategy." This platform focuses on converting complex ML residuals into actionable racing intelligence.
+
+---
+
+## 🔮 Future Vision: The "Invincible" Race Agent
+The long-term vision for this platform is to move beyond scheduled reporting and into **Durable Agentic Orchestration**. By potentially integrating frameworks like **Trigger.dev**, we aim to build a "Live Race Assistant" capable of:
+*   **Durable State**: Handling multi-hour race events with automatic retries and state persistence across API failures or system restarts.
+*   **Human-in-the-Loop**: Transitioning to a model where the AI proposes strategic shifts (e.g., "Box now for Intermediates") and waits for human validation before broadcasting briefings.
+*   **Multi-Agent Coordination**: Scaling to a swarm of specialized agents (Strategy, Weather, and Telemetry) that collaborate via a central durable execution bus.

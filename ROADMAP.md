@@ -61,3 +61,8 @@ This document outlines the strategic technical evolution of the F1 2026 Predicti
 - **Real-time Prediction**: Integrating live timing sockets for "In-Race" AI re-calculation.
 - **Weather Sensitivity**: Dynamic pace adjustment based on track temperature and rainfall probability.
 - **Advanced Explainability**: SHAP visualization per driver in the dashboard to show *why* the AI predicts a certain rank.
+
+## 🤖 Phase 11: Durable Agentic Orchestration (Vision)
+- **Human-in-the-Loop Workflows**: Implementing "waitpoints" where the AI pauses for engineer approval before finalizing high-stakes briefings.
+- **Durable Execution Integration**: Transitioning orchestration to a durable bus (e.g., Trigger.dev) to ensure 100% reliability during 2+ hour race events.
+- **Agentic Swarms**: Orchestrating specialized agents (Weather, Strategy, Aero) that coordinate asynchronously via persistent state machines.
