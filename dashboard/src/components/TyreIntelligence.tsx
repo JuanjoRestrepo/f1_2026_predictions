@@ -55,7 +55,7 @@ export function TyreIntelligence({ data }: TyreIntelligenceProps) {
             <Fuel size={18} className="text-yellow-500" />
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-widest text-gray-500">Winning Strategy</p>
+            <p className="text-xs md:text-sm uppercase tracking-widest text-gray-500">Winning Strategy</p>
             <p className="text-sm font-bold text-white">{data.winning_strategy}</p>
           </div>
         </div>
@@ -64,7 +64,7 @@ export function TyreIntelligence({ data }: TyreIntelligenceProps) {
             <Timer size={18} className="text-blue-500" />
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-widest text-gray-500">Avg Pit Stop</p>
+            <p className="text-xs md:text-sm uppercase tracking-widest text-gray-500">Avg Pit Stop</p>
             <p className="text-sm font-bold text-white">{data.avg_pit_stop}</p>
           </div>
         </div>
@@ -73,8 +73,8 @@ export function TyreIntelligence({ data }: TyreIntelligenceProps) {
       {/* Driver List with Search */}
       <div className="space-y-4">
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2 text-xs text-gray-400">
-            <MousePointer2 size={12} className="text-f1red" />
+          <div className="flex items-center gap-2 text-xs md:text-sm text-gray-400">
+            <MousePointer2 size={14} className="text-f1red" />
             <span>Click to highlight</span>
           </div>
           <div className="relative group">
@@ -84,7 +84,7 @@ export function TyreIntelligence({ data }: TyreIntelligenceProps) {
               placeholder="Search Lando, Norris, etc..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="bg-black/40 border border-white/10 rounded-md py-1.5 pl-7 pr-3 text-[10px] text-white placeholder:text-gray-600 focus:outline-none focus:border-f1red transition-all w-40 md:w-56"
+              className="bg-black/40 border border-white/10 rounded-md py-1.5 pl-7 pr-3 text-xs md:text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-f1red transition-all w-40 md:w-56"
             />
           </div>
         </div>
@@ -104,10 +104,10 @@ export function TyreIntelligence({ data }: TyreIntelligenceProps) {
               >
                 <div className="flex justify-between items-center px-1">
                   <div className="flex items-baseline gap-2">
-                    <span className={`text-xs font-black font-mono ${isHighlighted ? "text-f1red" : "text-gray-200"}`}>
+                    <span className={`text-sm md:text-base font-black font-mono ${isHighlighted ? "text-f1red" : "text-gray-200"}`}>
                       {driver.driver}
                     </span>
-                    <span className="text-[9px] text-gray-500 uppercase font-bold tracking-tighter">
+                    <span className="text-[10px] md:text-xs text-gray-500 uppercase font-bold tracking-tighter">
                       {driver.team}
                     </span>
                   </div>
@@ -116,8 +116,8 @@ export function TyreIntelligence({ data }: TyreIntelligenceProps) {
                     {driver.stints.map((s, idx) => (
                       <div key={idx} className="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
                         <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color }} />
-                        <span className="text-[8px] font-bold text-gray-300">{s.compound[0]}</span>
-                        <span className="text-[8px] font-medium text-gray-500">{s.laps}</span>
+                        <span className="text-[10px] md:text-xs font-bold text-gray-300">{s.compound[0]}</span>
+                        <span className="text-[10px] md:text-xs font-medium text-gray-500">{s.laps}</span>
                       </div>
                     ))}
                   </div>

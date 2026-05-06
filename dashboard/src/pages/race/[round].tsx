@@ -112,7 +112,7 @@ export default function RacePage({
   return (
     <>
       <Head>
-        <title>{race.name} 2026 AI Dashboard</title>
+        <title>{`${race.name} 2026 AI Dashboard`}</title>
         <meta name="description" content={`AI-Powered F1 Analysis for the ${race.name}`} />
       </Head>
 
@@ -155,7 +155,7 @@ export default function RacePage({
             <div className="rounded-xl bg-f1dark p-6 border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-f1red/30 transition-colors">
               <div className="flex items-center gap-2 text-yellow-500 mb-2">
                 <Trophy size={16} />
-                <span className="text-xs font-bold uppercase tracking-widest">{headerView === 'predicted' ? 'Predicted Winner' : 'Race Winner'}</span>
+                <span className="text-xs md:text-sm font-bold uppercase tracking-widest">{headerView === 'predicted' ? 'Predicted Winner' : 'Race Winner'}</span>
               </div>
               <h2 className="text-3xl font-bold text-white mb-1">
                 {winner ? ("Driver" in winner ? winner.Driver : winner.driver) : "--"}
@@ -166,7 +166,7 @@ export default function RacePage({
             <div className="rounded-xl bg-f1dark p-6 border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-f1red/30 transition-colors">
               <div className="flex items-center gap-2 text-gray-400 mb-2">
                 <Medal size={16} />
-                <span className="text-xs font-bold uppercase tracking-widest">{headerView === 'predicted' ? 'Predicted P2' : '2nd Place'}</span>
+                <span className="text-xs md:text-sm font-bold uppercase tracking-widest">{headerView === 'predicted' ? 'Predicted P2' : '2nd Place'}</span>
               </div>
               <h2 className="text-3xl font-bold text-white mb-1">
                 {secondPlace ? ("Driver" in secondPlace ? secondPlace.Driver : secondPlace.driver) : "--"}
@@ -177,7 +177,7 @@ export default function RacePage({
             <div className="rounded-xl bg-f1dark p-6 border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-f1red/30 transition-colors">
               <div className="flex items-center gap-2 text-purple-400 mb-2">
                 <Timer size={16} />
-                <span className="text-xs font-bold uppercase tracking-widest">{headerView === 'predicted' ? 'Predicted FL' : 'Fastest Lap'}</span>
+                <span className="text-xs md:text-sm font-bold uppercase tracking-widest">{headerView === 'predicted' ? 'Predicted FL' : 'Fastest Lap'}</span>
               </div>
               <h2 className="text-3xl font-bold text-white mb-1">{fastestLap.driver}</h2>
               <p className="text-sm text-gray-400">{fastestLap.time}</p>
@@ -189,8 +189,8 @@ export default function RacePage({
             <div className="lg:col-span-7 flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-f1red mb-1">Race Timeline</h3>
-                  <p className="text-xs text-gray-500">Coloured lines show lap-by-lap positions.</p>
+                  <h3 className="text-sm md:text-base font-bold uppercase tracking-widest text-f1red mb-1">Race Timeline</h3>
+                  <p className="text-xs md:text-sm text-gray-500">Coloured lines show lap-by-lap positions.</p>
                 </div>
                 <ViewToggle activeView={chartView} onToggle={setChartView} />
               </div>
@@ -205,8 +205,8 @@ export default function RacePage({
               <div className="mt-auto">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-f1red mb-1">Tyre Intelligence</h3>
-                    <p className="text-xs text-gray-500">Strategy analysis. Click to highlight.</p>
+                    <h3 className="text-sm md:text-base font-bold uppercase tracking-widest text-f1red mb-1">Tyre Intelligence</h3>
+                    <p className="text-xs md:text-sm text-gray-500">Strategy analysis. Click to highlight.</p>
                   </div>
                   <ViewToggle activeView={tyreView} onToggle={setTyreView} />
                 </div>
@@ -218,7 +218,7 @@ export default function RacePage({
 
             <div className="lg:col-span-5">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-f1red">Finishing Order</h3>
+                <h3 className="text-sm md:text-base font-bold uppercase tracking-widest text-f1red">Finishing Order</h3>
                 <ViewToggle activeView={tableView} onToggle={setTableView} />
               </div>
               <div className="rounded-xl bg-f1dark border border-white/5 overflow-hidden shadow-xl">
@@ -229,7 +229,7 @@ export default function RacePage({
 
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-f1red">AI Race Analysis</h3>
+              <h3 className="text-sm md:text-base font-bold uppercase tracking-widest text-f1red">AI Race Analysis</h3>
               <ViewToggle activeView={reportView} onToggle={setReportView} />
             </div>
             <div className="rounded-xl bg-f1dark border border-white/5 p-6 shadow-2xl">

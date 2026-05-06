@@ -31,6 +31,14 @@ Expert-level race reporting powered by **Gemini 2.0/2.5 Flash**, analyzing telem
 
 ---
 
+## [v4.2.0] - 2026-05-06
+### 🎨 The "High-Fidelity UI" Release
+- **Feature**: Systematic readability overhaul across the entire dashboard.
+- **Improved**: Hierarchical typography for section titles and subtitles (16px/14px desktop scale).
+- **Improved**: Increased legibility for tyre stints, metric labels, and search fields.
+- **Improved**: Responsive `prose-base` scaling for AI Race Analysis reports.
+- **Fixed**: Syntax nesting issues in `TyreIntelligence` component and React title tag warnings.
+
 ## [v4.1.0] - 2026-05-06
 ### 🚀 The "Autonomous Autopilot" Release
 - **Feature**: Implemented Friday Pre-Race automation. The system now proactively predicts the race hierarchy before the weekend starts.

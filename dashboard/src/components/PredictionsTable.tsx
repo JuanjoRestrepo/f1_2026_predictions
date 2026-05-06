@@ -28,7 +28,7 @@ export function PredictionsTable({ data, view }: PredictionsTableProps) {
   return (
     <div className="w-full">
       <table className="w-full text-left text-sm">
-        <thead className="text-[10px] uppercase tracking-widest text-gray-500 border-b border-white/5">
+        <thead className="text-xs md:text-sm uppercase tracking-widest text-gray-500 border-b border-white/5">
           <tr>
             <th className="px-4 py-3 font-medium w-12">Pos</th>
             <th className="px-4 py-3 font-medium">Driver</th>
@@ -53,7 +53,7 @@ export function PredictionsTable({ data, view }: PredictionsTableProps) {
             return (
               <tr key={idx} className="hover:bg-white/5 transition-colors group">
                 <td className="px-4 py-4 whitespace-nowrap">
-                  <span className={`text-xs font-bold ${
+                  <span className={`text-xs md:text-sm font-bold ${
                     idx === 0 ? "text-yellow-500" :
                     idx === 1 ? "text-gray-300" :
                     idx === 2 ? "text-amber-600" :
@@ -64,7 +64,7 @@ export function PredictionsTable({ data, view }: PredictionsTableProps) {
                 </td>
 
                 <td className="px-4 py-4 whitespace-nowrap">
-                  <span className="font-bold text-white group-hover:text-red-400 transition-colors">
+                  <span className="text-sm md:text-base font-bold text-white group-hover:text-red-400 transition-colors">
                     {driver}
                   </span>
                 </td>
@@ -72,12 +72,12 @@ export function PredictionsTable({ data, view }: PredictionsTableProps) {
                 <td className="px-4 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-2">
                     <span className={`h-2 w-2 flex-shrink-0 rounded-full ${getTeamColor(team)}`} />
-                    <span className="text-gray-400 text-xs truncate">{team}</span>
+                    <span className="text-gray-400 text-xs md:text-sm truncate">{team}</span>
                   </div>
                 </td>
 
                 <td className="px-4 py-4 whitespace-nowrap text-right">
-                  <span className="font-mono text-sm text-gray-300">
+                  <span className="font-mono text-sm md:text-base text-gray-300">
                     {displayTime}
                   </span>
                 </td>

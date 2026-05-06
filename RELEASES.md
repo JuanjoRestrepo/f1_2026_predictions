@@ -1,5 +1,18 @@
 # Project Releases & Versioning 🏁📜
 
+## v4.2.0 - High-Fidelity UI & Readability Overhaul
+**Date**: May 2026
+
+### 🎨 Visual Excellence & Accessibility
+This release focuses on industrial-grade UI/UX standards, ensuring the dashboard is as readable as it is beautiful across all device scales.
+
+- **Global Readability Bump**: Systematic increase of base font sizes to ensure critical race data is legible on both high-resolution monitors and mobile devices.
+- **Hierarchical Typography**: Redesigned section headers (`Race Timeline`, `Finishing Order`, `Tyre Intelligence`, `AI Race Analysis`) using a responsive `text-sm md:text-base` scale for better structural clarity.
+- **Proportional Subtitles**: Synchronized section subtitles and metric card labels to scale dynamically with headers, maintaining a consistent 2px visual hierarchy.
+- **Micro-Readability Fixes**: Eliminated legacy "tiny" font sizes (8px-10px). Tyre stints, search placeholders, and team tags now use a minimum 10px-12px scale for immediate recognition.
+- **Refined Data Display**: Increased font weight and size for driver codes and lap times in results tables, matching the professional F1 broadcast feel.
+- **Prose Content Optimization**: Enhanced the AI Race Analysis section with `prose-base` scaling and responsive heading sizes for a superior long-form reading experience.
+
 ## v4.1.0 - Autonomous Autopilot (Proactive Intelligence)
 **Date**: May 2026
 
