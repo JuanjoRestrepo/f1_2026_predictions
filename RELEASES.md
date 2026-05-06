@@ -1,5 +1,16 @@
 # Project Releases & Versioning 🏁📜
 
+## v4.1.0 - Autonomous Autopilot (Proactive Intelligence)
+**Date**: May 2026
+
+### 🚀 The "Full Autopilot" Era
+This release completes the autonomous loop by adding pre-race forecasting to the automated schedule.
+
+- **Friday Pre-Race Briefing**: Automated trigger (Friday 18:00 UTC) that runs ML simulations and sends a "Prediction Preview" before the weekend starts.
+- **Predictive Detection**: Added `detect_upcoming_race` to the orchestration engine, allowing the system to identify and prepare for future events.
+- **Resilient Pipeline**: Re-engineered `master_pipeline.py` to support "Prediction-Only" mode when actual race results are not yet available.
+- **Unified Orchestration**: Enhanced `scheduled_sync.yml` to intelligently switch between Friday (Preview) and Monday (Audit) modes.
+
 ## v4.0.0 - Autonomous Intelligence & Scheduled Reporting
 **Date**: May 2026
 

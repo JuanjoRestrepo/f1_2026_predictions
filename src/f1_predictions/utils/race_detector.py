@@ -114,6 +114,52 @@ def find_last_completed_race(
     return result
 
 
+def find_upcoming_race(
+    schedule: pd.DataFrame,
+    now_utc: datetime | None = None,
+    days_ahead: int = 3,
+) -> dict[str, Any] | None:
+    """Determine if a race is scheduled within the next N days.
+
+    Args:
+        schedule: FastF1 event schedule DataFrame.
+        now_utc: Reference timestamp.
+        days_ahead: Lookahead window in days. Default 3.
+
+    Returns:
+        Race metadata dict if found, otherwise None.
+    """
+    if now_utc is None:
+        now_utc = datetime.now(tz=UTC)
+
+    if schedule.empty:
+        return None
+
+    schedule = schedule.copy()
+    schedule["EventDate"] = pd.to_datetime(schedule["EventDate"], utc=True)
+
+    # Filter to future race events within the lookahead window.
+    cutoff = now_utc + pd.Timedelta(days=days_ahead)
+    mask = (
+        (schedule["EventDate"] > now_utc)
+        & (schedule["EventDate"] <= cutoff)
+        & (schedule["EventFormat"] != "testing")
+    )
+    upcoming = schedule.loc[mask]
+
+    if upcoming.empty:
+        logger.info("No upcoming race found in the next %d days.", days_ahead)
+        return None
+
+    # Take the next occurring event.
+    next_gp = upcoming.sort_values("EventDate").iloc[0]
+    return {
+        "round": int(next_gp["RoundNumber"]),
+        "gp_name": str(next_gp["EventName"]),
+        "event_date": next_gp["EventDate"].isoformat(),
+    }
+
+
 def detect_last_race(
     season: int,
     days_back: int = _DEFAULT_DAYS_BACK,
@@ -133,4 +179,20 @@ def detect_last_race(
         Race metadata dict or None if no race in the window.
     """
     schedule = get_event_schedule(season)
-    return find_last_completed_race(schedule, now_utc=now_utc, days_back=days_back)
+def detect_upcoming_race(
+    season: int,
+    days_ahead: int = 3,
+    now_utc: datetime | None = None,
+) -> dict[str, Any] | None:
+    """High-level entry point: detect the next scheduled race.
+
+    Args:
+        season: F1 season year.
+        days_ahead: Lookahead window in days.
+        now_utc: Override for testing.
+
+    Returns:
+        Upcoming race metadata or None.
+    """
+    schedule = get_event_schedule(season)
+    return find_upcoming_race(schedule, now_utc=now_utc, days_ahead=days_ahead)

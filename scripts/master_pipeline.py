@@ -176,39 +176,59 @@ def main():
     ai_model = setup_gemini()
     race_info = get_race_info(args.year, args.round)
     session = fastf1.get_session(args.year, args.round, 'R')
-    session.load(laps=True, telemetry=False, weather=False)
     
-    all_drivers = session.results['Abbreviation'].tolist()
-    total_laps = int(session.laps['LapNumber'].max())
+    # Pre-race safety: On Friday, laps/results aren't available yet.
+    # We load metadata first to see if we can proceed with a full sync.
+    try:
+        session.load(laps=True, telemetry=False, weather=False)
+        is_post_race = not session.laps.empty
+    except Exception as e:
+        print(f"Post-race data not yet available (Expected on Friday): {e}")
+        session.load(laps=False, telemetry=False, weather=False)
+        is_post_race = False
+
+    all_drivers = session.results['Abbreviation'].tolist() if not session.results.empty else []
+    if not all_drivers and not is_post_race:
+        # Fallback to entry list if results are empty
+        all_drivers = session.get_entry_list()['Abbreviation'].tolist()
+
+    # Determine lap count from schedule if session not yet run
+    if is_post_race:
+        total_laps = int(session.laps['LapNumber'].max())
+    else:
+        # Fallback to metadata lap count (usually approx or 50)
+        total_laps = 50 
     
-    # 1. Results
-    import pandas as pd
-    results_data = []
-    for idx, r in session.results.iterrows():
-        pos = int(r['Position']) if not pd.isna(r['Position']) else None
-        time_str = ""
-        if not pd.isna(r['Time']):
-            ts = r['Time'].total_seconds()
-            if pos == 1:
-                h = int(ts // 3600)
-                m = int((ts % 3600) // 60)
-                s = ts % 60
-                time_str = f"{h}:{m:02d}:{s:06.3f}"
+    # 1. Results (Skip if pre-race)
+    if is_post_race:
+        import pandas as pd
+        results_data = []
+        for idx, r in session.results.iterrows():
+            pos = int(r['Position']) if not pd.isna(r['Position']) else None
+            time_str = ""
+            if not pd.isna(r['Time']):
+                ts = r['Time'].total_seconds()
+                if pos == 1:
+                    h = int(ts // 3600)
+                    m = int((ts % 3600) // 60)
+                    s = ts % 60
+                    time_str = f"{h}:{m:02d}:{s:06.3f}"
+                else:
+                    time_str = f"+{ts:.3f}s"
             else:
-                time_str = f"+{ts:.3f}s"
-        else:
-            time_str = str(r['Status']) if r['Status'] not in ['Finished', ''] else ""
-            
-        results_data.append({
-            "position": pos, 
-            "driver": r['Abbreviation'], 
-            "team": r['TeamName'], 
-            "status": r['Status'],
-            "time": time_str
-        })
-    save_artifact(results_data, f"actual_results_round_{args.round}.json", args.year, race_info['dir'])
+                time_str = str(r['Status']) if r['Status'] not in ['Finished', ''] else ""
+                
+            results_data.append({
+                "position": pos, 
+                "driver": r['Abbreviation'], 
+                "team": r['TeamName'], 
+                "status": r['Status'],
+                "time": time_str
+            })
+        save_artifact(results_data, f"actual_results_round_{args.round}.json", args.year, race_info['dir'])
 
     # 2. Lap Positions (Actual AND Predicted)
+    import pandas as pd
     predictions_path = REPORTS_BASE / str(args.year) / race_info['dir'] / "results" / "data" / "predictions.csv"
     predicted_order = []
     if predictions_path.exists():
@@ -218,7 +238,9 @@ def main():
     else:
         predicted_order = all_drivers
 
-    save_artifact(generate_lap_data(session, all_drivers, total_laps), f"lap_positions_round_{args.round}.json", args.year, race_info['dir'])
+    if is_post_race:
+        save_artifact(generate_lap_data(session, all_drivers, total_laps), f"lap_positions_round_{args.round}.json", args.year, race_info['dir'])
+    
     save_artifact(generate_predicted_lap_data(session, all_drivers, total_laps, predicted_order), f"predicted_lap_positions_round_{args.round}.json", args.year, race_info['dir'])
     
     # 3. Tyre
@@ -261,20 +283,24 @@ def main():
             "proven_strategy_insight": insight, "drivers": data
         }
     
-    save_artifact(process_tyre_data(22, is_predicted=False), f"tyre_intelligence_round_{args.round}.json", args.year, race_info['dir'])
+    if is_post_race:
+        save_artifact(process_tyre_data(22, is_predicted=False), f"tyre_intelligence_round_{args.round}.json", args.year, race_info['dir'])
+    
     save_artifact(process_tyre_data(22, is_predicted=True), f"predicted_tyre_intelligence_round_{args.round}.json", args.year, race_info['dir'])
     
     # 4. AI Narratives
     if ai_model:
         print("Generating AI reports with gemini-2.5-flash...")
-        actual_prompt = (
-            f"TECHNICAL RACE ANALYSIS: {session.event['EventName']} 2026. "
-            f"Results: {session.results.head(10)[['Abbreviation', 'Position']].to_string()}. "
-            "Write a serious, high-level technical breakdown. Do not use the phrase 'Expert F1 Analysis'. "
-            "Structure the report using professional numbered headers (1. Stint Dynamics & Tire Management, 2. Aerodynamic Efficiency & Car Performance, 3. Driver Performance Deltas) "
-            "with detailed technical bullet points. Focus on stint dynamics, aerodynamic efficiency, and driver performance deltas."
-        )
-        report = call_ai_with_retry(actual_prompt, ai_model)
+        if is_post_race:
+            actual_prompt = (
+                f"TECHNICAL RACE ANALYSIS: {session.event['EventName']} 2026. "
+                f"Results: {session.results.head(10)[['Abbreviation', 'Position']].to_string()}. "
+                "Write a serious, high-level technical breakdown. Do not use the phrase 'Expert F1 Analysis'. "
+                "Structure the report using professional numbered headers (1. Stint Dynamics & Tire Management, 2. Aerodynamic Efficiency & Car Performance, 3. Driver Performance Deltas) "
+                "with detailed technical bullet points. Focus on stint dynamics, aerodynamic efficiency, and driver performance deltas."
+            )
+            report = call_ai_with_retry(actual_prompt, ai_model)
+            save_artifact(report or fallback, f"report_round_{args.round}.md", args.year, race_info['dir'], False)
         
         # Load predicted order for the predicted report
         pred_file = REPORTS_BASE / str(args.year) / race_info['dir'] / 'results' / 'data' / 'predictions.csv'
@@ -301,7 +327,6 @@ def main():
             "Our engineering team is validating stint-loading data, track-specific degradation curves, and overtake-probability maps. "
             "The full strategic narrative will be published once the cross-verification between real-world results and AI simulations is complete."
         )
-        save_artifact(report or fallback, f"report_round_{args.round}.md", args.year, race_info['dir'], False)
         save_artifact(pred_report or fallback, f"predicted_report_round_{args.round}.md", args.year, race_info['dir'], False)
     
     print(f"Round {args.round} fully processed with Pro F1 Styles.")

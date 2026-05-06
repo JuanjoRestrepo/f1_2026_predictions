@@ -31,10 +31,23 @@ Expert-level race reporting powered by **Gemini 2.0/2.5 Flash**, analyzing telem
 
 ---
 
+## [v4.1.0] - 2026-05-06
+### 🚀 The "Autonomous Autopilot" Release
+- **Feature**: Implemented Friday Pre-Race automation. The system now proactively predicts the race hierarchy before the weekend starts.
+- **Feature**: Added `detect_upcoming_race` logic to the core orchestration engine.
+- **Improved**: Hardened `master_pipeline.py` to handle "Prediction Mode" gracefully without actual race data.
+- **Improved**: Unified GitHub Actions workflow for both Friday (Preview) and Monday (Audit) cycles.
+
+## [v4.0.0] - 2026-05-06
+### 🏁 Industrialization & Stability Milestone
+
 ## 🌟 Key Features
 
 - **Industrialized Inference API**: High-performance FastAPI microservice for real-time lap time predictions.
-- **Autonomous Event-Driven Sync**: GitHub Actions triggers race detection and reporting every Monday/Wednesday.
+- **🔄 Autonomous Workflow (Event-Driven)**: The system operates on a professional, autonomous cycle via GitHub Actions:
+    1. **Friday @ 18:00 UTC**: **Pre-Race Mode**. Runs ML simulations to generate the "Prediction Preview" briefing.
+    2. **Monday @ 09:00 UTC**: **Post-Race Mode**. Syncs actual results, calculates MAE/Accuracy, and sends the "Race Verdict" audit.
+    3. **Wednesday @ 09:00 UTC**: **Safety Sync**. Re-verifies data in case of official delays.
 - **Multi-Channel Intelligence Dispatch**: Automated race briefings delivered via F1-branded HTML emails and Discord cards.
 - **Multi-Platform Docker Infrastructure**: Automated builds for `amd64` (servers) and `arm64` (Apple Silicon) using parallel GitHub Actions pipelines.
 - **2026 Regulation Awareness**: Custom feature engineering including `Era Normalization` (adjusting historical times to 2026 rules) and `PU Strain Index`.

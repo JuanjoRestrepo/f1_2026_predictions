@@ -53,6 +53,7 @@ This document outlines the strategic technical evolution of the F1 2026 Predicti
 - **Multi-Channel Notifications**: Strategic implementation of Gmail SMTP and Discord Webhooks for briefings.
 - **Post-Race Verdict Engine**: Autonomous accuracy evaluation (MAE, Podium Accuracy) against real race results.
 - **Premium Email Reporting**: Dark-mode, F1-branded HTML briefings with embedded Plotly charts.
+- **Autonomous Autopilot**: Friday Pre-Race triggers for proactive strategy intelligence.
 
 ---
 

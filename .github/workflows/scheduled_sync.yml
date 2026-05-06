@@ -1,19 +1,25 @@
 name: Scheduled Race Sync & Briefing
 
-# Runs every Monday + Wednesday at 09:00 UTC to cover:
-#   - Monday: post-race briefing (race was Sunday)
-#   - Wednesday: safety run in case Monday missed a delayed race result
-# Manual dispatch allows --round override for backfilling any GP.
+# Runs Friday (Pre-race simulation), Monday (Post-race audit), and Wednesday (Safety)
 on:
   schedule:
-    - cron: '0 9 * * 1'   # Monday 09:00 UTC
-    - cron: '0 9 * * 3'   # Wednesday 09:00 UTC (safety net)
+    - cron: '0 18 * * 5'  # Friday 18:00 UTC (Pre-race simulation)
+    - cron: '0 9 * * 1'   # Monday 09:00 UTC (Post-race audit)
+    - cron: '0 9 * * 3'   # Wednesday 09:00 UTC (Safety net)
   workflow_dispatch:
     inputs:
       round:
-        description: 'Force a specific round number (overrides auto-detection)'
+        description: 'Force a specific round number'
         required: false
         type: string
+      mode:
+        description: 'Force mode (pre-race or post-race)'
+        required: false
+        default: 'post-race'
+        type: choice
+        options:
+          - pre-race
+          - post-race
       season:
         description: 'Season year (default: 2026)'
         required: false
@@ -43,28 +49,40 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
-      - name: Detect last race (auto-mode)
+      - name: Detect race (auto-mode)
         id: detect
         if: ${{ !inputs.round }}
         env:
           SEASON: ${{ inputs.season || '2026' }}
         run: |
-          echo "Checking for a race in the last 48 hours..."
-          ROUND=$(uv run python -c "
-          from f1_predictions.utils.race_detector import detect_last_race
-          result = detect_last_race(int('$SEASON'))
-          if result:
-              print(result['round'])
-          else:
-              print('')
+          DOW=$(date +%u)
+          if [ "$DOW" -eq 5 ]; then
+            echo "Mode: Pre-Race (Friday Detection)"
+            FUNC="detect_upcoming_race"
+            echo "mode=pre-race" >> $GITHUB_OUTPUT
+          else
+            echo "Mode: Post-Race (Audit Detection)"
+            FUNC="detect_last_race"
+            echo "mode=post-race" >> $GITHUB_OUTPUT
+          fi
+
+          RESULT=$(uv run python -c "
+          from f1_predictions.utils.race_detector import $FUNC
+          result = $FUNC(int('$SEASON'))
+          import json
+          print(json.dumps(result) if result else '')
           ")
-          if [ -z "$ROUND" ]; then
-            echo "No race detected in the last 48h. Exiting cleanly."
+          
+          if [ -z "$RESULT" ]; then
+            echo "No relevant race detected. Exiting."
             echo "race_found=false" >> $GITHUB_OUTPUT
           else
-            echo "Race detected: Round $ROUND"
+            ROUND=$(echo $RESULT | uv run python -c "import sys, json; print(json.load(sys.stdin)['round'])")
+            EVENT=$(echo $RESULT | uv run python -c "import sys, json; print(json.load(sys.stdin)['gp_name'])")
+            echo "Race detected: $EVENT (Round $ROUND)"
             echo "race_found=true" >> $GITHUB_OUTPUT
             echo "round=$ROUND" >> $GITHUB_OUTPUT
+            echo "event=$EVENT" >> $GITHUB_OUTPUT
           fi
 
       - name: Set round (manual override)
@@ -77,18 +95,28 @@ jobs:
       - name: Resolve final round number
         id: resolve
         run: |
-          # Combine auto-detect and manual override outputs
           AUTO_FOUND="${{ steps.detect.outputs.race_found }}"
           MANUAL_FOUND="${{ steps.set-round.outputs.race_found }}"
           if [ "$AUTO_FOUND" = "true" ]; then
             echo "race_found=true" >> $GITHUB_OUTPUT
             echo "round=${{ steps.detect.outputs.round }}" >> $GITHUB_OUTPUT
+            echo "mode=${{ steps.detect.outputs.mode }}" >> $GITHUB_OUTPUT
+            echo "event=${{ steps.detect.outputs.event }}" >> $GITHUB_OUTPUT
           elif [ "$MANUAL_FOUND" = "true" ]; then
             echo "race_found=true" >> $GITHUB_OUTPUT
             echo "round=${{ steps.set-round.outputs.round }}" >> $GITHUB_OUTPUT
+            echo "mode=${{ inputs.mode || 'post-race' }}" >> $GITHUB_OUTPUT
+            echo "event=Grand Prix" >> $GITHUB_OUTPUT
           else
             echo "race_found=false" >> $GITHUB_OUTPUT
           fi
+
+      - name: Run ML simulation (Pre-Race only)
+        if: steps.resolve.outputs.race_found == 'true' && steps.resolve.outputs.mode == 'pre-race'
+        run: |
+          uv run python scripts/simulate_race.py \
+            --round ${{ steps.resolve.outputs.round }} \
+            --event "${{ steps.resolve.outputs.event }}"
 
       - name: Run master pipeline
         if: steps.resolve.outputs.race_found == 'true'
@@ -108,10 +136,9 @@ jobs:
             --auto
 
       - name: Compute post-race verdict
-        if: steps.resolve.outputs.race_found == 'true'
+        if: steps.resolve.outputs.race_found == 'true' && steps.resolve.outputs.mode == 'post-race'
         env:
           F1_TARGET_SEASON: ${{ inputs.season || '2026' }}
-          F1_FASTF1_CACHE_DIR: /tmp/fastf1_cache
         run: |
           uv run python -c "
           import json
@@ -123,18 +150,15 @@ jobs:
           season = int('${{ inputs.season || 2026 }}')
           predictions_path = Path('data/outputs') / f'round_{round_num:02d}_predictions.csv'
           if not predictions_path.exists():
-              # Try alternative path conventions
               predictions_path = Path('data/outputs') / 'predictions.csv'
           predictions = load_predictions(predictions_path)
           actuals = load_actuals(season, round_num)
           verdict = compute_verdict(predictions, actuals, round_num, 'Grand Prix')
           verdict_path = Path('data/outputs') / f'verdict_round_{round_num:02d}.json'
           verdict_path.write_text(json.dumps(verdict.to_dict(), indent=2))
-          print(f'Verdict saved to {verdict_path}')
-          print(f'Status: {verdict.status} | MAE: {verdict.mae_lap_time_s:.4f}s')
           "
 
-      - name: Send race briefing notification
+      - name: Send notification
         if: steps.resolve.outputs.race_found == 'true'
         env:
           F1_GMAIL_USER: ${{ secrets.F1_GMAIL_USER }}
@@ -144,7 +168,7 @@ jobs:
           F1_TARGET_SEASON: ${{ inputs.season || '2026' }}
         run: |
           uv run python -c "
-          import json
+          import json, os
           from pathlib import Path
           from f1_predictions.evaluation.post_race_verdict import RaceVerdict
           from f1_predictions.utils.email_builder import build_email_html, build_subject
@@ -153,62 +177,33 @@ jobs:
               NotificationDispatcher, RaceBriefingPayload
           )
           from f1_predictions.utils.config import get_settings
-          import os
 
           settings = get_settings()
           round_num = int('${{ steps.resolve.outputs.round }}')
-          verdict_path = Path('data/outputs') / f'verdict_round_{round_num:02d}.json'
-
-          if not verdict_path.exists():
-              print('No verdict file found, skipping notification.')
-              exit(0)
-
-          data = json.loads(verdict_path.read_text())
-          verdict = RaceVerdict(**data)
-
-          # Resolve AI Narrative from the generated report
-          report_path = Path('reports') / str(settings.target_season) / verdict.gp_name.replace(' ', '_') / 'results' / f'report_round_{round_num:02d}.md'
-          ai_narrative = None
-          if report_path.exists():
-              ai_narrative = report_path.read_text()
-              print(f'AI Narrative loaded from {report_path}')
+          mode = '${{ steps.resolve.outputs.mode }}'
+          event_name = '${{ steps.resolve.outputs.event }}'
+          
+          if mode == 'post-race':
+              verdict_path = Path('data/outputs') / f'verdict_round_{round_num:02d}.json'
+              data = json.loads(verdict_path.read_text())
+              verdict = RaceVerdict(**data)
+              report_name = f'report_round_{round_num:02d}.md'
+              subj_prefix = ''
           else:
-              # Fallback to the summary directory if the event dir is different
-              summary_path = Path('reports') / str(settings.target_season) / 'summaries' / f'report_round_{round_num:02d}.md'
-              if summary_path.exists():
-                  ai_narrative = summary_path.read_text()
-                  print(f'AI Narrative loaded from {summary_path}')
+              verdict = RaceVerdict(round=round_num, gp_name=event_name, mae_lap_time_s=0, mape_pct=0, winner_correct=True, podium_accuracy_pct=0, top10_accuracy_pct=0)
+              report_name = f'predicted_report_round_{round_num:02d}.md'
+              subj_prefix = '🚀 PREDICTION PREVIEW: '
 
+          report_path = Path('reports') / str(settings.target_season) / event_name.replace(' ', '_') / 'results' / report_name
+          ai_narrative = report_path.read_text() if report_path.exists() else 'Simulation complete.'
+          
           html = build_email_html(verdict, ai_narrative=ai_narrative)
-          subject = build_subject(verdict)
+          subject = subj_prefix + build_subject(verdict)
 
-          channels = []
-          if settings.gmail_user and settings.gmail_app_password and settings.recipient_email:
-              channels.append(GmailSMTPChannel(
-                  settings.gmail_user,
-                  settings.gmail_app_password,
-                  settings.recipient_email,
-              ))
+          channels = [GmailSMTPChannel(settings.gmail_user, settings.gmail_app_password, settings.recipient_email)]
           if settings.discord_webhook_url:
               channels.append(DiscordWebhookChannel(settings.discord_webhook_url))
-
-          if not channels:
-              print('No notification channels configured. Set F1_GMAIL_USER or F1_DISCORD_WEBHOOK_URL.')
-              exit(0)
-
+          
           dispatcher = NotificationDispatcher(channels)
-          payload = RaceBriefingPayload(verdict=verdict, html_body=html, subject=subject)
-          dispatcher.dispatch(payload)
+          dispatcher.dispatch(RaceBriefingPayload(verdict=verdict, html_body=html, subject=subject))
           "
-
-      - name: Upload verdict artifact
-        if: steps.resolve.outputs.race_found == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: race-verdict-round-${{ steps.resolve.outputs.round }}
-          path: data/outputs/verdict_round_*.json
-          retention-days: 90
-
-      - name: No race this week
-        if: steps.resolve.outputs.race_found != 'true'
-        run: echo "✅ No race weekend detected. Pipeline skipped cleanly."
