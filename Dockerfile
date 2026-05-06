@@ -9,7 +9,6 @@ ENV UV_COMPILE_BYTECODE=1 \
 WORKDIR /app
 
 # Install dependencies separately to leverage Docker layer caching
-# This only re-runs if pyproject.toml or uv.lock changes
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
@@ -18,35 +17,31 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Stage 2: Runner
 FROM python:3.12-slim-bookworm
 
-# Install system dependencies required by LightGBM/XGBoost (OpenMP)
-RUN apt-get update && apt-get install -y \
+# Combine system setup into a single layer for performance and size
+# Includes: system deps (libgomp1 for XGB/LGBM), user creation, and directory scaffolding
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
+    curl \
+    && groupadd -r f1user && useradd -r -g f1user f1user \
+    && mkdir -p /app/data/raw /app/data/processed /app/data/outputs/models /app/reports /app/logs /app/cache \
+    && chown -R f1user:f1user /app \
     && rm -rf /var/lib/apt/lists/*
-
-# Non-root user for security (DevOps best practice)
-RUN groupadd -r f1user && useradd -r -g f1user f1user
 
 WORKDIR /app
 
-# Copy the virtual environment from the builder
-COPY --from=builder /app/.venv /app/.venv
-
-# Copy the source code and scripts
-COPY src/ ./src/
-COPY scripts/ ./scripts/
-COPY pyproject.toml ./
-
-# Ensure the app can write to necessary directories
-RUN mkdir -p data/raw data/processed data/outputs reports logs cache && \
-    chown -R f1user:f1user /app
-
-# Bake the trained models into the image
-COPY data/outputs/models/ ./data/outputs/models/
+# Copy the virtual environment and code using --link for independent layer caching
+# Note: --link requires BuildKit and allows layers to be reused even if previous ones change
+COPY --from=builder --link /app/.venv /app/.venv
+COPY --link src/ ./src/
+COPY --link scripts/ ./scripts/
+COPY --link pyproject.toml ./
+COPY --link data/outputs/models/ ./data/outputs/models/
 
 # Set environment variables
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONPATH="/app/src:${PYTHONPATH:-}" \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
 USER f1user
 

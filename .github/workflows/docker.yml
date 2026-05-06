@@ -2,67 +2,122 @@ name: Docker Build and Publish
 
 on:
   push:
-    branches:
-      - master
-    tags:
-      - 'v*.*.*'
+    branches: [master]
+    tags: ['v*.*.*']
   workflow_dispatch:
 
-# Permisos requeridos para publicar en GHCR
 permissions:
   contents: read
   packages: write
 
 env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  build-and-push:
-    name: Build & Push Docker Image
+  build:
+    name: Build (${{ matrix.platform }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [linux/amd64, linux/arm64]
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # QEMU permite compilar para múltiples arquitecturas (ej. ARM64 para Mac M1)
       - name: Set up QEMU
+        if: matrix.platform == 'linux/arm64'
         uses: docker/setup-qemu-action@v3
 
-      # Buildx es el motor avanzado de Docker que permite caché y multi-arquitectura
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Autenticación automática en GitHub Container Registry usando el token seguro
-      - name: Log in to the Container registry (GHCR)
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Genera automáticamente los tags (ej. latest, v1.0.0, sha)
-      - name: Extract metadata (tags, labels) for Docker
+      - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    name: Merge Manifests
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Download digests
+        uses: actions/cache@v4
+        with:
+          path: /tmp/digests
+          key: digests-${{ github.sha }}
+
+      # Alternative to cache: download-artifact
+      - name: Download all digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'master') }}
             type=semver,pattern={{version}}
             type=sha,format=short
 
-      # Construye y empuja la imagen al registro
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          # Construimos para procesadores estándar (amd64) y Apple Silicon / ARM (arm64)
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          # Caché de capas súper optimizada nativa de GitHub Actions
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Create manifest list and push
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create $(echo "${{ steps.meta.outputs.tags }}" | xargs -I {} echo "--tag {}") \
+            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
+
+      - name: Inspect image
+        run: |
+          docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
