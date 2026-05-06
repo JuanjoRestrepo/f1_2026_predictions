@@ -1,0 +1,270 @@
+{# F1 Race Briefing Email Template
+   Design: Dark mode, F1 broadcast aesthetics
+   Compatible: Gmail, Outlook, Apple Mail (inline CSS only — no external CSS)
+   Chart: Embedded as base64 PNG (data URI) — no external image hosting required
+   Variables:
+     verdict.gp_name        : str  — Grand Prix name
+     verdict.round          : int  — Round number
+     verdict.mae_lap_time_s : float
+     verdict.mape_pct       : float
+     verdict.winner_correct : bool
+     verdict.podium_accuracy_pct : float
+     verdict.top10_accuracy_pct  : float
+     verdict.key_misses     : list[str]
+     verdict.status         : str  — 'excellent' | 'good' | 'needs_improvement'
+     chart_base64           : str | None — base64 PNG string
+     ai_narrative           : str | None — Gemini race summary
+     predicted_podium       : list[str] — predicted P1, P2, P3
+     actual_podium          : list[str] — actual P1, P2, P3
+#}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>F1 Race Briefing: {{ verdict.gp_name }}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0a0a0f;font-family:'Helvetica Neue',Arial,sans-serif;">
+
+  {# ── Outer wrapper ──────────────────────────────────────────────── #}
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a0f;">
+    <tr>
+      <td align="center" style="padding:20px 0;">
+
+        {# ── Email container (600px max for email clients) ─────────── #}
+        <table width="600" cellpadding="0" cellspacing="0"
+               style="background-color:#12121a;border-radius:12px;overflow:hidden;
+                      border:1px solid #1e1e2e;">
+
+          {# ── Header Banner ──────────────────────────────────────── #}
+          <tr>
+            <td style="background:linear-gradient(135deg,#e8002d 0%,#c41023 50%,#0a0a0f 100%);
+                        padding:28px 32px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td>
+                    <div style="font-size:11px;color:#ff6680;font-weight:600;
+                                letter-spacing:3px;text-transform:uppercase;
+                                margin-bottom:6px;">
+                      ROUND {{ verdict.round }} • 2026 SEASON
+                    </div>
+                    <div style="font-size:26px;font-weight:800;color:#ffffff;
+                                line-height:1.2;">
+                      🏁 {{ verdict.gp_name }}
+                    </div>
+                    <div style="font-size:13px;color:#ffaaaa;margin-top:6px;">
+                      Prediction Accuracy Briefing
+                    </div>
+                  </td>
+                  <td align="right" valign="middle">
+                    {# Status badge #}
+                    {% if verdict.status == 'excellent' %}
+                      <div style="background:#00C853;color:#fff;padding:8px 16px;
+                                  border-radius:20px;font-size:12px;font-weight:700;
+                                  letter-spacing:1px;">✓ EXCELLENT</div>
+                    {% elif verdict.status == 'good' %}
+                      <div style="background:#FFD600;color:#000;padding:8px 16px;
+                                  border-radius:20px;font-size:12px;font-weight:700;
+                                  letter-spacing:1px;">▲ GOOD</div>
+                    {% else %}
+                      <div style="background:#D50000;color:#fff;padding:8px 16px;
+                                  border-radius:20px;font-size:12px;font-weight:700;
+                                  letter-spacing:1px;">✗ REVIEW</div>
+                    {% endif %}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          {# ── Accuracy Metrics Grid ──────────────────────────────── #}
+          <tr>
+            <td style="padding:24px 32px 8px;">
+              <div style="font-size:10px;color:#555570;font-weight:600;
+                          letter-spacing:2px;text-transform:uppercase;
+                          margin-bottom:16px;">
+                MODEL ACCURACY METRICS
+              </div>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  {# MAE #}
+                  <td width="25%" style="text-align:center;padding:12px 8px;
+                      background:#1a1a2e;border-radius:8px;margin:0 4px;">
+                    <div style="font-size:22px;font-weight:800;color:#e8002d;">
+                      {{ "%.4f"|format(verdict.mae_lap_time_s) }}s
+                    </div>
+                    <div style="font-size:10px;color:#666688;margin-top:4px;
+                                text-transform:uppercase;letter-spacing:1px;">
+                      MAE Lap Time
+                    </div>
+                  </td>
+                  <td width="4%"></td>
+                  {# MAPE #}
+                  <td width="25%" style="text-align:center;padding:12px 8px;
+                      background:#1a1a2e;border-radius:8px;">
+                    <div style="font-size:22px;font-weight:800;color:#ff8c42;">
+                      {{ "%.2f"|format(verdict.mape_pct) }}%
+                    </div>
+                    <div style="font-size:10px;color:#666688;margin-top:4px;
+                                text-transform:uppercase;letter-spacing:1px;">
+                      MAPE
+                    </div>
+                  </td>
+                  <td width="4%"></td>
+                  {# Podium #}
+                  <td width="25%" style="text-align:center;padding:12px 8px;
+                      background:#1a1a2e;border-radius:8px;">
+                    <div style="font-size:22px;font-weight:800;color:#00e5ff;">
+                      {{ "%.0f"|format(verdict.podium_accuracy_pct) }}%
+                    </div>
+                    <div style="font-size:10px;color:#666688;margin-top:4px;
+                                text-transform:uppercase;letter-spacing:1px;">
+                      Podium Accuracy
+                    </div>
+                  </td>
+                  <td width="4%"></td>
+                  {# Winner #}
+                  <td width="17%" style="text-align:center;padding:12px 8px;
+                      background:#1a1a2e;border-radius:8px;">
+                    <div style="font-size:28px;">
+                      {% if verdict.winner_correct %}✅{% else %}❌{% endif %}
+                    </div>
+                    <div style="font-size:10px;color:#666688;margin-top:4px;
+                                text-transform:uppercase;letter-spacing:1px;">
+                      Winner
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          {# ── Podium Comparison ─────────────────────────────────── #}
+          {% if predicted_podium or actual_podium %}
+          <tr>
+            <td style="padding:16px 32px;">
+              <div style="font-size:10px;color:#555570;font-weight:600;
+                          letter-spacing:2px;text-transform:uppercase;
+                          margin-bottom:12px;">
+                PODIUM COMPARISON
+              </div>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td width="48%" style="background:#1a1a2e;border-radius:8px;
+                      padding:12px 16px;">
+                    <div style="font-size:10px;color:#555570;margin-bottom:8px;
+                                text-transform:uppercase;letter-spacing:1px;">
+                      🤖 Predicted
+                    </div>
+                    {% for driver in predicted_podium %}
+                    <div style="color:#e0e0ff;font-size:14px;font-weight:600;
+                                padding:2px 0;">
+                      P{{ loop.index }}  {{ driver }}
+                    </div>
+                    {% endfor %}
+                  </td>
+                  <td width="4%"></td>
+                  <td width="48%" style="background:#1a1a2e;border-radius:8px;
+                      padding:12px 16px;">
+                    <div style="font-size:10px;color:#555570;margin-bottom:8px;
+                                text-transform:uppercase;letter-spacing:1px;">
+                      🏆 Actual Result
+                    </div>
+                    {% for driver in actual_podium %}
+                    <div style="color:#e0e0ff;font-size:14px;font-weight:600;
+                                padding:2px 0;">
+                      P{{ loop.index }}  {{ driver }}
+                    </div>
+                    {% endfor %}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          {% endif %}
+
+          {# ── Lap Position Chart ────────────────────────────────── #}
+          {% if chart_base64 %}
+          <tr>
+            <td style="padding:8px 32px 16px;">
+              <div style="font-size:10px;color:#555570;font-weight:600;
+                          letter-spacing:2px;text-transform:uppercase;
+                          margin-bottom:12px;">
+                PREDICTED LAP POSITIONS
+              </div>
+              <img src="data:image/png;base64,{{ chart_base64 }}"
+                   alt="Lap Position Chart"
+                   width="536"
+                   style="width:100%;max-width:536px;border-radius:8px;
+                          display:block;"/>
+            </td>
+          </tr>
+          {% endif %}
+
+          {# ── Key Misses ────────────────────────────────────────── #}
+          {% if verdict.key_misses %}
+          <tr>
+            <td style="padding:8px 32px 16px;">
+              <div style="background:#1a1a2e;border-left:3px solid #e8002d;
+                          border-radius:0 8px 8px 0;padding:12px 16px;">
+                <div style="font-size:10px;color:#e8002d;font-weight:600;
+                            text-transform:uppercase;letter-spacing:1px;
+                            margin-bottom:6px;">
+                  ⚠️ Key Prediction Misses
+                </div>
+                <div style="color:#aaaacc;font-size:13px;">
+                  {{ verdict.key_misses | join(", ") }}
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% endif %}
+
+          {# ── AI Race Narrative ─────────────────────────────────── #}
+          {% if ai_narrative %}
+          <tr>
+            <td style="padding:8px 32px 24px;">
+              <div style="font-size:10px;color:#555570;font-weight:600;
+                          letter-spacing:2px;text-transform:uppercase;
+                          margin-bottom:12px;">
+                🤖 AI RACE ANALYSIS (GEMINI 2.5 FLASH)
+              </div>
+              <div style="background:#0f0f1a;border:1px solid #1e1e2e;
+                          border-radius:8px;padding:16px;color:#c0c0e0;
+                          font-size:13px;line-height:1.7;">
+                {{ ai_narrative }}
+              </div>
+            </td>
+          </tr>
+          {% endif %}
+
+          {# ── Footer ───────────────────────────────────────────── #}
+          <tr>
+            <td style="background:#070710;padding:16px 32px;border-top:1px solid #1e1e2e;
+                        border-radius:0 0 12px 12px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td>
+                    <div style="font-size:11px;color:#333355;">
+                      F1 Intelligence System • XGBoost + LightGBM + Gemini 2.5
+                    </div>
+                    <div style="font-size:10px;color:#222244;margin-top:2px;">
+                      Automated weekly race briefing — unsubscribe by removing
+                      F1_RECIPIENT_EMAIL from your .env
+                    </div>
+                  </td>
+                  <td align="right">
+                    <div style="font-size:20px;">🏎️</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

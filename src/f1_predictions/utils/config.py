@@ -29,6 +29,10 @@ Environment variables (see .env.example for full reference):
     F1_TARGET_SEASON    : Integer season year for the active prediction run.
     F1_RANDOM_SEED      : Global random seed for reproducible model training.
     F1_CV_N_SPLITS      : Number of folds for TimeSeriesSplit cross-validation.
+    F1_GMAIL_USER       : Gmail address for outbound race briefing emails.
+    F1_GMAIL_APP_PASSWORD: 16-char Google App Password (not the account password).
+    F1_RECIPIENT_EMAIL  : Destination email address for race briefings.
+    F1_DISCORD_WEBHOOK_URL: Discord webhook URL for race card notifications.
 """
 
 import functools
@@ -82,6 +86,25 @@ class Settings(BaseSettings):
     gemini_api_key: str | None = Field(
         default=None,
         description="Google Gemini API Key for the AI Race Summarizer.",
+    )
+
+    # ── Notification system (all optional — pipeline runs without them) ──
+    gmail_user: str | None = Field(
+        default=None,
+        description="Gmail address used as sender for race briefing emails.",
+    )
+    gmail_app_password: str | None = Field(
+        default=None,
+        description="Google App Password (16 chars). "
+        "Generate at myaccount.google.com/apppasswords.",
+    )
+    recipient_email: str | None = Field(
+        default=None,
+        description="Destination email address for race briefings.",
+    )
+    discord_webhook_url: str | None = Field(
+        default=None,
+        description="Discord Webhook URL for race card embed notifications.",
     )
     data_raw_dir: Path = Field(
         default=Path("data/raw"),
