@@ -1,9 +1,8 @@
 # Application Security Reference
 
-A production application has two security layers: **infrastructure security** (handled in SKILL.md)
-and **application security** (this file). Both are mandatory. This reference covers authentication,
-authorization, data protection, API hardening, and operational security patterns applicable across
-all stacks covered by this skill.
+Production security has two mandatory layers: **infrastructure** (covered in SKILL.md) and
+**application** (this file). This reference covers authentication, authorization, data protection,
+API hardening, and operational security patterns across all stacks in this skill.
 
 ---
 

@@ -1,9 +1,9 @@
 # Git Versioning & Workflow Reference
 
-Professional version control is not just about saving changes — it is a communication protocol
-between developers, a traceability system for deployments, and an audit trail for every decision
-made on a codebase. This reference covers the complete discipline: commit authorship, branching
-strategy, pull request conventions, hooks, automated versioning, and repository governance.
+Professional version control is a communication protocol between developers, a traceability
+system for deployments, and an audit trail for every decision made on a codebase. This reference
+covers commit authorship, branching strategy, PR conventions, hooks, automated versioning,
+and repository governance.
 
 ---
 

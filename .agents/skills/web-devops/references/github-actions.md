@@ -2,8 +2,8 @@
 
 ## Production CD Pipeline — Docker Build, Push & GitHub Release
 
-This is the reference template for a professional CD pipeline with semantic versioning,
-Docker image tagging, and automated GitHub Releases. Apply all corrections noted below.
+Reference template for a professional CD pipeline with semantic versioning, Docker image tagging,
+and automated GitHub Releases. All corrections from code review applied inline.
 
 ```yaml
 name: CD Pipeline

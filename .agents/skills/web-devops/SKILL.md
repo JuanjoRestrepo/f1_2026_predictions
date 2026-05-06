@@ -13,22 +13,15 @@ description: >
 
 # Web Development & DevOps Skill
 
-This skill makes Claude an expert web dev + DevOps engineer, capable of scaffolding projects,
-writing infra configs, setting up CI/CD, deploying to cloud platforms, and applying full-SDLC
-best practices — across a wide variety of stacks and platforms.
-
 ---
 
 ## How to Use This Skill
 
-1. **Identify the task type** from the list below and read the matching section or reference file.
-2. **Ask clarifying questions** if the user's stack or target platform is unclear — don't guess.
-3. **Produce outputs** in the format most useful for the task: code files, configs, step-by-step
-   runbooks, or a combination.
-4. **Always apply** the best practices in the [Cross-Cutting Best Practices](#cross-cutting-best-practices)
-   section regardless of the task type.
-5. **Explain your decisions** — especially for infra and architecture choices. Don't just say _what_,
-   say _why_. Users learn more and trust the output more when reasoning is visible.
+1. **Identify the task type** and read the matching section or reference file.
+2. **Ask clarifying questions** if the stack or target platform is unclear — don't guess.
+3. **Produce outputs** in the format most useful: code files, configs, runbooks, or a combination.
+4. **Always apply** [Cross-Cutting Best Practices](#cross-cutting-best-practices) regardless of task type.
+5. **Explain decisions** — especially for infra and architecture choices, not just the "what" but the "why". Users learn more and trust the output more when reasoning is visible.
 
 ### Quick Stack Decision Guide
 
@@ -47,31 +40,25 @@ best practices — across a wide variety of stacks and platforms.
 
 ### 1. Project Scaffolding
 
-When the user wants to start a new web project, create a proper structure. Ask:
+Always ask before generating:
 
 - Framework/stack? (Next.js, T3, Vue/Nuxt, Express, FastAPI, Django, MERN, PERN)
-- TypeScript or JavaScript? (default to TypeScript — strongly recommended)
-- Will it be containerized? Deployed to which platform?
+- TypeScript or JavaScript? (default TypeScript — strongly recommended)
+- Containerized? Target deployment platform?
 - Does it need auth, a database, an ORM?
 - Monorepo or standalone? (suggest monorepo with Turborepo for T3/multi-package setups)
 
-Then generate:
+Generate: directory structure with explanation, core config files (`tsconfig.json`, `eslint.config.js`, `.env.example`, `.gitignore`, etc.), package manager setup (`package.json` / `pyproject.toml` / `requirements.txt`), README with setup, environment variables, and deployment instructions
 
-- Directory structure with explanation
-- Core config files (`tsconfig.json`, `eslint.config.js`, `.env.example`, `.gitignore`, etc.)
-- Package manager setup (`package.json` / `pyproject.toml` / `requirements.txt`)
-- README with setup, environment variables, and deployment instructions
-
-**T3 Stack — use `create-t3-app` as the baseline:**
+**T3 Stack — bootstrap with:**
 
 ```bash
 pnpm create t3-app@latest
 ```
 
 Covers: Next.js + TypeScript + tRPC + Prisma (or Drizzle) + NextAuth.js + Tailwind CSS + Zod.
-See `references/scaffolding.md` for the full T3 project layout and key patterns.
 
-See `references/scaffolding.md` for all stack-specific templates and patterns.
+→ See `references/scaffolding.md` for directory structures, config templates, and T3 patterns.
 
 ---
 
@@ -132,16 +119,17 @@ The T3 Stack is an opinionated, type-safe full-stack framework. Understand its c
 
 ### 3. Docker & Kubernetes
 
-When the user needs to containerize an app or deploy to a container orchestrator.
-
 **Dockerfile best practices (always apply):**
 
 - Use official, version-pinned base images (e.g., `node:20-alpine`, `python:3.12-slim`)
-- Multi-stage builds: separate `builder` and `runner` stages to minimize image size
+- Multi-stage builds: separate `builder` and `runner` stages to minimize final image size
+- **Layer ordering:** least-frequently-changing instructions first — base image → system deps → dependency manifest → package install → `COPY . .` (source code) last. Each instruction is a cached layer; placing `COPY . .` before package install causes a full reinstall on every code change.
+- Combine related `RUN` commands with `&&`; clean package caches in the **same** layer that created them — `rm -rf /var/lib/apt/lists/*` in a separate `RUN` is too late
+- Always include `.dockerignore` — excludes `node_modules`, `.git`, `.env`, build artifacts from the build context; without it, `COPY . .` inflates context size and busts the cache on irrelevant changes
 - Run as non-root user
-- Use `.dockerignore` to exclude `node_modules`, `.env`, `.git`, build artifacts
-- `COPY` only what's needed; layer order matters for cache efficiency
 - Set `ENV NODE_ENV=production` or equivalent
+
+→ See `references/docker-kubernetes.md` for layer caching mental model, anti-patterns, BuildKit cache mounts, and the full optimization checklist.
 
 **docker-compose:**
 
