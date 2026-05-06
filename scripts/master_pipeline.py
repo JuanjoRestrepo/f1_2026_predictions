@@ -34,7 +34,7 @@ def setup_fastf1():
     fastf1.Cache.enable_cache(CACHE_DIR)
 
 def setup_gemini():
-    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    api_key = os.getenv("F1_GEMINI_API_KEY")
     if not api_key: return None
     return genai.Client(api_key=api_key)
 
