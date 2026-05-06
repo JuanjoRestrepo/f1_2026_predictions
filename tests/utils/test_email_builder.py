@@ -130,9 +130,7 @@ class TestBuildEmailHtml:
         assert "Predicted" in html
         assert "Actual" in html
 
-    def test_renders_valid_html_structure(
-        self, excellent_verdict: RaceVerdict
-    ) -> None:
+    def test_renders_valid_html_structure(self, excellent_verdict: RaceVerdict) -> None:
         """Rendered output must be a valid HTML document."""
         html = build_email_html(excellent_verdict)
         assert html.strip().startswith("<!DOCTYPE html>")

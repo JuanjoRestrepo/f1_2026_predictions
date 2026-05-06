@@ -22,6 +22,17 @@ FROM python:3.12-slim-bookworm
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
     curl \
+    # Kaleido / Plotly static export dependencies (headless graphics)
+    libnss3 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libgbm1 \
+    libasound2 \
     && groupadd -r f1user && useradd -r -g f1user f1user \
     && mkdir -p /app/data/raw /app/data/processed /app/data/outputs/models /app/reports /app/logs /app/cache \
     && chown -R f1user:f1user /app \
