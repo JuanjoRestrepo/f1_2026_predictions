@@ -166,7 +166,20 @@ jobs:
           data = json.loads(verdict_path.read_text())
           verdict = RaceVerdict(**data)
 
-          html = build_email_html(verdict)
+          # Resolve AI Narrative from the generated report
+          report_path = Path('reports') / str(settings.target_season) / verdict.gp_name.replace(' ', '_') / 'results' / f'report_round_{round_num:02d}.md'
+          ai_narrative = None
+          if report_path.exists():
+              ai_narrative = report_path.read_text()
+              print(f'AI Narrative loaded from {report_path}')
+          else:
+              # Fallback to the summary directory if the event dir is different
+              summary_path = Path('reports') / str(settings.target_season) / 'summaries' / f'report_round_{round_num:02d}.md'
+              if summary_path.exists():
+                  ai_narrative = summary_path.read_text()
+                  print(f'AI Narrative loaded from {summary_path}')
+
+          html = build_email_html(verdict, ai_narrative=ai_narrative)
           subject = build_subject(verdict)
 
           channels = []
