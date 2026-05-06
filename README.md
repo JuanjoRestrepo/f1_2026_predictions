@@ -1,6 +1,8 @@
 # F1 2026 Season Predictive Platform 🏎️📊🤖
 
-![F1 Prediction Dashboard Header](images/dashboard/01_header_metrics.png)
+[![Docker Build and Publish](https://github.com/JuanjoRestrepo/f1_2026_predictions/actions/workflows/docker.yml/badge.svg)](https://github.com/JuanjoRestrepo/f1_2026_predictions/actions/workflows/docker.yml)
+[![Lint and Test](https://github.com/JuanjoRestrepo/f1_2026_predictions/actions/workflows/ci.yml/badge.svg)](https://github.com/JuanjoRestrepo/f1_2026_predictions/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/Coverage-82.5%25-brightgreen.svg)](https://github.com/JuanjoRestrepo/f1_2026_predictions/actions/workflows/ci.yml)
 
 A production-grade, end-to-end MLOps platform designed to predict Formula 1 race dynamics for the 2026 regulation era. This system combines state-of-the-art Gradient Boosting (XGBoost/LightGBM) with a high-fidelity interactive dashboard inspired by F1 TV telemetry.
 
@@ -8,15 +10,22 @@ A production-grade, end-to-end MLOps platform designed to predict Formula 1 race
 
 ## 📸 Platform Interface Preview
 
-### 1. Race Timeline & Global Standings
+### 1. Dashboard Header
+
+![F1 Prediction Dashboard Header](images/dashboard/01_header_metrics.png)
+
+### 2. Race Timeline & Global Standings
+
 Interactive position chart with real-time "Predicted vs Actual" toggle.
 ![Race Timeline & Finishing Order](images/dashboard/02_timeline_order.png)
 
-### 2. Tyre Strategy Intelligence
+### 3. Tyre Strategy Intelligence
+
 AI-driven stint analysis and business question engine for optimal pit-stop windows.
 ![Tyre Strategy Intelligence](images/dashboard/03_tyre_intelligence.png)
 
-### 3. AI-Generated Race Narratives
+### 4. AI-Generated Race Narratives
+
 Expert-level race reporting powered by **Gemini 2.0/2.5 Flash**, analyzing telemetry residuals and strategic outcomes with professional engineering personas.
 ![AI Race Analysis](images/dashboard/04_ai_analysis.png)
 
@@ -24,43 +33,57 @@ Expert-level race reporting powered by **Gemini 2.0/2.5 Flash**, analyzing telem
 
 ## 🌟 Key Features
 
-- **F1 Broadcast Aesthetics**: A high-fidelity interface with official team colors and `Solid vs Dashed` line styles to differentiate teammates.
+- **Industrialized Inference API**: High-performance FastAPI microservice for real-time lap time predictions.
+- **Multi-Platform Docker Infrastructure**: Automated builds for `amd64` (servers) and `arm64` (Apple Silicon) using parallel GitHub Actions pipelines.
+- **2026 Regulation Awareness**: Custom feature engineering including `Era Normalization` (adjusting historical times to 2026 rules) and `PU Strain Index`.
+- **Track Evolution Intelligence**: Captures "rubbering-in" effects through rolling pace potential analysis.
 - **Differentiated Analysis**: Unique AI narratives for both **Actual Results** (post-race debrief) and **Predicted ML Simulations** (pre-race forecasting).
-- **Mission-Critical Reliability**: Integrated **AI Retry Logic** and professional **Engineering Fallbacks** that maintain a "Strategic Intelligence" persona even during API rate limits.
-- **Race Tyre Intelligence**: Deep-dive strategy analysis for all 22 drivers, featuring interactive stint timelines and "Business Question" logic.
-- **Automated MLOps Pipeline**: Orchestrated via `scripts/master_pipeline.py`. Automated data ingestion from FastF1, ML model inference, and AI report generation.
 
 ---
 
 ### 🏗️ Platform Architecture
 
 ```text
-├── .github/workflows/       # CI/CD Automation (GitHub Actions)
+├── .github/workflows/       # CI/CD Automation (Docker & CI)
+├── src/f1_predictions/      # Core Python Package (ML & API)
+│   ├── api/                 # FastAPI Inference Service
+│   ├── features/            # Feature Engineering (Reliability, Evolution, Era)
+│   ├── modeling/            # Optuna Tuning & Training Logic
+│   └── models/              # Model Persistence & Base Classes
 ├── dashboard/               # Next.js 15 Web Application
-├── scripts/                 # Master Pipeline (Orchestrator) & Training Scripts
-├── models/                  # Trained XGBoost/LightGBM Model Artifacts
-├── data/                    # Raw Historical Telemetry & Datasets (Bronze Layer)
-├── images/                  # Documentation Assets & UI Screenshots
-├── reports/                 # Hierarchical Data Store (Medallion Architecture)
-│   └── 2026/
-│       ├── summaries/       # Dashboard-ready JSON/MD Artifacts (Gold Layer)
-│       └── {Grand_Prix}/    # Deep-dive ML Reports & Raw Predictions (Silver Layer)
+├── Dockerfile               # Multi-stage Optimized Build
+├── data/outputs/models/     # Production Model Artifacts (*.joblib)
+├── scripts/                 # Master Pipeline (Orchestrator)
+└── tests/                   # Pytest suite (>80% coverage)
 ```
 
 ---
 
 ## 🚀 Execution Workflow
 
-### 1. Local Development
+### 1. Inference API (Docker)
+
+The easiest way to run the prediction engine:
+
 ```bash
-uv sync
-cd dashboard && npm run dev
+docker pull ghcr.io/juanjorestrepo/f1_2026_predictions:latest
+docker run -p 8000:8000 ghcr.io/juanjorestrepo/f1_2026_predictions:latest
 ```
 
-### 2. Update Race Data
-To ingest and analyze any Grand Prix (e.g., Canada Round 5, Spain Round 6):
+Access the API docs at `http://localhost:8000/docs`.
+
+### 2. Local Development
+
 ```bash
-# General orchestrator for any GP
+uv sync
+uv run uvicorn f1_predictions.api.main:app --reload
+```
+
+### 3. Update Race Data
+
+To ingest and analyze any Grand Prix (e.g., Canada Round 5, Spain Round 6):
+
+```bash
 uv run scripts/master_pipeline.py --round [ROUND_NUM]
 ```
 
@@ -68,10 +91,10 @@ uv run scripts/master_pipeline.py --round [ROUND_NUM]
 
 ## 🛠️ Technical Stack
 
-- **ML**: `XGBoost`, `LightGBM`, `Scikit-Learn`, `SHAP`
+- **ML & Inference**: `FastAPI`, `XGBoost`, `LightGBM`, `Scikit-Learn`, `SHAP`, `Joblib`
 - **AI**: `google-genai` (Gemini 2.5 Flash)
 - **Frontend**: `Next.js 15 (Pages)`, `TypeScript`, `Tailwind CSS`, `Recharts`
-- **Automation**: `GitHub Actions`, `uv`
+- **DevOps**: `Docker (Buildx)`, `GitHub Actions (Parallel Builds)`, `uv`
 - **Data Source**: `FastF1 API`
 
 ---
