@@ -38,7 +38,7 @@ COPY --link pyproject.toml ./
 COPY --link data/outputs/models/ ./data/outputs/models/
 
 # Set environment variables
-ENV PATH="/app/.venv/bin:$PATH" \
+ENV PATH="/app/.venv/bin:${PATH}" \
     PYTHONPATH="/app/src:${PYTHONPATH:-}" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1

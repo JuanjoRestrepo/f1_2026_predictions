@@ -24,6 +24,7 @@ def add_track_evolution_factor(df: pd.DataFrame, window: int = 5) -> pd.DataFram
         DataFrame with 'Track_Evolution_Factor' column added.
     """
     if "LapTime_s" not in df.columns or "LapNumber" not in df.columns:
+        df["Track_Evolution_Factor"] = 0.0
         return df
 
     # Group by LapNumber to get the median of the top 3 fastest times per lap

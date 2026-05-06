@@ -110,7 +110,7 @@ class OptunaTuner:
                 "n_jobs": -1,
                 "verbose": -1,
             }
-            model = LGBMRegressor(**params)
+            model = LGBMRegressor(**params)  # type: ignore[arg-type]
             model.fit(
                 x_train,
                 y_train,

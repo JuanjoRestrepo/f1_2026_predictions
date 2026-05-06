@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Self, cast
 
-import joblib
+import joblib  # type: ignore[import-untyped]
 
 import numpy as np
 import pandas as pd

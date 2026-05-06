@@ -76,11 +76,10 @@ def add_pu_strain_index(df: pd.DataFrame) -> pd.DataFrame:
     base_strain = df["LapNumber"]
 
     # Multiplier for track temperature if available
+    temp_multiplier: pd.Series[float] | float = 1.0
     if "TrackTemp" in df.columns:
         # Normalize around 30C
         temp_multiplier = (df["TrackTemp"] / 30.0).clip(lower=0.5, upper=2.0)
-    else:
-        temp_multiplier = 1.0
 
     df["PU_Strain_Index"] = base_strain * temp_multiplier
 
