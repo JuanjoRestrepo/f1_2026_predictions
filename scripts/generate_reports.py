@@ -378,7 +378,9 @@ def run_report_pipeline(
         df, train_years, test_year
     )
     metrics_xgb = RegressionMetrics(
-        mae=metrics_xgb_dict["MAE"], rmse=metrics_xgb_dict["RMSE"]
+        mae=metrics_xgb_dict["MAE"],
+        rmse=metrics_xgb_dict["RMSE"],
+        mape=metrics_xgb_dict["MAPE"],
     )
     y_pred_xgb = model_xgb.predict(df_test)
 
@@ -389,7 +391,9 @@ def run_report_pipeline(
         df, train_years, test_year
     )
     metrics_lgb = RegressionMetrics(
-        mae=metrics_lgb_dict["MAE"], rmse=metrics_lgb_dict["RMSE"]
+        mae=metrics_lgb_dict["MAE"],
+        rmse=metrics_lgb_dict["RMSE"],
+        mape=metrics_lgb_dict["MAPE"],
     )
     y_pred_lgb = model_lgb.predict(df_test)
 

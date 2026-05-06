@@ -179,6 +179,9 @@ def detect_last_race(
         Race metadata dict or None if no race in the window.
     """
     schedule = get_event_schedule(season)
+    return find_last_completed_race(schedule, now_utc=now_utc, days_back=days_back)
+
+
 def detect_upcoming_race(
     season: int,
     days_ahead: int = 3,

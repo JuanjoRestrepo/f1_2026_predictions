@@ -6,6 +6,8 @@ from google import genai
 import numpy as np
 from pathlib import Path
 from dotenv import load_dotenv
+from typing import Any, Dict, List, Optional
+import fastf1.core
 
 # Config
 load_dotenv()
@@ -29,16 +31,18 @@ TEAM_COLORS = {
     "Cadillac": "#ffffff"
 }
 
-def setup_fastf1():
-    if not os.path.exists(CACHE_DIR): os.makedirs(CACHE_DIR)
+def setup_fastf1() -> None:
+    if not os.path.exists(CACHE_DIR):
+        os.makedirs(CACHE_DIR)
     fastf1.Cache.enable_cache(CACHE_DIR)
 
-def setup_gemini():
+def setup_gemini() -> Optional[genai.Client]:
     api_key = os.getenv("F1_GEMINI_API_KEY")
-    if not api_key: return None
+    if not api_key:
+        return None
     return genai.Client(api_key=api_key)
 
-def get_race_info(year, round_num):
+def get_race_info(year: int, round_num: int) -> Dict[str, str]:
     mapping = {
         1: {"name": "Bahrain Grand Prix", "dir": "Bahrain_Grand_Prix"},
         2: {"name": "Saudi Arabian Grand Prix", "dir": "Saudi_Arabian_Grand_Prix"},
@@ -49,7 +53,7 @@ def get_race_info(year, round_num):
     }
     return mapping.get(round_num, {"name": f"Round {round_num}", "dir": f"Round_{round_num}"})
 
-def save_artifact(data, filename, year, event_dir, is_json=True):
+def save_artifact(data: Any, filename: str, year: int, event_dir: str, is_json: bool = True) -> None:
     summary_path = REPORTS_BASE / str(year) / SUMMARY_SUBDIR / filename
     event_path = REPORTS_BASE / str(year) / event_dir / "results" / filename
     for p in [summary_path, event_path]:
@@ -59,12 +63,12 @@ def save_artifact(data, filename, year, event_dir, is_json=True):
         else:
             with open(p, 'w') as f: f.write(data)
 
-def generate_lap_data(session, all_drivers, total_laps):
+def generate_lap_data(session: fastf1.core.Session, all_drivers: List[str], total_laps: int) -> Dict[str, Any]:
     drivers_lap_list = []
     laps = session.laps
     
     # Track assigned styles per team to differentiate teammates
-    team_driver_count = {}
+    team_driver_count: Dict[str, int] = {}
     
     for drv in all_drivers:
         drv_laps = laps.pick_drivers(drv)
@@ -105,10 +109,10 @@ def generate_lap_data(session, all_drivers, total_laps):
         "drivers": drivers_lap_list
     }
 
-def generate_predicted_lap_data(session, all_drivers, total_laps, predicted_order):
+def generate_predicted_lap_data(session: fastf1.core.Session, all_drivers: List[str], total_laps: int, predicted_order: List[str]) -> Dict[str, Any]:
     import pandas as pd
     drivers_lap_list = []
-    team_driver_count = {}
+    team_driver_count: Dict[str, int] = {}
     for drv in all_drivers:
         drv_laps = session.laps.pick_drivers(drv)
         if drv_laps.empty: continue
@@ -141,38 +145,40 @@ def generate_predicted_lap_data(session, all_drivers, total_laps, predicted_orde
     }
 
 
-def call_ai_with_retry(prompt, model, retries=2, delay=10):
+def call_ai_with_retry(prompt: str, model: Optional[genai.Client], retries: int = 2, delay: int = 10) -> Optional[str]:
     import time
     if not model: return None
     for i in range(retries + 1):
         try:
             # model is actually the genai.Client here
             response = model.models.generate_content(
-                model='gemini-2.5-flash',
+                model="gemini-2.0-flash",
                 contents=prompt
             )
-            return response.text.strip().replace('"', '')
+            return response.text
         except Exception as e:
-            if "429" in str(e) and i < retries:
-                print(f"AI Quota hit, retrying in {delay}s... (Attempt {i+1}/{retries})")
+            if i < retries:
+                print(f"AI Call Failed. Retrying in {delay}s... ({e})")
                 time.sleep(delay)
-                continue
-            print(f"AI Call Failed: {e}")
-            return None
+            else:
+                print(f"AI Call Failed: {e}")
+                return None
+    return None
 
-def main():
-    parser = argparse.ArgumentParser()
+def main() -> None:
+    setup_fastf1()
+    parser = argparse.ArgumentParser(description="Professional F1 2026 Prediction Pipeline")
     parser.add_argument("--year", type=int, default=2026)
     parser.add_argument("--round", type=int, required=True)
     parser.add_argument(
-        "--auto",
-        action="store_true",
-        default=False,
-        help="Non-interactive mode for CI/CD. Skips all confirmation prompts.",
+        "--auto", 
+        action="store_true", 
+        help="Run in non-interactive mode (for CI/CD)"
     )
     args = parser.parse_args()
 
-    setup_fastf1()
+    print(f"🏁 Starting Autonomous F1 Intelligence Sync: {args.year} Round {args.round}")
+    
     ai_model = setup_gemini()
     race_info = get_race_info(args.year, args.round)
     session = fastf1.get_session(args.year, args.round, 'R')
@@ -203,7 +209,7 @@ def main():
     if is_post_race:
         import pandas as pd
         results_data = []
-        for idx, r in session.results.iterrows():
+        for _, r in session.results.iterrows():
             pos = int(r['Position']) if not pd.isna(r['Position']) else None
             time_str = ""
             if not pd.isna(r['Time']):
@@ -244,12 +250,13 @@ def main():
     save_artifact(generate_predicted_lap_data(session, all_drivers, total_laps, predicted_order), f"predicted_lap_positions_round_{args.round}.json", args.year, race_info['dir'])
     
     # 3. Tyre
-    def process_tyre_data(limit=18, is_predicted=False):
+    def process_tyre_data(limit: int = 18, is_predicted: bool = False) -> Dict[str, Any]:
         data = []
         compound_colors = {"SOFT": "#ef4444", "MEDIUM": "#facc15", "HARD": "#f8fafc", "INTERMEDIATE": "#22c55e", "WET": "#3b82f6"}
         for drv in all_drivers[:limit]:
             drv_laps = session.laps.pick_drivers(drv)
-            if drv_laps.empty: continue
+            if drv_laps.empty:
+                continue
             stints = drv_laps[['Stint', 'Compound', 'LapNumber']].groupby(['Stint', 'Compound'], sort=False).count().reset_index()
             res_row = session.results[session.results['Abbreviation'] == drv]
             full_name = res_row['FullName'].iloc[0] if not res_row.empty else drv
@@ -274,7 +281,8 @@ def main():
             prompt_type = "predicted optimal strategy" if is_predicted else "actual post-race strategy analysis"
             prompt = f"Write a professional 2-sentence F1 strategy intelligence report for the {session.event['EventName']} 2026 ({prompt_type}). Top 5 drivers stints: {stint_summary}. Be highly analytical like an F1 race engineer. Do not use markdown."
             res = call_ai_with_retry(prompt, ai_model)
-            if res: insight = res
+            if res:
+                insight = res
 
         return {
             "gp": session.event['EventName'], "year": args.year, "total_laps": total_laps,
@@ -291,6 +299,13 @@ def main():
     # 4. AI Narratives
     if ai_model:
         print("Generating AI reports with gemini-2.5-flash...")
+        fallback = (
+            f"### [STRATEGIC INTELLIGENCE] {session.event['EventName']} Narrative Synthesis Underway\n\n"
+            f"Technical analysis of the delta between **Actual Race Telemetry** and **Predictive ML Simulations** for the {session.event['EventName']} is currently being synthesized. "
+            "Our engineering team is validating stint-loading data, track-specific degradation curves, and overtake-probability maps. "
+            "The full strategic narrative will be published once the cross-verification between real-world results and AI simulations is complete."
+        )
+
         if is_post_race:
             actual_prompt = (
                 f"TECHNICAL RACE ANALYSIS: {session.event['EventName']} 2026. "
@@ -321,12 +336,7 @@ def main():
         )
         pred_report = call_ai_with_retry(predicted_prompt, ai_model)
         
-        fallback = (
-            f"### [STRATEGIC INTELLIGENCE] {session.event['EventName']} Narrative Synthesis Underway\n\n"
-            f"Technical analysis of the delta between **Actual Race Telemetry** and **Predictive ML Simulations** for the {session.event['EventName']} is currently being synthesized. "
-            "Our engineering team is validating stint-loading data, track-specific degradation curves, and overtake-probability maps. "
-            "The full strategic narrative will be published once the cross-verification between real-world results and AI simulations is complete."
-        )
+        # (Already defined above)
         save_artifact(pred_report or fallback, f"predicted_report_round_{args.round}.md", args.year, race_info['dir'], False)
     
     print(f"Round {args.round} fully processed with Pro F1 Styles.")

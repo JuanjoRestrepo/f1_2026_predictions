@@ -2,6 +2,7 @@
 
 import argparse
 from pathlib import Path
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -100,7 +101,7 @@ def _calculate_sample_weights(
     weights = np.exp(-decay_rate * df["round_dist"])
 
     # Normalise weights so mean is 1.0 (standard practice for GBMs)
-    return weights / weights.mean()
+    return cast(pd.Series, weights / weights.mean())
 
 
 def run_race_simulation(
@@ -240,8 +241,8 @@ def run_race_simulation(
 
     # XGBoost as baseline (mean)
     xgb_model = F1PaceRegressor()
-    xgb_model.model.fit(x_train, y_train, sample_weight=sample_weights)
-    y_pred_xgb = xgb_model.model.predict(x_sim)
+    cast(Any, xgb_model.model).fit(x_train, y_train, sample_weight=sample_weights)
+    y_pred_xgb = cast(Any, xgb_model.model).predict(x_sim)
 
     # LightGBM Quantile Models
     quantiles = [0.05, 0.50, 0.95]
@@ -250,8 +251,8 @@ def run_race_simulation(
     for q in quantiles:
         logger.info("Fitting LightGBM for alpha=%.2f...", q)
         lgb_q = LightGBMPaceRegressor(alpha=q)
-        lgb_q.model.fit(x_train, y_train, sample_weight=sample_weights)
-        quantile_preds[q] = lgb_q.model.predict(x_sim)
+        cast(Any, lgb_q.model).fit(x_train, y_train, sample_weight=sample_weights)
+        quantile_preds[q] = cast(Any, lgb_q.model).predict(x_sim)
 
     # 6. Save Results
     res_dir = Path(settings.reports_dir) / str(year) / safe_event / "results"

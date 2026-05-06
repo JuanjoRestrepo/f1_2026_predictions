@@ -5,7 +5,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
+import seaborn as sns  # type: ignore[import-untyped]
 
 from f1_predictions.utils.config import get_settings
 from f1_predictions.utils.logging_setup import (

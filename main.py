@@ -98,6 +98,7 @@ def run_validation_loop(year: int, round_num: int, event: str) -> None:
             mae_threshold,
         )
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="F1 2026 Prediction Pipeline Orchestrator"
@@ -108,7 +109,7 @@ if __name__ == "__main__":
         help=(
             "Action to perform: 'predict' runs the standard simulation pipeline. "
             "'validate' checks past predictions and triggers retraining if needed."
-        )
+        ),
     )
     parser.add_argument(
         "--year", type=int, default=2026, help="Season year (default: 2026)"
