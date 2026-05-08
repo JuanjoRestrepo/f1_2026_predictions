@@ -116,14 +116,29 @@ def generate_predicted_lap_data(session: fastf1.core.Session, all_drivers: List[
     drivers_lap_list = []
     team_driver_count: Dict[str, int] = {}
     for drv in all_drivers:
-        drv_laps = session.laps.pick_drivers(drv)
-        if drv_laps.empty: continue
-        team_name = drv_laps['Team'].iloc[0]
-        team_driver_count[team_name] = team_driver_count.get(team_name, 0) + 1
-        line_style = "solid" if team_driver_count[team_name] == 1 else "dashed"
+        # Default values for pre-race
+        team_name = "TBD"
+        color = "#888888"
+        line_style = "solid"
+        start_pos = 20
         
-        res_row = session.results[session.results['Abbreviation'] == drv]
-        start_pos = int(res_row['GridPosition'].iloc[0]) if not res_row.empty and not pd.isna(res_row['GridPosition'].iloc[0]) and int(res_row['GridPosition'].iloc[0]) > 0 else 20
+        # Try to get real data if available
+        try:
+            if not session.laps.empty:
+                drv_laps = session.laps.pick_drivers(drv)
+                if not drv_laps.empty:
+                    team_name = drv_laps['Team'].iloc[0]
+                    team_driver_count[team_name] = team_driver_count.get(team_name, 0) + 1
+                    line_style = "solid" if team_driver_count[team_name] == 1 else "dashed"
+                    color = TEAM_COLORS.get(team_name, "#888888")
+            
+            if not session.results.empty:
+                res_row = session.results[session.results['Abbreviation'] == drv]
+                if not res_row.empty and not pd.isna(res_row['GridPosition'].iloc[0]) and int(res_row['GridPosition'].iloc[0]) > 0:
+                    start_pos = int(res_row['GridPosition'].iloc[0])
+        except Exception:
+            pass # Stay with defaults
+        
         end_pos = predicted_order.index(drv) + 1 if drv in predicted_order else 20
         
         pos_dict = {}
@@ -135,7 +150,7 @@ def generate_predicted_lap_data(session: fastf1.core.Session, all_drivers: List[
         drivers_lap_list.append({
             "driver": drv,
             "team": team_name,
-            "color": TEAM_COLORS.get(team_name, "#888888"),
+            "color": color,
             "lineStyle": line_style,
             "positions": pos_dict
         })
@@ -212,9 +227,21 @@ def main() -> None:
         is_post_race = False
 
     all_drivers = session.results['Abbreviation'].tolist() if not session.results.empty else []
-    if not all_drivers and not is_post_race:
-        # Fallback to entry list if results are empty
-        all_drivers = session.get_entry_list()['Abbreviation'].tolist()
+    if not all_drivers:
+        try:
+            # Attempt 1: Get official entry list from event metadata
+            all_drivers = session.event.get_entry_list()['Abbreviation'].tolist()
+        except:
+            try:
+                # Attempt 2: Inherit from the previous race in the same year
+                prev_session = fastf1.get_session(args.year, args.round - 1, 'R')
+                prev_session.load(laps=False, telemetry=False, weather=False)
+                all_drivers = prev_session.results['Abbreviation'].tolist()
+                print(f"📋 Inherited driver list from Round {args.round - 1}")
+            except:
+                # Attempt 3: Professional 2024/2026 grid fallback
+                all_drivers = ["VER", "PER", "LEC", "SAI", "HAM", "RUS", "NOR", "PIA", "ALO", "STR", 
+                               "GAS", "OCO", "ALB", "SAR", "TSU", "RIC", "BOT", "ZHO", "MAG", "HUL"]
 
     # Determine lap count from schedule if session not yet run
     if is_post_race:
@@ -272,21 +299,35 @@ def main() -> None:
         data = []
         compound_colors = {"SOFT": "#ef4444", "MEDIUM": "#facc15", "HARD": "#f8fafc", "INTERMEDIATE": "#22c55e", "WET": "#3b82f6"}
         for drv in all_drivers[:limit]:
-            drv_laps = session.laps.pick_drivers(drv)
-            if drv_laps.empty:
-                continue
-            stints = drv_laps[['Stint', 'Compound', 'LapNumber']].groupby(['Stint', 'Compound'], sort=False).count().reset_index()
-            res_row = session.results[session.results['Abbreviation'] == drv]
-            full_name = res_row['FullName'].iloc[0] if not res_row.empty else drv
+            team = "TBD"
+            full_name = drv
+            stint_info = []
+
+            try:
+                if not session.laps.empty:
+                    drv_laps = session.laps.pick_drivers(drv)
+                    if not drv_laps.empty:
+                        team = drv_laps['Team'].iloc[0]
+                        stints = drv_laps[['Stint', 'Compound', 'LapNumber']].groupby(['Stint', 'Compound'], sort=False).count().reset_index()
+                        res_row = session.results[session.results['Abbreviation'] == drv]
+                        full_name = res_row['FullName'].iloc[0] if not res_row.empty else drv
+                        stint_info = [{'stint': int(r['Stint']), 'compound': str(r['Compound']).upper(), 'laps': int(r['LapNumber']), 'color': compound_colors.get(str(r['Compound']).upper(), "#888888")} for _, r in stints.iterrows()]
+            except Exception:
+                pass
+
             data.append({
-                'driver': drv, 'fullName': full_name, 'team': drv_laps['Team'].iloc[0], 
-                'stints': [{'stint': int(r['Stint']), 'compound': str(r['Compound']).upper(), 'laps': int(r['LapNumber']), 'color': compound_colors.get(str(r['Compound']).upper(), "#888888")} for _, r in stints.iterrows()]
+                'driver': drv, 'fullName': full_name, 'team': team, 
+                'stints': stint_info
             })
+            
         if is_predicted:
             for d in data:
                 m_laps = round(total_laps * 0.4)
                 h_laps = total_laps - m_laps
-                d['stints'] = [{'stint': 1, 'compound': 'MEDIUM', 'laps': m_laps, 'color': compound_colors['MEDIUM']}, {'stint': 2, 'compound': 'HARD', 'laps': h_laps, 'color': compound_colors['HARD']}]
+                d['stints'] = [
+                    {'stint': 1, 'compound': 'MEDIUM', 'laps': m_laps, 'color': compound_colors['MEDIUM']}, 
+                    {'stint': 2, 'compound': 'HARD', 'laps': h_laps, 'color': compound_colors['HARD']}
+                ]
             data.sort(key=lambda x: predicted_order.index(x['driver']) if x['driver'] in predicted_order else 99)
 
         insight = (

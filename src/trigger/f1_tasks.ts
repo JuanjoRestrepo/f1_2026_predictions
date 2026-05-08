@@ -7,17 +7,18 @@ import { python } from "@trigger.dev/python";
  */
 export const f1ManualSync = task({
   id: "f1-manual-sync",
-  run: async (payload: { year?: number; round: number }) => {
+  maxDuration: 1200, // 20 minutes for heavy data downloads
+  run: async (payload: { year?: number; round?: number }) => {
     const year = payload.year ?? 2026;
-    console.log(`Starting F1 Sync for ${year} Round ${payload.round}`);
+    const roundStr = payload.round ? `Round ${payload.round}` : "Auto-detecting Round";
+    console.log(`Starting F1 Sync for ${year} (${roundStr})`);
 
-    const result = await python.runScript("scripts/master_pipeline.py", [
-      "--year",
-      year.toString(),
-      "--round",
-      payload.round.toString(),
-      "--auto",
-    ]);
+    const args = ["--year", year.toString(), "--auto"];
+    if (payload.round) {
+      args.push("--round", payload.round.toString());
+    }
+
+    const result = await python.runScript("scripts/master_pipeline.py", args);
 
     if (result.exitCode !== 0) {
       throw new Error(`Pipeline failed with exit code ${result.exitCode}: ${result.stderr}`);
@@ -36,6 +37,7 @@ export const f1ManualSync = task({
  */
 export const f1FridayForecast = schedules.task({
   id: "f1-friday-forecast",
+  maxDuration: 1200,
   cron: "0 10 * * 5", // Fridays at 10:00 AM
   run: async (payload) => {
     // Note: We need a way to determine the "next" round automatically.
@@ -59,6 +61,7 @@ export const f1FridayForecast = schedules.task({
  */
 export const f1MondayAudit = schedules.task({
   id: "f1-monday-audit",
+  maxDuration: 1200,
   cron: "0 10 * * 1", // Mondays at 10:00 AM
   run: async (payload) => {
     console.log("Monday Audit Triggered. Processing race results...");

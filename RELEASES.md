@@ -11,10 +11,10 @@ This release completes the transition to a fully autonomous, industrial-grade ex
 - **Scheduled Autonomous Loop**: 
   - **Friday Forecasts**: Automatic pre-race ML simulations triggered by race weekend metadata.
   - **Monday Audits**: Automatic post-race telemetry analysis and SHAP-powered narrative generation.
-- **Enhanced Reliability**:
-  - **Cross-Platform Compatibility**: Cleaned the pipeline of Unicode/Emoji characters to ensure stability on all terminal environments (including legacy Windows consoles).
-  - **Safe Environment Management**: Hardened `.env` handling with UTF-8 enforcement to prevent "embedded null character" errors.
-  - **Automatic Race Discovery**: Updated `master_pipeline.py` to autonomously identify and process the next event in the F1 schedule.
+- **Future-Proof Robustness**:
+  - **Driver Inheritance**: Implemented dynamic grid discovery that inherits the previous race's drivers if official entry lists are unavailable for future rounds.
+  - **Synthetic Projections**: Added fallback logic for "Pre-Race" forecasts that generates theoretical strategy and lap data when real telemetry hasn't occurred yet.
+  - **Extended TTL**: Increased task maximum duration to 20 minutes to accommodate heavy data ingestion from the FastF1 API.
 - **Full Quality Certification**: Maintained 100% passing test suites and >80% coverage across the new orchestration layer.
 
 ---
