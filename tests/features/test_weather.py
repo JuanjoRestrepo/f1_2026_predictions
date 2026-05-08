@@ -144,10 +144,14 @@ class TestAddWeatherFeaturesPartial:
     """Tests for partial weather column coverage."""
 
     def test_missing_weather_col_filled_with_nan(self, laps_df: pd.DataFrame) -> None:
-        """Columns absent from df_weather will raise KeyError or be handled (currently raises in merge_asof)."""
-        # Our implementation requires all columns to be present or it fails during selection.
-        # This is fine as FastF1 usually provides all or none.
-        partial_weather = pd.DataFrame({"Time": pd.to_timedelta(["0:01:00"]), "AirTemp": [30.0]})
+        """Verify that missing weather columns raise KeyError.
+
+        Our implementation requires all columns to be present or it fails
+        during selection. This is fine as FastF1 usually provides all or none.
+        """
+        partial_weather = pd.DataFrame(
+            {"Time": pd.to_timedelta(["0:01:00"]), "AirTemp": [30.0]}
+        )
         with pytest.raises(KeyError):
             add_weather_features(laps_df, partial_weather)
 
@@ -209,8 +213,10 @@ class TestAddWeatherFeaturesRainfall:
         result = add_weather_features(laps_df, full_weather_df)
         assert not result["Rainfall"].any()
 
-    def test_multiple_weather_rows_merges_correctly(self, laps_df: pd.DataFrame) -> None:
-        """When df_weather has multiple rows, merge_asof must use the correct one per row."""
+    def test_multiple_weather_rows_merges_correctly(
+        self, laps_df: pd.DataFrame
+    ) -> None:
+        """When df_weather has multiple rows, merge_asof must use correct ones."""
         multi_row_weather = pd.DataFrame(
             {
                 "Time": pd.to_timedelta(["0:01:00", "0:01:31"]),
