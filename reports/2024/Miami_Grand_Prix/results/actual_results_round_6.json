@@ -1,0 +1,142 @@
+[
+  {
+    "position": 1,
+    "driver": "NOR",
+    "team": "McLaren",
+    "status": "Finished",
+    "time": "1:30:49.876"
+  },
+  {
+    "position": 2,
+    "driver": "VER",
+    "team": "Red Bull Racing",
+    "status": "Finished",
+    "time": "+7.612s"
+  },
+  {
+    "position": 3,
+    "driver": "LEC",
+    "team": "Ferrari",
+    "status": "Finished",
+    "time": "+9.920s"
+  },
+  {
+    "position": 4,
+    "driver": "PER",
+    "team": "Red Bull Racing",
+    "status": "Finished",
+    "time": "+14.650s"
+  },
+  {
+    "position": 5,
+    "driver": "SAI",
+    "team": "Ferrari",
+    "status": "Finished",
+    "time": "+16.407s"
+  },
+  {
+    "position": 6,
+    "driver": "HAM",
+    "team": "Mercedes",
+    "status": "Finished",
+    "time": "+16.585s"
+  },
+  {
+    "position": 7,
+    "driver": "TSU",
+    "team": "RB",
+    "status": "Finished",
+    "time": "+26.185s"
+  },
+  {
+    "position": 8,
+    "driver": "RUS",
+    "team": "Mercedes",
+    "status": "Finished",
+    "time": "+34.789s"
+  },
+  {
+    "position": 9,
+    "driver": "ALO",
+    "team": "Aston Martin",
+    "status": "Finished",
+    "time": "+37.107s"
+  },
+  {
+    "position": 10,
+    "driver": "OCO",
+    "team": "Alpine",
+    "status": "Finished",
+    "time": "+39.746s"
+  },
+  {
+    "position": 11,
+    "driver": "HUL",
+    "team": "Haas F1 Team",
+    "status": "Finished",
+    "time": "+40.789s"
+  },
+  {
+    "position": 12,
+    "driver": "GAS",
+    "team": "Alpine",
+    "status": "Finished",
+    "time": "+44.958s"
+  },
+  {
+    "position": 13,
+    "driver": "PIA",
+    "team": "McLaren",
+    "status": "Finished",
+    "time": "+49.756s"
+  },
+  {
+    "position": 14,
+    "driver": "ZHO",
+    "team": "Kick Sauber",
+    "status": "Finished",
+    "time": "+49.979s"
+  },
+  {
+    "position": 15,
+    "driver": "RIC",
+    "team": "RB",
+    "status": "Finished",
+    "time": "+50.956s"
+  },
+  {
+    "position": 16,
+    "driver": "BOT",
+    "team": "Kick Sauber",
+    "status": "Finished",
+    "time": "+52.356s"
+  },
+  {
+    "position": 17,
+    "driver": "STR",
+    "team": "Aston Martin",
+    "status": "Finished",
+    "time": "+55.173s"
+  },
+  {
+    "position": 18,
+    "driver": "ALB",
+    "team": "Williams",
+    "status": "Finished",
+    "time": "+76.091s"
+  },
+  {
+    "position": 19,
+    "driver": "MAG",
+    "team": "Haas F1 Team",
+    "status": "Finished",
+    "time": "+84.683s"
+  },
+  {
+    "position": 20,
+    "driver": "SAR",
+    "team": "Williams",
+    "status": "Retired",
+    "time": "Retired"
+  }
+]

@@ -171,7 +171,7 @@ def main() -> None:
     setup_fastf1()
     parser = argparse.ArgumentParser(description="Professional F1 2026 Prediction Pipeline")
     parser.add_argument("--year", type=int, default=2026)
-    parser.add_argument("--round", type=int, required=True)
+    parser.add_argument("--round", type=int, help="Round number (auto-detected if omitted)")
     parser.add_argument(
         "--auto", 
         action="store_true", 
@@ -179,7 +179,23 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    print(f"🏁 Starting Autonomous F1 Intelligence Sync: {args.year} Round {args.round}")
+    if args.round is None:
+        print("No round specified. Attempting auto-detection...")
+        from datetime import datetime
+        schedule = fastf1.get_event_schedule(args.year)
+        # Find the event where the date is closest to now
+        now = datetime.now()
+        # FastF1 dates are often at the end of the weekend, so we look for the next one
+        future_races = schedule[schedule['EventDate'] >= now]
+        if not future_races.empty:
+            args.round = int(future_races.iloc[0]['RoundNumber'])
+            print(f"Detected next race: {future_races.iloc[0]['EventName']} (Round {args.round})")
+        else:
+            # If no future races, pick the last one of the season
+            args.round = int(schedule['RoundNumber'].max())
+            print(f"No future races found. Defaulting to final round: {args.round}")
+
+    print(f"Starting Autonomous F1 Intelligence Sync: {args.year} Round {args.round}")
     
     ai_model = setup_gemini()
     race_info = get_race_info(args.year, args.round)

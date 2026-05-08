@@ -62,6 +62,29 @@ Expert-level race reporting powered by **Gemini 2.0/2.5 Flash**, analyzing telem
 - **Track Evolution Intelligence**: Captures "rubbering-in" effects through rolling pace potential analysis.
 - **Differentiated Analysis**: Unique AI narratives for both **Actual Results** (post-race debrief) and **Predicted ML Simulations** (pre-race forecasting).
 
+### 🤖 Autonomous Orchestration (v4.3.0+)
+The engine now features durable, long-running workflows powered by **Trigger.dev v3**. This enables:
+- **Friday Forecasts**: Automatic pre-race predictions based on practice data.
+- **Monday Audits**: Automatic post-race telemetry analysis and AI narrative synthesis.
+- **Manual Sync**: On-demand race processing via the Trigger.dev Cloud Dashboard.
+
+#### Setup Orchestration
+1. Install dependencies: `npm install`
+2. Connect to your Trigger.dev project: `npx trigger.dev@latest login`
+3. Start local development worker:
+   ```bash
+   npx trigger.dev@latest dev
+   ```
+4. Deploy to cloud for 24/7 autonomy:
+   ```bash
+   npx trigger.dev@latest deploy
+   ```
+
+### 🛠️ Core Engine Setup
+1. **Environment**: Ensure you have `uv` installed.
+2. **Sync**: `uv sync`
+3. **API Keys**: Add `F1_GEMINI_API_KEY` and `TRIGGER_SECRET_KEY` to your `.env`.
+
 ### 🛠️ Technical Retrospective & Lessons Learned
 - **The "Headless" Dependency Trap**: Encountered a build failure where `kaleido` (the static chart engine) required Linux system libraries (`libnss3`, `libatk`, etc.) that were missing in the slim Docker image. Resolved by adding a dedicated graphics-dep layer to the `Dockerfile`.
 - **CI Linting Granularity**: Discovered that `ruff check` passes don't guarantee `ruff format --check` passes. Standardized the local development workflow to always run `uv run ruff format` before pushing to avoid CI blocking.
