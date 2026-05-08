@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="F1 2026 Predictions — Race Pace Model Report" />
+    <title>F1 Predictions Report — Test Season 2024</title>
+    <style>
+        /* ── Design tokens ─────────────────────────────────────── */
+        :root {
+            --bg:         #0d0d0d;
+            --surface:    #161616;
+            --surface-2:  #1f1f1f;
+            --border:     #2a2a2a;
+            --f1-red:     #e8002d;
+            --f1-red-dim: #8b0017;
+            --accent:     #1e88e5;
+            --accent-lgb: #43a047;
+            --text:       #f0f0f0;
+            --text-muted: #888;
+            --font:       'Inter', 'Segoe UI', system-ui, sans-serif;
+            --radius:     10px;
+            --shadow:     0 4px 24px rgba(0,0,0,.55);
+        }
+
+        /* ── Reset ─────────────────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.65;
+            min-height: 100vh;
+        }
+
+        /* ── Header ────────────────────────────────────────────── */
+        header {
+            background: linear-gradient(135deg, #1a0004 0%, #0d0d0d 60%);
+            border-bottom: 2px solid var(--f1-red);
+            padding: 2.5rem 2rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+        .f1-logo {
+            font-size: 2.6rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            color: var(--f1-red);
+            line-height: 1;
+        }
+        .f1-logo span { color: var(--text); }
+        header h1 {
+            font-size: 1.35rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+        header p { color: var(--text-muted); font-size: 0.88rem; margin-top: 0.2rem; }
+
+        /* ── Layout ────────────────────────────────────────────── */
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 4rem;
+        }
+
+        section { margin-bottom: 3rem; }
+        section h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--f1-red);
+            margin-bottom: 1.2rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* ── Metrics cards ─────────────────────────────────────── */
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem 1.75rem;
+            box-shadow: var(--shadow);
+            transition: transform .15s ease, border-color .15s ease;
+        }
+        .card:hover { transform: translateY(-3px); border-color: var(--f1-red-dim); }
+        .card .model-tag {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 0.8rem;
+        }
+        .tag-xgb { background: #1e3a5f; color: var(--accent); }
+        .tag-lgb { background: #1b3320; color: var(--accent-lgb); }
+        .card .metric-label {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .card .metric-value {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            line-height: 1.1;
+            margin-top: 0.25rem;
+        }
+        .card .metric-unit { font-size: 0.85rem; color: var(--text-muted); font-weight: 400; }
+
+        /* ── Split info ────────────────────────────────────────── */
+        .split-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            padding: 0.4rem 1rem;
+            font-size: 0.83rem;
+            color: var(--text-muted);
+        }
+        .split-pill b { color: var(--text); }
+        .split-row { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+
+        /* ── Figures ───────────────────────────────────────────── */
+        .figure-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+            gap: 1.5rem;
+        }
+        .figure-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: transform .15s ease;
+        }
+        .figure-card:hover { transform: translateY(-3px); }
+        .figure-card figcaption {
+            padding: 0.75rem 1.1rem;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+            background: var(--surface-2);
+        }
+        .figure-card img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* ── Interpretation table ──────────────────────────────── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+        thead tr { background: var(--surface-2); }
+        th {
+            text-align: left;
+            padding: 0.65rem 1rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            border-bottom: 1px solid var(--border);
+        }
+        td {
+            padding: 0.65rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        tbody tr:hover { background: var(--surface-2); }
+        .better { color: #66bb6a; font-weight: 700; }
+        .worse  { color: var(--text-muted); }
+
+        /* ── Footer ────────────────────────────────────────────── */
+        footer {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            padding: 2rem 1rem;
+            border-top: 1px solid var(--border);
+            margin-top: 2rem;
+        }
+        footer a { color: var(--f1-red); text-decoration: none; }
+
+        @media (max-width: 640px) {
+            .figure-grid { grid-template-columns: 1fr; }
+            .f1-logo { font-size: 1.8rem; }
+        }
+    </style>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<header>
+    <div class="f1-logo">F1<span>·</span></div>
+    <div>
+        <h1>Race Pace Prediction Report</h1>
+        <p>Test Season: <strong>2024</strong> &nbsp;|&nbsp;
+           Train Seasons: <strong>2022, 2023</strong> &nbsp;|&nbsp;
+           Models: XGBoost &amp; LightGBM</p>
+    </div>
+</header>
+
+<main>
+
+    <!-- ── Split Summary ─────────────────────────────────────── -->
+    <section id="split">
+        <h2>Data Split</h2>
+        <div class="split-row">
+            <span class="split-pill">
+                🏋 Training &nbsp;<b>2022, 2023</b>
+            </span>
+            <span class="split-pill">
+                🏁 Test &nbsp;<b>2024</b>
+            </span>
+        </div>
+    </section>
+
+    <!-- ── Metrics ───────────────────────────────────────────── -->
+    <section id="metrics">
+        <h2>Evaluation Metrics (Test Season)</h2>
+        <div class="cards">
+            <div class="card">
+                <span class="model-tag tag-xgb">XGBoost</span>
+                <div class="metric-label">MAE</div>
+                <div class="metric-value">
+                    0.271
+                    <span class="metric-unit">seconds</span>
+                </div>
+            </div>
+            <div class="card">
+                <span class="model-tag tag-xgb">XGBoost</span>
+                <div class="metric-label">RMSE</div>
+                <div class="metric-value">
+                    0.680
+                    <span class="metric-unit">seconds</span>
+                </div>
+            </div>
+            <div class="card">
+                <span class="model-tag tag-lgb">LightGBM</span>
+                <div class="metric-label">MAE</div>
+                <div class="metric-value">
+                    0.297
+                    <span class="metric-unit">seconds</span>
+                </div>
+            </div>
+            <div class="card">
+                <span class="model-tag tag-lgb">LightGBM</span>
+                <div class="metric-label">RMSE</div>
+                <div class="metric-value">
+                    0.707
+                    <span class="metric-unit">seconds</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── Model Comparison Table ────────────────────────────── -->
+    <section id="comparison">
+        <h2>Model Comparison</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Model</th>
+                    <th>MAE (s)</th>
+                    <th>RMSE (s)</th>
+                    <th>Better MAE</th>
+                    <th>Better RMSE</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                
+                
+                
+                <tr>
+                    <td><strong>XGBoost</strong></td>
+                    <td>0.2711</td>
+                    <td>0.6804</td>
+                    <td><span class="better">✓</span></td>
+                    <td><span class="better">✓</span></td>
+                </tr>
+                <tr>
+                    <td><strong>LightGBM</strong></td>
+                    <td>0.2971</td>
+                    <td>0.7069</td>
+                    <td><span class="worse">—</span></td>
+                    <td><span class="worse">—</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- ── Predicted vs Actual ───────────────────────────────── -->
+    
+    <section id="scatter">
+        <h2>Predicted vs Actual Lap Times</h2>
+        <div class="figure-grid">
+            <figure class="figure-card">
+                <img src="fig_01_predicted_vs_actual.png" alt="Predicted vs Actual scatter plot" loading="lazy" />
+                <figcaption>Fig 01 — Scatter of predicted vs actual lap times for the 2024 test season.
+                Points on the dashed diagonal indicate perfect predictions.</figcaption>
+            </figure>
+        </div>
+    </section>
+    
+
+    <!-- ── Feature Importance ────────────────────────────────── -->
+    
+    <section id="importance">
+        <h2>Feature Importance</h2>
+        <div class="figure-grid">
+            
+            <figure class="figure-card">
+                <img src="fig_02_importance_xgb.png" alt="XGBoost feature importance" loading="lazy" />
+                <figcaption>Fig 02 — XGBoost: top-20 features by gain score.</figcaption>
+            </figure>
+            
+            
+            <figure class="figure-card">
+                <img src="fig_03_importance_lgb.png" alt="LightGBM feature importance" loading="lazy" />
+                <figcaption>Fig 03 — LightGBM: top-20 features by split gain.</figcaption>
+            </figure>
+            
+        </div>
+    </section>
+    
+
+    <!-- ── SHAP ──────────────────────────────────────────────── -->
+    
+    <section id="shap">
+        <h2>SHAP Explainability (LightGBM)</h2>
+        <div class="figure-grid">
+            
+            <figure class="figure-card">
+                <img src="fig_07_shap_summary.png" alt="SHAP summary beeswarm plot" loading="lazy" />
+                <figcaption>Fig 07 — SHAP beeswarm plot: feature impact directionality on lap time.
+                Red = high feature value increases prediction; blue = decreases.</figcaption>
+            </figure>
+            
+            
+            <figure class="figure-card">
+                <img src="fig_08_shap_bar.png" alt="SHAP bar plot mean absolute values" loading="lazy" />
+                <figcaption>Fig 08 — Mean |SHAP value|: global average impact per feature.</figcaption>
+            </figure>
+            
+        </div>
+    </section>
+    
+
+</main>
+
+<footer>
+    Generated by <strong>F1 2026 Predictions</strong> pipeline &mdash;
+    <a href="https://github.com/JuanjoRestrepo/f1_2026_predictions">GitHub</a>
+    &nbsp;|&nbsp; Data source: <a href="https://theoehrly.github.io/Fast-F1/">FastF1</a>
+</footer>
+
+</body>
+</html>

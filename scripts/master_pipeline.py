@@ -43,15 +43,17 @@ def setup_gemini() -> Optional[genai.Client]:
     return genai.Client(api_key=api_key)
 
 def get_race_info(year: int, round_num: int) -> Dict[str, str]:
-    mapping = {
-        1: {"name": "Bahrain Grand Prix", "dir": "Bahrain_Grand_Prix"},
-        2: {"name": "Saudi Arabian Grand Prix", "dir": "Saudi_Arabian_Grand_Prix"},
-        3: {"name": "Australian Grand Prix", "dir": "Australian_Grand_Prix"},
-        4: {"name": "Miami Grand Prix", "dir": "Miami_Grand_Prix"},
-        5: {"name": "Canadian Grand Prix", "dir": "Canadian_Grand_Prix"},
-        6: {"name": "Spanish Grand Prix", "dir": "Spanish_Grand_Prix"},
-    }
-    return mapping.get(round_num, {"name": f"Round {round_num}", "dir": f"Round_{round_num}"})
+    """Dynamically discover event info using FastF1 schedule."""
+    schedule = fastf1.get_event_schedule(year)
+    # FastF1 schedule uses 1-based indexing for rounds.
+    # Note: Pre-season testing is usually Round 0.
+    event = schedule[schedule['RoundNumber'] == round_num]
+    if event.empty:
+        return {"name": f"Round {round_num}", "dir": f"Round_{round_num}"}
+    
+    event_name = event['EventName'].iloc[0]
+    safe_name = event_name.replace(" ", "_")
+    return {"name": event_name, "dir": safe_name}
 
 def save_artifact(data: Any, filename: str, year: int, event_dir: str, is_json: bool = True) -> None:
     summary_path = REPORTS_BASE / str(year) / SUMMARY_SUBDIR / filename
@@ -298,7 +300,18 @@ def main() -> None:
     
     # 4. AI Narratives
     if ai_model:
-        print("Generating AI reports with gemini-2.5-flash...")
+        print("Generating AI reports with gemini-2.0-flash...")
+        
+        # Load SHAP metadata for technical reasoning
+        shap_file = REPORTS_BASE / str(args.year) / race_info['dir'] / 'results' / 'shap_metadata.json'
+        shap_context = ""
+        if shap_file.exists():
+            with open(shap_file, 'r') as f:
+                shap_data = json.load(f)
+                shap_context = "\nMODEL EXPLAINABILITY DATA (SHAP):\n"
+                for feat, impact in shap_data.items():
+                    shap_context += f"- Feature '{feat}': Relative Impact {impact:.4f}\n"
+        
         fallback = (
             f"### [STRATEGIC INTELLIGENCE] {session.event['EventName']} Narrative Synthesis Underway\n\n"
             f"Technical analysis of the delta between **Actual Race Telemetry** and **Predictive ML Simulations** for the {session.event['EventName']} is currently being synthesized. "
@@ -309,8 +322,12 @@ def main() -> None:
         if is_post_race:
             actual_prompt = (
                 f"TECHNICAL RACE ANALYSIS: {session.event['EventName']} 2026. "
-                f"Results: {session.results.head(10)[['Abbreviation', 'Position']].to_string()}. "
-                "Write a serious, high-level technical breakdown. Do not use the phrase 'Expert F1 Analysis'. "
+                f"Actual Results: {session.results.head(10)[['Abbreviation', 'Position']].to_string()}. "
+                f"{shap_context}"
+                "\nINSTRUCTIONS:\n"
+                "Write a professional, high-level technical breakdown of the race. "
+                "Use the SHAP data provided to explain *why* the performance hierarchies shifted (e.g., if 'TrackTemp' has high impact, discuss thermal management). "
+                "Do not use the phrase 'Expert F1 Analysis' or generic filler. "
                 "Structure the report using professional numbered headers (1. Stint Dynamics & Tire Management, 2. Aerodynamic Efficiency & Car Performance, 3. Driver Performance Deltas) "
                 "with detailed technical bullet points. Focus on stint dynamics, aerodynamic efficiency, and driver performance deltas."
             )
@@ -330,13 +347,16 @@ def main() -> None:
         predicted_prompt = (
             f"PREDICTIVE ML SIMULATION ANALYSIS: {session.event['EventName']} 2026. "
             f"AI Simulated Results: {pred_results_str}. "
+            f"{shap_context}"
+            "\nINSTRUCTIONS:\n"
             "Write a serious, high-level technical breakdown of these simulated results. "
+            "Use the provided SHAP importance values to justify the model's predictions. "
+            "Explain how the top features (like Aero_Profile or TireLife) drove the predicted gaps. "
             "Structure the report using professional numbered headers (1. Stint Dynamics & Tire Management, 2. Aerodynamic Efficiency & Car Performance, 3. Driver Performance Deltas) "
             "with detailed technical bullet points. Focus on why the ML model predicted these specific stint dynamics and aerodynamic efficiencies compared to typical expectations."
         )
         pred_report = call_ai_with_retry(predicted_prompt, ai_model)
         
-        # (Already defined above)
         save_artifact(pred_report or fallback, f"predicted_report_round_{args.round}.md", args.year, race_info['dir'], False)
     
     print(f"Round {args.round} fully processed with Pro F1 Styles.")

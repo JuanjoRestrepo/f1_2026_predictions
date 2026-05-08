@@ -179,6 +179,21 @@ def run_cleaning_pipeline(
     laps, imputation_audit = run_imputation_pipeline(laps)
     report.imputation_audit = imputation_audit
 
+    # ── Step 5: Weather Passthrough (Bronze -> Silver) ────────────────────
+    try:
+        raw_weather = read_parquet(key, DataType.WEATHER, base_dir=raw_dir)
+        if not raw_weather.empty:
+            logger.info("Weather data found in Raw layer. Migrating to Silver.")
+            write_parquet(
+                df=raw_weather,
+                key=key,
+                data_type=DataType.WEATHER,
+                base_dir=processed_dir,
+                overwrite=overwrite,
+            )
+    except FileNotFoundError:
+        logger.debug("No weather data in Raw layer for %s", key)
+
     # ── Step 5: Write Silver Parquet ──────────────────────────────────────
     output_path = write_parquet(
         df=laps,

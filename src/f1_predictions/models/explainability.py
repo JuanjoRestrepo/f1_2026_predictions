@@ -74,3 +74,40 @@ def save_tree_shap_artifacts(
 
     logger.info("Saved SHAP artifacts: %s, %s", summary_path, bar_path)
     return {"summary": summary_path, "bar": bar_path}
+
+
+def get_top_shap_features(
+    model: Any, x_test: pd.DataFrame, top_n: int = 5
+) -> dict[str, float]:
+    """Calculate the top-N features by mean absolute SHAP value.
+
+    Args:
+        model: Fitted tree-based estimator.
+        x_test: Feature matrix.
+        top_n: Number of top features to return.
+
+    Returns:
+        Dictionary mapping feature names to their mean absolute SHAP value.
+    """
+    import numpy as np
+    import shap
+
+    explainer = shap.TreeExplainer(model)
+    shap_values = explainer.shap_values(x_test)
+
+    # Calculate mean absolute SHAP values across all samples
+    # For regression, shap_values is a simple (n_samples, n_features) array
+    vals = np.abs(shap_values).mean(axis=0)
+    feature_importance = pd.DataFrame(
+        list(zip(x_test.columns, vals, strict=True)),
+        columns=["col_name", "feature_importance_vals"],
+    )
+    feature_importance.sort_values(
+        by=["feature_importance_vals"], ascending=False, inplace=True
+    )
+
+    return (
+        feature_importance.head(top_n)
+        .set_index("col_name")["feature_importance_vals"]
+        .to_dict()
+    )

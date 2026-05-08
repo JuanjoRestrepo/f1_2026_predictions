@@ -38,7 +38,10 @@ from f1_predictions.models import (
     chronological_split,
     prepare_feature_matrix,
 )
-from f1_predictions.models.explainability import save_tree_shap_artifacts
+from f1_predictions.models.explainability import (
+    get_top_shap_features,
+    save_tree_shap_artifacts,
+)
 from f1_predictions.utils.config import get_settings
 from f1_predictions.utils.logging_setup import (
     configure_root_pipeline_logger,
@@ -438,6 +441,12 @@ def run_report_pipeline(
         logger.info("Generating SHAP plots (LightGBM)...")
         shap_paths = save_tree_shap_artifacts(lgb_est, x_test, reports_dir)
         figure_paths.update(shap_paths)
+
+        # NEW: Save top features to JSON for AI narrative enrichment
+        top_shap = get_top_shap_features(lgb_est, x_test, top_n=8)
+        shap_json_path = reports_dir / "shap_metadata.json"
+        shap_json_path.write_text(json.dumps(top_shap, indent=2), encoding="utf-8")
+        logger.info("Saved SHAP metadata for AI: %s", shap_json_path)
     else:
         logger.info("SHAP skipped (use --shap to enable).")
 

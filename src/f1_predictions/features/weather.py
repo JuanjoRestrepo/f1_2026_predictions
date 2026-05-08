@@ -22,15 +22,17 @@ def add_weather_features(
     df_laps: pd.DataFrame,
     df_weather: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Broadcast session weather summary features to all laps.
+    """Join weather timeseries data with laps using temporal alignment.
+
+    Uses ``pd.merge_asof`` to find the weather sample closest to the start
+    of each lap. This provides high-fidelity environmental context.
 
     Args:
-        df_laps: Clean laps DataFrame.
-        df_weather: Single-row weather summary DataFrame from session_loader.
-            If empty, weather columns will be populated with NaN.
+        df_laps: Clean laps DataFrame (must have 'Time' or 'LapStartTime').
+        df_weather: Weather timeseries DataFrame from FastF1.
 
     Returns:
-        New laps DataFrame with weather columns appended.
+        New laps DataFrame with weather features aligned to each lap.
 
     Raises:
         TypeError: If inputs are not pandas DataFrames.
@@ -42,34 +44,34 @@ def add_weather_features(
         msg = f"Expected df_weather to be pd.DataFrame, got {type(df_weather).__name__}"
         raise TypeError(msg)
 
-    result = df_laps.copy()
-
-    weather_cols = [
-        "AirTemp_mean",
-        "TrackTemp_mean",
-        "Humidity_mean",
-        "Rainfall_any",
-    ]
-
     if df_weather.empty:
         logger.warning("Weather DataFrame is empty. Filling weather features with NaN.")
-        for col in weather_cols:
-            result[col] = float("nan")
-        return result
+        for col in ["AirTemp", "TrackTemp", "Humidity", "Rainfall", "WindSpeed"]:
+            df_laps[col] = float("nan")
+        return df_laps
 
-    # Extract the first row as a dictionary
-    weather_row = df_weather.iloc[0].to_dict()
+    # Ensure both dataframes are sorted by time for merge_asof
+    # Laps: we want weather at the START of the lap.
+    # Note: FastF1 'Time' is completion time. 'LapStartTime' is start time.
+    laps = df_laps.copy().sort_values("Time")
+    weather = df_weather.copy().sort_values("Time")
 
-    # Assign values to the laps dataframe
-    for col in weather_cols:
-        if col in weather_row:
-            # Broadcast scalar value to the entire column
-            result[col] = weather_row[col]
-        else:
-            result[col] = float("nan")
+    # Select only relevant weather columns
+    weather = weather[
+        ["Time", "AirTemp", "TrackTemp", "Humidity", "Rainfall", "WindSpeed"]
+    ]
+
+    # Perform temporal join
+    # direction='backward' finds the last weather record BEFORE or AT the lap time
+    result = pd.merge_asof(
+        laps,
+        weather,
+        on="Time",
+        direction="backward",
+    )
 
     logger.info(
-        "Weather features broadcasted to laps: %s",
-        ", ".join(weather_cols),
+        "Weather features merged via temporal join (pd.merge_asof): %d rows",
+        len(result),
     )
     return result

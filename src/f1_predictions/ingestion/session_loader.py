@@ -164,68 +164,35 @@ def _validate_results(df: pd.DataFrame, key: SessionKey) -> pd.DataFrame:
     return df
 
 
-def _extract_weather_summary(session: fastf1.core.Session) -> pd.DataFrame:
-    """Extract a lean weather summary from a loaded session.
+def _extract_weather_timeseries(session: fastf1.core.Session) -> pd.DataFrame:
+    """Extract full weather timeseries from a loaded session.
 
-    FastF1's ``session.weather_data`` returns one row per ~20 seconds.
-    For race prediction we need a session-level summary, not the full
-    timeseries. This function computes mean and max for the key channels.
-
-    If weather data is unavailable (outdoor sessions before 2018, or
-    cancelled sessions), an empty DataFrame with the expected columns is
-    returned rather than raising — downstream stages treat null weather
-    as a feature gap and handle it during imputation.
+    FastF1's ``session.weather_data`` returns samples throughout the session.
+    We return the full DataFrame so it can be joined with laps using timestamps.
 
     Args:
         session: A loaded FastF1 session.
 
     Returns:
-        A single-row DataFrame with aggregated weather statistics.
+        DataFrame with the full weather timeseries.
     """
-    expected_cols = [
-        "AirTemp_mean",
-        "AirTemp_max",
-        "TrackTemp_mean",
-        "TrackTemp_max",
-        "Humidity_mean",
-        "Pressure_mean",
-        "WindSpeed_mean",
-        "WindSpeed_max",
-        "Rainfall_any",
-    ]
-
     try:
         w = session.weather_data
         if w is None or w.empty:
             logger.warning("No weather data available for session.")
-            return pd.DataFrame(columns=expected_cols)
+            return pd.DataFrame()
 
-        summary = pd.DataFrame(
-            [
-                {
-                    "AirTemp_mean": w["AirTemp"].mean(),
-                    "AirTemp_max": w["AirTemp"].max(),
-                    "TrackTemp_mean": w["TrackTemp"].mean(),
-                    "TrackTemp_max": w["TrackTemp"].max(),
-                    "Humidity_mean": w["Humidity"].mean(),
-                    "Pressure_mean": w["Pressure"].mean(),
-                    "WindSpeed_mean": w["WindSpeed"].mean(),
-                    "WindSpeed_max": w["WindSpeed"].max(),
-                    # Rainfall is boolean — any True in the session = True
-                    "Rainfall_any": bool(w["Rainfall"].any()),
-                }
-            ]
-        )
-        logger.debug("Weather summary extracted: %s", summary.to_dict("records"))
+        # Cast to plain DataFrame and ensure 'Time' column is clean
+        df_weather = pd.DataFrame(w).copy()
+        logger.debug("Weather timeseries extracted: %d samples", len(df_weather))
+        return df_weather
     except (KeyError, AttributeError) as exc:
         logger.warning(
-            "Weather extraction failed (%s: %s). Returning empty summary.",
+            "Weather extraction failed (%s: %s). Returning empty DataFrame.",
             type(exc).__name__,
             exc,
         )
-        return pd.DataFrame(columns=expected_cols)
-    else:
-        return summary
+        return pd.DataFrame()
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
@@ -338,7 +305,7 @@ def load_race(
 
     laps = _add_metadata_columns(raw_laps, key)
     results = _add_metadata_columns(raw_results, key)
-    weather = _extract_weather_summary(session)
+    weather = _extract_weather_timeseries(session)
 
     laps = _validate_laps(laps, key)
     results = _validate_results(results, key)
