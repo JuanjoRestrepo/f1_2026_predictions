@@ -12,7 +12,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from f1_predictions.models.explainability import save_tree_shap_artifacts
+from f1_predictions.models.explainability import (
+    get_top_shap_features,
+    save_tree_shap_artifacts,
+)
+import xgboost as xgb
 
 
 def test_save_tree_shap_artifacts_creates_pngs() -> None:
@@ -73,3 +77,22 @@ def test_save_tree_shap_artifacts_creates_pngs() -> None:
     assert artifacts["bar"].exists()
     assert artifacts["summary"].stat().st_size > 0
     assert artifacts["bar"].stat().st_size > 0
+
+def test_get_top_shap_features_returns_sorted_dict() -> None:
+    """get_top_shap_features should return top features by importance."""
+    # Create tiny dataset
+    x = pd.DataFrame({"A": [1, 2, 3], "B": [10, 20, 30], "C": [100, 200, 300]})
+    y = [1.1, 2.1, 3.1]
+
+    # Fit tiny model
+    model = xgb.XGBRegressor(n_estimators=5, max_depth=2, random_state=42)
+    model.fit(x, y)
+
+    # Get top 2
+    top = get_top_shap_features(model, x, top_n=2)
+
+    assert isinstance(top, dict)
+    assert len(top) == 2
+    # The output keys must be strings
+    for k in top.keys():
+        assert isinstance(k, str)
