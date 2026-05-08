@@ -6,7 +6,7 @@ from f1_predictions.features.reliability import (
 )
 
 
-def test_add_brake_wear_proxy_basic():
+def test_add_brake_wear_proxy_basic() -> None:
     df = pd.DataFrame(
         {
             "Driver": ["VER", "VER", "VER", "HAM", "HAM"],
@@ -22,14 +22,14 @@ def test_add_brake_wear_proxy_basic():
     assert result.iloc[1]["Brake_Wear_Proxy"] > 0.0
 
 
-def test_add_brake_wear_proxy_missing_cols():
+def test_add_brake_wear_proxy_missing_cols() -> None:
     df = pd.DataFrame({"A": [1, 2]})
     result = add_brake_wear_proxy(df)
     assert "Brake_Wear_Proxy" in result.columns
     assert (result["Brake_Wear_Proxy"] == 0.0).all()
 
 
-def test_add_pu_strain_index_basic():
+def test_add_pu_strain_index_basic() -> None:
     df = pd.DataFrame({"LapNumber": [1, 10, 20], "TrackTemp": [20.0, 30.0, 40.0]})
     result = add_pu_strain_index(df)
     assert "PU_Strain_Index" in result.columns
@@ -41,7 +41,7 @@ def test_add_pu_strain_index_basic():
     assert result.iloc[0]["PU_Strain_Index"] < 1.0
 
 
-def test_add_pu_strain_index_no_temp():
+def test_add_pu_strain_index_no_temp() -> None:
     df = pd.DataFrame({"LapNumber": [1, 2, 3]})
     result = add_pu_strain_index(df)
     assert "PU_Strain_Index" in result.columns

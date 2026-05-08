@@ -165,7 +165,7 @@ class TestNotificationDispatcher:
 
         ch_a = StubChannelA()
         ch_b = StubChannelB()
-        dispatcher = NotificationDispatcher([ch_a, ch_b])  # type: ignore[arg-type]
+        dispatcher = NotificationDispatcher([ch_a, ch_b])
         results = dispatcher.dispatch(sample_payload)
 
         assert len(results) == 2
@@ -192,7 +192,7 @@ class TestNotificationDispatcher:
 
         ch_fail = FailingChannel()
         ch_ok = SucceedingChannel()
-        dispatcher = NotificationDispatcher([ch_fail, ch_ok])  # type: ignore[arg-type]
+        dispatcher = NotificationDispatcher([ch_fail, ch_ok])
         results = dispatcher.dispatch(sample_payload)
 
         assert ch_ok.called is True

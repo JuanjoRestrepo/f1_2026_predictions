@@ -5,13 +5,14 @@ global fallback logic).
 """
 
 import pandas as pd
-import pytest
+
 from f1_predictions.cleaning.imputer import (
     drop_null_lap_times,
-    impute_tyre_data,
     impute_speed_traps,
+    impute_tyre_data,
     run_imputation_pipeline,
 )
+
 
 def test_drop_null_lap_times_missing_column() -> None:
     """It should return the DF unchanged if the lap time column is missing."""
@@ -49,7 +50,7 @@ def test_impute_speed_traps_residual_nulls() -> None:
         "EventName": ["GP1", "GP1", "GP1"],
         "SpeedI1": [None, None, 320.0]
     })
-    # VER group is all NaN, HAM group has 320. 
+    # VER group is all NaN, HAM group has 320.
     # Global median is 320.
     result, audit = impute_speed_traps(df)
     assert result["SpeedI1"].iloc[0] == 320.0
