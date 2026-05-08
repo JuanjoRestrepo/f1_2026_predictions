@@ -32,7 +32,7 @@ from f1_predictions.ingestion.session_loader import (
     COL_SEASON,
     COL_SESSION_TYPE,
     _add_metadata_columns,
-    _extract_weather_summary,
+    _extract_weather_timeseries,
     load_qualifying,
     load_race,
 )
@@ -236,36 +236,25 @@ class TestAddMetadataColumns:
 # =============================================================================
 
 
-class TestExtractWeatherSummary:
+class TestExtractWeatherTimeseries:
     """Tests for weather extraction from a mock session."""
 
-    def test_returns_single_row_dataframe(self, mock_session: MagicMock) -> None:
-        """Happy path returns a 1-row DataFrame."""
-        result = _extract_weather_summary(mock_session)
+    def test_returns_full_dataframe(self, mock_session: MagicMock) -> None:
+        """Happy path returns the weather DataFrame directly."""
+        result = _extract_weather_timeseries(mock_session)
         assert isinstance(result, pd.DataFrame)
-        assert len(result) == 1
-
-    def test_rainfall_aggregated_as_bool(self, mock_session: MagicMock) -> None:
-        """Rainfall_any is True only if any row has rainfall=True."""
-        result = _extract_weather_summary(mock_session)
-        assert not result["Rainfall_any"].iloc[0]
-
-    def test_rainfall_true_when_any_row_wet(self, mock_session: MagicMock) -> None:
-        """Rainfall_any=True when at least one weather row has rainfall."""
-        mock_session.weather_data["Rainfall"] = [False, True, False]
-        result = _extract_weather_summary(mock_session)
-        assert result["Rainfall_any"].iloc[0]
+        assert len(result) == 3  # Based on mock_session fixture
 
     def test_empty_weather_data_returns_empty_df(self, mock_session: MagicMock) -> None:
         """Empty weather_data returns an empty DataFrame (not an error)."""
         mock_session.weather_data = pd.DataFrame()
-        result = _extract_weather_summary(mock_session)
+        result = _extract_weather_timeseries(mock_session)
         assert result.empty
 
     def test_none_weather_data_returns_empty_df(self, mock_session: MagicMock) -> None:
         """None weather_data returns an empty DataFrame (graceful degradation)."""
         mock_session.weather_data = None
-        result = _extract_weather_summary(mock_session)
+        result = _extract_weather_timeseries(mock_session)
         assert result.empty
 
 
@@ -310,7 +299,7 @@ class TestLoadRace:
         """load_race returns a RaceData with a non-empty weather DataFrame."""
         result = load_race(mock_session, sample_key)
         assert not result.weather.empty
-        assert "AirTemp_mean" in result.weather.columns
+        assert "AirTemp" in result.weather.columns
 
     def test_laps_shape_preserved(
         self, mock_session: MagicMock, sample_key: SessionKey

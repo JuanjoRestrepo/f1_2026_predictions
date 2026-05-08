@@ -185,7 +185,6 @@ def _extract_weather_timeseries(session: fastf1.core.Session) -> pd.DataFrame:
         # Cast to plain DataFrame and ensure 'Time' column is clean
         df_weather = pd.DataFrame(w).copy()
         logger.debug("Weather timeseries extracted: %d samples", len(df_weather))
-        return df_weather
     except (KeyError, AttributeError) as exc:
         logger.warning(
             "Weather extraction failed (%s: %s). Returning empty DataFrame.",
@@ -193,6 +192,8 @@ def _extract_weather_timeseries(session: fastf1.core.Session) -> pd.DataFrame:
             exc,
         )
         return pd.DataFrame()
+    else:
+        return df_weather
 
 
 # ── Public API ────────────────────────────────────────────────────────────────

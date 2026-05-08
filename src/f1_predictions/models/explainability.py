@@ -106,8 +106,11 @@ def get_top_shap_features(
         by=["feature_importance_vals"], ascending=False, inplace=True
     )
 
-    return (
+    top_features = (
         feature_importance.head(top_n)
         .set_index("col_name")["feature_importance_vals"]
         .to_dict()
     )
+
+    # Explicit cast to satisfy strict mypy dict[str, float] contract
+    return {str(k): float(v) for k, v in top_features.items()}
