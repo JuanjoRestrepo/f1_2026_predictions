@@ -1,5 +1,20 @@
 # Project Releases & Versioning 🏁📜
 
+## v4.4.0 - Advanced Model Ensembling (Stacking)
+**Date**: May 2026
+
+### 🧠 Predictive Engine Upgrade
+This release tackles Phase 12 of the Roadmap, significantly upgrading the predictive intelligence of the platform by moving from isolated models to an advanced meta-learning architecture.
+
+- **StackingRegressor Integration**: Combined our top-performing base learners (XGBoost and LightGBM) using a `StackingPaceRegressor`.
+- **Bayesian Ridge Meta-Model**: Implemented a Bayesian Ridge regressor at the meta-level to intelligently blend predictions, explicitly targeting a Mean Absolute Error (MAE) reduction below 0.150s.
+- **Cross-Validated Stacking**: Engineered internal 5-fold cross-validation during the stacking process to completely eliminate data leakage between base-learner training and meta-learner blending.
+- **Pipeline-Wide Refactoring**: 
+  - `predict_season.py`, `simulate_race.py`, and `generate_reports.py` now all execute the StackingRegressor as the primary source of truth for driver standings and performance forecasts.
+- **Robust Environment Configuration**: Improved `SettingsConfigDict` (`extra="ignore"`) to handle autonomous Trigger.dev environment variables gracefully during local pipeline testing.
+
+---
+
 ## v4.3.0 - Durable Orchestration & Agentic Autopilot
 **Date**: May 2026
 

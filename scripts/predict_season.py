@@ -48,6 +48,7 @@ from lightgbm import LGBMRegressor
 from f1_predictions.models import (
     F1PaceRegressor,
     LightGBMPaceRegressor,
+    StackingPaceRegressor,
     prepare_feature_matrix,
 )
 from f1_predictions.modeling.tuning import OptunaTuner
@@ -155,7 +156,7 @@ def train_models(
     predict_year: int,
     random_seed: int,
     tune_trials: int = 0,
-) -> tuple[F1PaceRegressor, LightGBMPaceRegressor]:
+) -> tuple[F1PaceRegressor, LightGBMPaceRegressor, StackingPaceRegressor]:
     """Train XGBoost and LightGBM on the specified training seasons.
 
     Uses chronological_split to isolate training data. The predict_year data
@@ -198,7 +199,11 @@ def train_models(
     lgb_model = LightGBMPaceRegressor(random_state=random_seed, model_params=lgb_params)
     lgb_model.train_evaluate_chronological(df_all, train_years, predict_year)
 
-    return xgb_model, lgb_model
+    logger.info("Training StackingRegressor on seasons %s...", train_years)
+    stack_model = StackingPaceRegressor(random_state=random_seed)
+    stack_model.train_evaluate_chronological(df_all, train_years, predict_year)
+
+    return xgb_model, lgb_model, stack_model
 
 
 # ---------------------------------------------------------------------------
@@ -209,8 +214,9 @@ def train_models(
 def predict_season(
     xgb_model: F1PaceRegressor,
     lgb_model: LightGBMPaceRegressor,
+    stack_model: StackingPaceRegressor,
     df_predict: pd.DataFrame,
-) -> tuple[np.ndarray, np.ndarray, pd.DataFrame]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, pd.DataFrame]:
     """Apply trained models to the target season and return predictions.
 
     Aligns feature columns between the trained models and the predict DataFrame.
@@ -227,6 +233,7 @@ def predict_season(
         Tuple of:
             - XGBoost predictions (np.ndarray, seconds per lap).
             - LightGBM predictions (np.ndarray, seconds per lap).
+            - Stacking predictions (np.ndarray, seconds per lap).
             - Feature matrix used for inference (for diagnostics).
 
     Raises:
@@ -246,14 +253,16 @@ def predict_season(
 
     y_pred_xgb: np.ndarray = xgb_est.predict(x_aligned)
     y_pred_lgb: np.ndarray = lgb_est.predict(x_aligned)
+    y_pred_stack: np.ndarray = stack_model.predict(df_predict) # Uses internal feature alignment
 
     logger.info(
-        "Inference complete: %d laps | XGB mean=%.3fs | LGB mean=%.3fs",
+        "Inference complete: %d laps | XGB mean=%.3fs | LGB mean=%.3fs | Stack mean=%.3fs",
         len(x_aligned),
         float(y_pred_xgb.mean()),
         float(y_pred_lgb.mean()),
+        float(y_pred_stack.mean()),
     )
-    return y_pred_xgb, y_pred_lgb, x_aligned
+    return y_pred_xgb, y_pred_lgb, y_pred_stack, x_aligned
 
 
 # ---------------------------------------------------------------------------
@@ -265,6 +274,7 @@ def build_predictions_df(
     metadata: pd.DataFrame,
     y_pred_xgb: np.ndarray,
     y_pred_lgb: np.ndarray,
+    y_pred_stack: np.ndarray | None = None,
 ) -> pd.DataFrame:
     """Build a unified predictions DataFrame with metadata columns.
 
@@ -279,6 +289,8 @@ def build_predictions_df(
     result = metadata.copy().reset_index(drop=True)
     result["predicted_laptime_xgb_s"] = y_pred_xgb
     result["predicted_laptime_lgb_s"] = y_pred_lgb
+    if y_pred_stack is not None:
+        result["predicted_laptime_stack_s"] = y_pred_stack
     result["ensemble_laptime_s"] = (y_pred_xgb + y_pred_lgb) / 2.0
     return result
 
@@ -422,7 +434,7 @@ def run_prediction_pipeline(
         raise ValueError(msg)
 
     # ── 2. Train ───────────────────────────────────────────────────────────
-    xgb_model, lgb_model = train_models(
+    xgb_model, lgb_model, stack_model = train_models(
         df_all, train_years, predict_year, settings.random_seed, tune_trials=tune_trials
     )
 
@@ -437,11 +449,11 @@ def run_prediction_pipeline(
     xgb_model.save(model_path)
 
     # ── 3. Predict ─────────────────────────────────────────────────────────
-    y_pred_xgb, y_pred_lgb, _ = predict_season(xgb_model, lgb_model, df_predict)
+    y_pred_xgb, y_pred_lgb, y_pred_stack, _ = predict_season(xgb_model, lgb_model, stack_model, df_predict)
 
     # ── 4. Build & save outputs (Season Level) ────────────────────────────
     metadata = extract_metadata(df_predict)
-    predictions_df = build_predictions_df(metadata, y_pred_xgb, y_pred_lgb)
+    predictions_df = build_predictions_df(metadata, y_pred_xgb, y_pred_lgb, y_pred_stack)
     saved = save_outputs(predictions_df, predict_year, train_years, predict_dir)
 
     # ── 5. Save per-GP Results (Elite Structure) ─────────────────────────
@@ -461,9 +473,9 @@ def run_prediction_pipeline(
         logger.info("Saved GP results for %s in: %s", gp_name, gp_dir)
 
     # ── 5. Print standings to console ─────────────────────────────────────
-    xgb_standings = build_driver_standings(predictions_df, "predicted_laptime_xgb_s")
+    xgb_standings = build_driver_standings(predictions_df, "predicted_laptime_stack_s")
     logger.info("=" * 60)
-    logger.info("PREDICTED DRIVER STANDINGS — Season %d (XGBoost)", predict_year)
+    logger.info("PREDICTED DRIVER STANDINGS — Season %d (Stacking)", predict_year)
     logger.info("(Ranked by median predicted lap time — lower = faster)")
     logger.info("=" * 60)
     for _, row in xgb_standings.head(10).iterrows():
@@ -480,7 +492,7 @@ def run_prediction_pipeline(
     logger.info("=" * 60)
     logger.info("Artifacts saved:")
     for name, path in saved.items():
-        logger.info("  %s → %s", name, path)
+        logger.info("  %s -> %s", name, path)
 
 
 # ---------------------------------------------------------------------------
@@ -527,7 +539,7 @@ if __name__ == "__main__":
     configure_root_pipeline_logger(level=args.log_level)
 
     logger.info(
-        "F1 Prediction Pipeline | Train=%s → Predict=%d",
+        "F1 Prediction Pipeline | Train=%s -> Predict=%d",
         args.train_years,
         args.predict_year,
     )

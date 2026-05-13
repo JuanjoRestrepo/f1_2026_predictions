@@ -34,6 +34,7 @@ import pandas as pd
 from f1_predictions.models import (
     F1PaceRegressor,
     LightGBMPaceRegressor,
+    StackingPaceRegressor,
     RegressionMetrics,
     chronological_split,
     prepare_feature_matrix,
@@ -223,6 +224,7 @@ def plot_feature_importance(
 def save_metrics_json(
     metrics_xgb: RegressionMetrics,
     metrics_lgb: RegressionMetrics,
+    metrics_stack: RegressionMetrics,
     train_years: list[int],
     test_year: int,
     reports_dir: Path,
@@ -244,6 +246,7 @@ def save_metrics_json(
         "test_year": test_year,
         "xgboost": metrics_xgb.as_dict(),
         "lightgbm": metrics_lgb.as_dict(),
+        "stacking": metrics_stack.as_dict(),
     }
     out_path = reports_dir / "metrics.json"
     out_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -400,8 +403,20 @@ def run_report_pipeline(
     )
     y_pred_lgb = model_lgb.predict(df_test)
 
+    # 4.5 Training & Evaluation: Stacking
+    logger.info("Training StackingRegressor...")
+    model_stack = StackingPaceRegressor()
+    metrics_stack_dict = model_stack.train_evaluate_chronological(
+        df, train_years, test_year
+    )
+    metrics_stack = RegressionMetrics(
+        mae=metrics_stack_dict["MAE"],
+        rmse=metrics_stack_dict["RMSE"],
+        mape=metrics_stack_dict["MAPE"],
+    )
+
     # ── 5. Save metrics JSON ──────────────────────────────────────────────
-    save_metrics_json(metrics_xgb, metrics_lgb, train_years, test_year, reports_dir)
+    save_metrics_json(metrics_xgb, metrics_lgb, metrics_stack, train_years, test_year, reports_dir)
 
     # ── 6. Generate figures ───────────────────────────────────────────────
     figure_paths: dict[str, Path] = {}

@@ -7,7 +7,7 @@ from typing import Any, cast
 import numpy as np
 import pandas as pd
 
-from f1_predictions.models import F1PaceRegressor, LightGBMPaceRegressor
+from f1_predictions.models import F1PaceRegressor, LightGBMPaceRegressor, StackingPaceRegressor
 from f1_predictions.models.common import prepare_feature_matrix
 from f1_predictions.utils.analysis import build_driver_standings, build_predictions_df
 from f1_predictions.utils.config import get_settings
@@ -239,10 +239,10 @@ def run_race_simulation(
     # 5. Training Suite (Phase 2.1: Quantile Regression)
     logger.info("Training Quantile Regression suite (P05, P50, P95)...")
 
-    # XGBoost as baseline (mean)
-    xgb_model = F1PaceRegressor()
-    cast(Any, xgb_model.model).fit(x_train, y_train, sample_weight=sample_weights)
-    y_pred_xgb = cast(Any, xgb_model.model).predict(x_sim)
+    # StackingRegressor as the new baseline (mean)
+    stack_model = StackingPaceRegressor()
+    cast(Any, stack_model.model).fit(x_train, y_train, sample_weight=sample_weights)
+    y_pred_baseline = cast(Any, stack_model.model).predict(x_sim)
 
     # LightGBM Quantile Models
     quantiles = [0.05, 0.50, 0.95]
@@ -259,7 +259,7 @@ def run_race_simulation(
     res_dir.mkdir(parents=True, exist_ok=True)
 
     metadata = df_sim[["Season", "RoundNumber", "EventName", "Driver", "Team"]]
-    predictions_df = build_predictions_df(metadata, y_pred_xgb, quantile_preds)
+    predictions_df = build_predictions_df(metadata, y_pred_baseline, quantile_preds)
 
     # Save CSVs
     standings = build_driver_standings(predictions_df)

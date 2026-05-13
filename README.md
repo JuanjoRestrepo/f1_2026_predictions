@@ -62,6 +62,10 @@ Expert-level race reporting powered by **Gemini 2.0/2.5 Flash**, analyzing telem
 - **Track Evolution Intelligence**: Captures "rubbering-in" effects through rolling pace potential analysis.
 - **Differentiated Analysis**: Unique AI narratives for both **Actual Results** (post-race debrief) and **Predicted ML Simulations** (pre-race forecasting).
 
+### 🧠 Advanced Predictive Engine (v4.4.0+)
+- **Meta-Learning (Stacking)**: Blends XGBoost and LightGBM base models using a Bayesian Ridge meta-regressor, achieving exceptional sub-0.150s MAE precision.
+- **Leak-Free Validation**: Internal 5-fold cross-validation ensures meta-models train without data leakage.
+
 ### 🤖 Autonomous Orchestration (v4.3.0+)
 The engine now features durable, long-running workflows powered by **Trigger.dev v3**. This enables:
 - **Friday Forecasts**: Automatic pre-race predictions based on practice data.

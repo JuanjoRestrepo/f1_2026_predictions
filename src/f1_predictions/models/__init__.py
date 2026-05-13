@@ -13,6 +13,7 @@ from f1_predictions.models.common import (
 from f1_predictions.models.explainability import save_tree_shap_artifacts
 from f1_predictions.models.lightgbm_pipeline import LightGBMPaceRegressor
 from f1_predictions.models.xgboost_pipeline import F1PaceRegressor
+from f1_predictions.models.stacking_pipeline import StackingPaceRegressor
 
 __all__ = [
     "DEFAULT_DROP_COLS",
@@ -20,6 +21,7 @@ __all__ = [
     "DEFAULT_TARGET_COLUMN",
     "F1PaceRegressor",
     "LightGBMPaceRegressor",
+    "StackingPaceRegressor",
     "RegressionMetrics",
     "align_feature_columns",
     "chronological_split",
