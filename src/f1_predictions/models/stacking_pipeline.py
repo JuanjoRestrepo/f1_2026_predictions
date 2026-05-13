@@ -10,8 +10,8 @@ from __future__ import annotations
 from typing import Any
 
 import pandas as pd
-from sklearn.ensemble import StackingRegressor
-from sklearn.linear_model import BayesianRidge
+from sklearn.ensemble import StackingRegressor  # type: ignore[import-untyped]
+from sklearn.linear_model import BayesianRidge  # type: ignore[import-untyped]
 import xgboost as xgb
 from lightgbm import LGBMRegressor
 
