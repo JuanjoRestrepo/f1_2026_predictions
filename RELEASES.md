@@ -1,5 +1,15 @@
 # Project Releases & Versioning 🏁📜
 
+## v4.4.1 - Dashboard Synchronization & Test Coverage
+**Date**: May 2026
+
+### 🖥️ Full-Stack Alignment
+This patch release ensures the UI completely supports the newly integrated StackingRegressor.
+- **Frontend Sync**: Updated `dashboard/src/utils/fileReader.ts` and `PredictionsTable.tsx` to read and prioritize the `predicted_laptime_stack_s` metrics, with a seamless fallback to XGBoost for legacy reports.
+- **Test Integrity**: Added explicit pytest coverage for `StackingPaceRegressor` in the models suite.
+
+---
+
 ## v4.4.0 - Advanced Model Ensembling (Stacking)
 **Date**: May 2026
 
