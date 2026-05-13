@@ -78,3 +78,8 @@ This document outlines the strategic technical evolution of the F1 2026 Predicti
 - **Waitpoint Approvals**: Implement Trigger.dev "Waitpoints" for race briefings, requiring engineer sign-off via Discord/API before final distribution.
 - **Live Timing Sockets**: Integrate real-time telemetry streams for "In-Race" pace re-calculation and strategic pivot alerts.
 - **Agentic Swarms**: Orchestrate specialized agents (Aero, Strategy, Weather) that coordinate via persistent state machines for multi-dimensional race insights.
+- **UI/UX Benchmark (Formula-Timer)**: Leverage **Formula-Timer** as a "design muse" for the Live Dashboard. While FastF1 remains the superior data engine, Formula-Timer's premium handling of latency, dynamic gaps, and micro-sector visualization will serve as the UX standard for Phase 13.
+
+## 📝 Strategic Technical Notes
+- **FastF1 vs. Formula-Timer**: The platform will continue using FastF1 as the "Ground Truth" for ML modeling and telemetry analysis. Formula-Timer is designated as a secondary-screen validation tool and UI reference to ensure professional-grade visualization and real-time trend benchmarking.
+- **Model Target**: Maintain a target MAE < 0.150s through iterative Stacking (Phase 12).
