@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 
 from f1_predictions.models.lightgbm_pipeline import LightGBMPaceRegressor
+from f1_predictions.models.stacking_pipeline import StackingPaceRegressor
 from f1_predictions.models.xgboost_pipeline import F1PaceRegressor
 
 
@@ -76,3 +77,30 @@ def test_tree_regressors_train_predict(
     preds = regressor.predict(inference_df)
 
     assert len(preds) == len(inference_df)
+
+
+def test_stacking_regressor_train_predict(sample_model_df: pd.DataFrame) -> None:
+    """Stacking regressor should train, score, and predict on a smoke set."""
+
+    regressor = StackingPaceRegressor(random_state=7)
+    # The default estimators in the ensemble might require a decent number of samples
+    # to perform 5-fold CV without breaking. The sample_model_df has 12 rows.
+    # StackingRegressor with cv=5 requires at least 5 samples in training.
+    # Our sample_model_df has 6 rows for 2023, which allows cv=5.
+    metrics = regressor.train_evaluate_chronological(
+        sample_model_df,
+        train_years=[2023],
+        test_year=2024,
+    )
+
+    assert set(metrics) == {"MAE", "RMSE", "MAPE"}
+    assert metrics["MAE"] >= 0.0
+    assert metrics["RMSE"] >= 0.0
+    assert metrics["MAPE"] >= 0.0
+    assert regressor.features
+
+    inference_df = sample_model_df.drop(columns=["LapTime_s"])
+    preds = regressor.predict(inference_df)
+
+    assert len(preds) == len(inference_df)
+

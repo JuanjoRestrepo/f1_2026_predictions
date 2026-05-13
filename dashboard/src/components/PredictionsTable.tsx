@@ -47,7 +47,7 @@ export function PredictionsTable({ data, view }: PredictionsTableProps) {
             
             // For predicted, we show the laptime delta. For actual, we show the time/gap string.
             const displayTime = isPredicted
-              ? (idx === 0 ? "1:23:06.801" : `+${parseFloat((row as PredictionRow).predicted_laptime_xgb_s).toFixed(3)}s`)
+              ? (idx === 0 ? "1:23:06.801" : `+${parseFloat((row as PredictionRow).predicted_laptime_stack_s || (row as PredictionRow).predicted_laptime_xgb_s).toFixed(3)}s`)
               : (row as ActualResult).time || (row as ActualResult).gap;
 
             return (

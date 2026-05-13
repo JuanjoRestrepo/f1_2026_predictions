@@ -66,6 +66,7 @@ export interface PredictionRow {
   Driver: string;
   Team: string;
   predicted_laptime_xgb_s: string;
+  predicted_laptime_stack_s?: string;
   predicted_position?: number;
 }
 
@@ -136,9 +137,14 @@ export function getRacePredictions(year: number, eventDirName: string): Predicti
     });
     
     // Sort by predicted laptime ascending to get finishing order
+    // Prioritize stack prediction if available, else fallback to xgb
     const sorted = parsed.data
-      .filter(r => r.Driver && r.predicted_laptime_xgb_s)
-      .sort((a, b) => parseFloat(a.predicted_laptime_xgb_s) - parseFloat(b.predicted_laptime_xgb_s))
+      .filter(r => r.Driver && (r.predicted_laptime_stack_s || r.predicted_laptime_xgb_s))
+      .sort((a, b) => {
+        const valA = parseFloat(a.predicted_laptime_stack_s || a.predicted_laptime_xgb_s);
+        const valB = parseFloat(b.predicted_laptime_stack_s || b.predicted_laptime_xgb_s);
+        return valA - valB;
+      })
       .map((row, idx) => ({ ...row, predicted_position: idx + 1 }));
 
     return sorted;
