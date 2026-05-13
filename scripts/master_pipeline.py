@@ -11,7 +11,7 @@ import fastf1.core
 
 # Config
 load_dotenv()
-CACHE_DIR = "fastf1_cache"
+CACHE_DIR = ".cache/fastf1"
 REPORTS_BASE = Path("reports")
 SUMMARY_SUBDIR = "summaries"
 

@@ -79,7 +79,7 @@ class Settings(BaseSettings):
 
     # ── Data paths ────────────────────────────────────────────────────────
     fastf1_cache_dir: Path = Field(
-        default=Path("fastf1_cache"),
+        default=Path(".cache/fastf1"),
         description="FastF1 telemetry cache directory. "
         "Set to an absolute path outside the repo.",
     )
