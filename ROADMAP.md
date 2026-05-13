@@ -63,11 +63,16 @@ This document outlines the strategic technical evolution of the F1 2026 Predicti
 - **SHAP-to-Text Narratives**: Automated translation of model feature impacts into professional race engineer insights.
 - **HTML Engineering Reports**: Premium, F1-branded technical debriefs with integrated SHAP visualizations.
 
+---
+
 ## ✅ Phase 11: Durable Agentic Orchestration [COMPLETED]
 - **Durable Execution**: Migrated orchestration to **Trigger.dev v3** for 100% reliable, long-running race events.
 - **Hybrid MLOps**: Integrated Node.js task management with a production-grade Python predictive engine.
 - **Autonomous Autopilot**: Scheduled Friday forecasting and Monday auditing with automatic race discovery.
 - **Fault-Tolerant Pipelines**: Resilience against network drops and API rate limits via durable retries.
+
+---
+
 ## 🚀 Phase 12: Advanced Modeling & Cloud Scalability
 - **✅ Model Ensembling (Stacking)**: Implemented `StackingRegressor` (Bayesian Ridge meta-model on top of XGBoost and LightGBM) for improved lap pace precision.
 - **Dynamic Track Evolution**: Enhance "Track Evolution" logic using a *Rolling Track Grip* feature based on real-time parity deltas across the entire grid.
@@ -84,6 +89,7 @@ This document outlines the strategic technical evolution of the F1 2026 Predicti
 - **Interactive Season Discovery (Home Page)**: Implement a premium landing page at the root URL (`/`) featuring a dynamic 2026 race calendar, live countdowns to the next GP, and high-level performance trend cards.
 - **Historical Comparison Engine**: Enable side-by-side UI comparisons between different GP predictions to visualize model improvement and track-specific performance deltas across the season.
 - **Unified Backend API**: Centralize all telemetry ingestion and ML inference into a single scalable service layer to reduce Dashboard latency and support mobile-first experiences.
+- **Zero-Cost Cloud Persistence**: Migrate the local `fastf1_cache` to a $0 cloud storage solution (Supabase Storage or Google Drive API) to enable 100% autonomous serverless execution without local hardware dependencies.
 
 ## 📝 Strategic Technical Notes
 - **FastF1 vs. Formula-Timer**: The platform will continue using FastF1 as the "Ground Truth" for ML modeling and telemetry analysis. Formula-Timer is designated as a secondary-screen validation tool and UI reference to ensure professional-grade visualization and real-time trend benchmarking.
