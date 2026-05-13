@@ -80,6 +80,11 @@ This document outlines the strategic technical evolution of the F1 2026 Predicti
 - **Agentic Swarms**: Orchestrate specialized agents (Aero, Strategy, Weather) that coordinate via persistent state machines for multi-dimensional race insights.
 - **UI/UX Benchmark (Formula-Timer)**: Leverage **Formula-Timer** as a "design muse" for the Live Dashboard. While FastF1 remains the superior data engine, Formula-Timer's premium handling of latency, dynamic gaps, and micro-sector visualization will serve as the UX standard for Phase 13.
 
+## 🌐 Phase 14: Full-Stack Experience & Global Discovery
+- **Interactive Season Discovery (Home Page)**: Implement a premium landing page at the root URL (`/`) featuring a dynamic 2026 race calendar, live countdowns to the next GP, and high-level performance trend cards.
+- **Historical Comparison Engine**: Enable side-by-side UI comparisons between different GP predictions to visualize model improvement and track-specific performance deltas across the season.
+- **Unified Backend API**: Centralize all telemetry ingestion and ML inference into a single scalable service layer to reduce Dashboard latency and support mobile-first experiences.
+
 ## 📝 Strategic Technical Notes
 - **FastF1 vs. Formula-Timer**: The platform will continue using FastF1 as the "Ground Truth" for ML modeling and telemetry analysis. Formula-Timer is designated as a secondary-screen validation tool and UI reference to ensure professional-grade visualization and real-time trend benchmarking.
 - **Model Target**: Maintain a target MAE < 0.150s through iterative Stacking (Phase 12).
