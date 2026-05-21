@@ -25,7 +25,9 @@ jobs:
 
       - name: Run Master Pipeline
         env:
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          F1_GEMINI_API_KEY: ${{ secrets.F1_GEMINI_API_KEY }}
+          F1_GEMINI_MODEL: gemini-3.1-pro-preview
+          F1_GEMINI_FALLBACK_MODEL: gemini-3.5-flash
         run: |
           uv run scripts/master_pipeline.py --round ${{ github.event.inputs.round }}
 

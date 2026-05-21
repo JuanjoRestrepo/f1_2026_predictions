@@ -122,6 +122,8 @@ jobs:
         if: steps.resolve.outputs.race_found == 'true'
         env:
           F1_GEMINI_API_KEY: ${{ secrets.F1_GEMINI_API_KEY }}
+          F1_GEMINI_MODEL: gemini-3.1-pro-preview
+          F1_GEMINI_FALLBACK_MODEL: gemini-3.5-flash
           F1_TARGET_SEASON: ${{ inputs.season || '2026' }}
           F1_FASTF1_CACHE_DIR: /tmp/fastf1_cache
           F1_DATA_RAW_DIR: data/raw

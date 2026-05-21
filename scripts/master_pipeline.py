@@ -1,19 +1,23 @@
-import os
 import json
 import argparse
 import fastf1
 from google import genai
 import numpy as np
 from pathlib import Path
-from dotenv import load_dotenv
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 import fastf1.core
+from f1_predictions.utils.config import Settings, get_settings
+from f1_predictions.utils.logging_setup import (
+    configure_root_pipeline_logger,
+    get_logger,
+)
 
 # Config
-load_dotenv()
-CACHE_DIR = ".cache/fastf1"
 REPORTS_BASE = Path("reports")
 SUMMARY_SUBDIR = "summaries"
+DEFAULT_GEMINI_DELAY_SECONDS = 10
+
+logger = get_logger(__name__)
 
 # Professional F1 2026 Color Palette
 TEAM_COLORS = {
@@ -31,16 +35,26 @@ TEAM_COLORS = {
     "Cadillac": "#ffffff"
 }
 
-def setup_fastf1() -> None:
-    if not os.path.exists(CACHE_DIR):
-        os.makedirs(CACHE_DIR)
-    fastf1.Cache.enable_cache(CACHE_DIR)
+def setup_fastf1(cache_dir: Path) -> None:
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    fastf1.Cache.enable_cache(str(cache_dir))
 
-def setup_gemini() -> Optional[genai.Client]:
-    api_key = os.getenv("F1_GEMINI_API_KEY")
+def setup_gemini(settings: Settings) -> Optional[genai.Client]:
+    api_key = settings.gemini_api_key
     if not api_key:
+        logger.warning("F1_GEMINI_API_KEY is not configured; AI narratives will use fallback copy.")
         return None
     return genai.Client(api_key=api_key)
+
+
+def get_gemini_model_sequence(settings: Settings) -> list[str]:
+    """Return the configured Gemini primary/fallback sequence without duplicates."""
+    model_names = [settings.gemini_model, settings.gemini_fallback_model]
+    sequence: list[str] = []
+    for model_name in model_names:
+        if model_name and model_name not in sequence:
+            sequence.append(model_name)
+    return sequence
 
 def get_race_info(year: int, round_num: int) -> Dict[str, str]:
     """Dynamically discover event info using FastF1 schedule."""
@@ -162,28 +176,48 @@ def generate_predicted_lap_data(session: fastf1.core.Session, all_drivers: List[
     }
 
 
-def call_ai_with_retry(prompt: str, model: Optional[genai.Client], retries: int = 2, delay: int = 10) -> Optional[str]:
+def call_ai_with_retry(
+    prompt: str,
+    model: Optional[genai.Client],
+    model_names: Sequence[str],
+    retries: int = 2,
+    delay: int = DEFAULT_GEMINI_DELAY_SECONDS,
+) -> Optional[str]:
     import time
-    if not model: return None
-    for i in range(retries + 1):
-        try:
-            # model is actually the genai.Client here
-            response = model.models.generate_content(
-                model="gemini-2.0-flash",
-                contents=prompt
-            )
-            return response.text
-        except Exception as e:
-            if i < retries:
-                print(f"AI Call Failed. Retrying in {delay}s... ({e})")
-                time.sleep(delay)
-            else:
-                print(f"AI Call Failed: {e}")
-                return None
+
+    if not model:
+        return None
+
+    for model_name in model_names:
+        for i in range(retries + 1):
+            try:
+                response = model.models.generate_content(
+                    model=model_name,
+                    contents=prompt
+                )
+                if response.text:
+                    logger.info("Gemini narrative generated with model %s.", model_name)
+                    return response.text
+                logger.warning("Gemini model %s returned an empty response.", model_name)
+                break
+            except Exception as e:
+                if i < retries:
+                    logger.warning(
+                        "Gemini call failed for %s. Retrying in %ss (%s)",
+                        model_name,
+                        delay,
+                        e,
+                    )
+                    if delay > 0:
+                        time.sleep(delay)
+                else:
+                    logger.warning("Gemini model %s failed after retries: %s", model_name, e)
     return None
 
 def main() -> None:
-    setup_fastf1()
+    settings = get_settings()
+    configure_root_pipeline_logger(level=settings.log_level)
+    setup_fastf1(settings.fastf1_cache_dir)
     parser = argparse.ArgumentParser(description="Professional F1 2026 Prediction Pipeline")
     parser.add_argument("--year", type=int, default=2026)
     parser.add_argument("--round", type=int, help="Round number (auto-detected if omitted)")
@@ -195,7 +229,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.round is None:
-        print("No round specified. Attempting auto-detection...")
+        logger.info("No round specified. Attempting auto-detection...")
         from datetime import datetime
         schedule = fastf1.get_event_schedule(args.year)
         # Find the event where the date is closest to now
@@ -204,15 +238,20 @@ def main() -> None:
         future_races = schedule[schedule['EventDate'] >= now]
         if not future_races.empty:
             args.round = int(future_races.iloc[0]['RoundNumber'])
-            print(f"Detected next race: {future_races.iloc[0]['EventName']} (Round {args.round})")
+            logger.info(
+                "Detected next race: %s (Round %d)",
+                future_races.iloc[0]['EventName'],
+                args.round,
+            )
         else:
             # If no future races, pick the last one of the season
             args.round = int(schedule['RoundNumber'].max())
-            print(f"No future races found. Defaulting to final round: {args.round}")
+            logger.info("No future races found. Defaulting to final round: %d", args.round)
 
-    print(f"Starting Autonomous F1 Intelligence Sync: {args.year} Round {args.round}")
+    logger.info("Starting Autonomous F1 Intelligence Sync: %d Round %d", args.year, args.round)
     
-    ai_model = setup_gemini()
+    ai_model = setup_gemini(settings)
+    ai_model_names = get_gemini_model_sequence(settings)
     race_info = get_race_info(args.year, args.round)
     session = fastf1.get_session(args.year, args.round, 'R')
     
@@ -222,7 +261,7 @@ def main() -> None:
         session.load(laps=True, telemetry=False, weather=False)
         is_post_race = not session.laps.empty
     except Exception as e:
-        print(f"Post-race data not yet available (Expected on Friday): {e}")
+        logger.info("Post-race data not yet available (expected on Friday): %s", e)
         session.load(laps=False, telemetry=False, weather=False)
         is_post_race = False
 
@@ -237,7 +276,7 @@ def main() -> None:
                 prev_session = fastf1.get_session(args.year, args.round - 1, 'R')
                 prev_session.load(laps=False, telemetry=False, weather=False)
                 all_drivers = prev_session.results['Abbreviation'].tolist()
-                print(f"📋 Inherited driver list from Round {args.round - 1}")
+                logger.info("Inherited driver list from Round %d", args.round - 1)
             except:
                 # Attempt 3: Professional 2024/2026 grid fallback
                 all_drivers = ["VER", "PER", "LEC", "SAI", "HAM", "RUS", "NOR", "PIA", "ALO", "STR", 
@@ -335,11 +374,20 @@ def main() -> None:
             "Full strategic narrative will be available shortly."
         )
         if ai_model:
-            print(f"Generating AI strategy insight ({'Predicted' if is_predicted else 'Actual'})...")
+            logger.info(
+                "Generating AI strategy insight (%s) with Gemini models: %s",
+                "Predicted" if is_predicted else "Actual",
+                ", ".join(ai_model_names),
+            )
             stint_summary = ", ".join([f"{d['driver']} ({'-'.join([s['compound'][0] for s in d['stints']])})" for d in data[:5]])
             prompt_type = "predicted optimal strategy" if is_predicted else "actual post-race strategy analysis"
             prompt = f"Write a professional 2-sentence F1 strategy intelligence report for the {session.event['EventName']} 2026 ({prompt_type}). Top 5 drivers stints: {stint_summary}. Be highly analytical like an F1 race engineer. Do not use markdown."
-            res = call_ai_with_retry(prompt, ai_model)
+            res = call_ai_with_retry(
+                prompt,
+                ai_model,
+                ai_model_names,
+                retries=settings.gemini_retries,
+            )
             if res:
                 insight = res
 
@@ -357,7 +405,7 @@ def main() -> None:
     
     # 4. AI Narratives
     if ai_model:
-        print("Generating AI reports with gemini-2.0-flash...")
+        logger.info("Generating AI reports with Gemini models: %s", ", ".join(ai_model_names))
         
         # Load SHAP metadata for technical reasoning
         shap_file = REPORTS_BASE / str(args.year) / race_info['dir'] / 'results' / 'shap_metadata.json'
@@ -388,7 +436,12 @@ def main() -> None:
                 "Structure the report using professional numbered headers (1. Stint Dynamics & Tire Management, 2. Aerodynamic Efficiency & Car Performance, 3. Driver Performance Deltas) "
                 "with detailed technical bullet points. Focus on stint dynamics, aerodynamic efficiency, and driver performance deltas."
             )
-            report = call_ai_with_retry(actual_prompt, ai_model)
+            report = call_ai_with_retry(
+                actual_prompt,
+                ai_model,
+                ai_model_names,
+                retries=settings.gemini_retries,
+            )
             save_artifact(report or fallback, f"report_round_{args.round}.md", args.year, race_info['dir'], False)
         
         # Load predicted order for the predicted report
@@ -412,11 +465,16 @@ def main() -> None:
             "Structure the report using professional numbered headers (1. Stint Dynamics & Tire Management, 2. Aerodynamic Efficiency & Car Performance, 3. Driver Performance Deltas) "
             "with detailed technical bullet points. Focus on why the ML model predicted these specific stint dynamics and aerodynamic efficiencies compared to typical expectations."
         )
-        pred_report = call_ai_with_retry(predicted_prompt, ai_model)
+        pred_report = call_ai_with_retry(
+            predicted_prompt,
+            ai_model,
+            ai_model_names,
+            retries=settings.gemini_retries,
+        )
         
         save_artifact(pred_report or fallback, f"predicted_report_round_{args.round}.md", args.year, race_info['dir'], False)
     
-    print(f"Round {args.round} fully processed with Pro F1 Styles.")
+    logger.info("Round %d fully processed with Pro F1 Styles.", args.round)
 
 if __name__ == "__main__":
     main()

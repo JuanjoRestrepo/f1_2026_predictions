@@ -33,6 +33,9 @@ Environment variables (see .env.example for full reference):
     F1_GMAIL_APP_PASSWORD: 16-char Google App Password (not the account password).
     F1_RECIPIENT_EMAIL  : Destination email address for race briefings.
     F1_DISCORD_WEBHOOK_URL: Discord webhook URL for race card notifications.
+    F1_GEMINI_MODEL     : Primary Gemini model for AI race narratives.
+    F1_GEMINI_FALLBACK_MODEL: Fallback Gemini model for automated reports.
+    F1_GEMINI_RETRIES   : Retry attempts per Gemini model before fallback.
 """
 
 import functools
@@ -86,6 +89,22 @@ class Settings(BaseSettings):
     gemini_api_key: str | None = Field(
         default=None,
         description="Google Gemini API Key for the AI Race Summarizer.",
+    )
+    gemini_model: str = Field(
+        default="gemini-3.1-pro-preview",
+        min_length=1,
+        description="Primary Gemini model for high-reasoning race narratives.",
+    )
+    gemini_fallback_model: str = Field(
+        default="gemini-3.5-flash",
+        min_length=1,
+        description="Fallback Gemini model for lower-latency automated reports.",
+    )
+    gemini_retries: int = Field(
+        default=2,
+        ge=0,
+        le=10,
+        description="Retry attempts per Gemini model before trying the fallback.",
     )
 
     # ── Notification system (all optional — pipeline runs without them) ──

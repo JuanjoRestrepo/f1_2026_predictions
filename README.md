@@ -26,7 +26,7 @@ AI-driven stint analysis and business question engine for optimal pit-stop windo
 
 ### 4. AI-Generated Race Narratives
 
-Expert-level race reporting powered by **Gemini 2.0/2.5 Flash**, analyzing telemetry residuals and strategic outcomes with professional engineering personas.
+Expert-level race reporting powered by configurable **Gemini 3.1 Pro** primary generation with **Gemini 3.5 Flash** fallback, analyzing telemetry residuals and strategic outcomes with professional engineering personas.
 ![AI Race Analysis](images/dashboard/04_ai_analysis.png)
 
 ---
@@ -88,6 +88,7 @@ The engine now features durable, long-running workflows powered by **Trigger.dev
 1. **Environment**: Ensure you have `uv` installed.
 2. **Sync**: `uv sync`
 3. **API Keys**: Add `F1_GEMINI_API_KEY` and `TRIGGER_SECRET_KEY` to your `.env`.
+4. **Gemini Models**: The default AI narrative stack is `F1_GEMINI_MODEL=gemini-3.1-pro-preview` with `F1_GEMINI_FALLBACK_MODEL=gemini-3.5-flash`. `gemini-3.1-pro-preview` requires usable API quota/billing in Google AI Studio; otherwise the pipeline falls back to Flash or local engineering copy.
 
 ### 🛠️ Technical Retrospective & Lessons Learned
 - **The "Headless" Dependency Trap**: Encountered a build failure where `kaleido` (the static chart engine) required Linux system libraries (`libnss3`, `libatk`, etc.) that were missing in the slim Docker image. Resolved by adding a dedicated graphics-dep layer to the `Dockerfile`.
@@ -147,7 +148,7 @@ uv run scripts/master_pipeline.py --round [ROUND_NUM]
 ## 🛠️ Technical Stack
 
 - **ML & Inference**: `FastAPI`, `XGBoost`, `LightGBM`, `Scikit-Learn`, `SHAP`, `Joblib`
-- **AI**: `google-genai` (Gemini 2.5 Flash)
+- **AI**: `google-genai` (`gemini-3.1-pro-preview` primary, `gemini-3.5-flash` fallback)
 - **Frontend**: `Next.js 15 (Pages)`, `TypeScript`, `Tailwind CSS`, `Recharts`
 - **DevOps**: `Docker (Buildx)`, `GitHub Actions (Parallel Builds)`, `uv`
 - **Data Source**: `FastF1 API`

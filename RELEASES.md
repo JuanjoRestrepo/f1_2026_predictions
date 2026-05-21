@@ -1,5 +1,15 @@
 # Project Releases & Versioning 🏁📜
 
+## v4.4.2 - Gemini Model Migration & AI Pipeline Cleanup
+**Date**: May 2026
+
+### 🤖 AI Narrative Reliability
+- **Gemini Migration**: Updated the AI narrative path to use `gemini-3.1-pro-preview` as the primary model after Google shut down `gemini-3-pro-preview`.
+- **Fallback Resilience**: Added `gemini-3.5-flash` as the automated fallback so race reports can still publish when Pro preview quota, billing, or availability blocks a run.
+- **Workflow Cleanup**: Consolidated AI reporting through `master_pipeline.py`, removed the stale AI summarizer workflow that referenced a missing script, and aligned GitHub Actions secret names around `F1_GEMINI_API_KEY`.
+
+---
+
 ## v4.4.1 - Dashboard Synchronization & Test Coverage
 **Date**: May 2026
 

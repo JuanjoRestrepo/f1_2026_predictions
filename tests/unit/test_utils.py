@@ -139,6 +139,33 @@ class TestSettings:
         with pytest.raises(ValidationError):
             Settings()
 
+    def test_gemini_model_defaults(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Gemini defaults target the current Pro model with Flash fallback."""
+        monkeypatch.chdir(tmp_path)
+        from f1_predictions.utils.config import Settings
+
+        s = Settings()
+        assert s.gemini_model == "gemini-3.1-pro-preview"
+        assert s.gemini_fallback_model == "gemini-3.5-flash"
+        assert s.gemini_retries == 2
+
+    def test_gemini_model_env_overrides(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Gemini model settings can be overridden by environment variables."""
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setenv("F1_GEMINI_MODEL", "gemini-primary")
+        monkeypatch.setenv("F1_GEMINI_FALLBACK_MODEL", "gemini-fallback")
+        monkeypatch.setenv("F1_GEMINI_RETRIES", "4")
+        from f1_predictions.utils.config import Settings
+
+        s = Settings()
+        assert s.gemini_model == "gemini-primary"
+        assert s.gemini_fallback_model == "gemini-fallback"
+        assert s.gemini_retries == 4
+
 
 # =============================================================================
 # Tests: logging_setup.py
