@@ -1,6 +1,39 @@
 # GitHub Actions Workflow Templates
 
-## Production CD Pipeline — Docker Build, Push & GitHub Release
+## CRITICAL: `pull_request_target` Security Warning
+
+**Real-world incidents:** Grafana Labs (April 2025, May 2026) and TanStack (CVE-2026-45321,
+May 2026) were both compromised via `pull_request_target` "Pwn Request" misconfigurations
+in their GitHub Actions workflows.
+
+`pull_request_target` runs in the context of the **base repository** and can access secrets.
+`pull_request` runs in the context of the **fork** and cannot access secrets. Any workflow
+that uses `pull_request_target` AND checks out fork code effectively hands base-repo secrets
+to the attacker who opened the PR.
+
+**Audit immediately:**
+
+```bash
+grep -r "pull_request_target" .github/workflows/
+grep -r -A 20 "pull_request_target" .github/workflows/ | grep -i "checkout"
+```
+
+**Rule:** use `pull_request` for any workflow that runs or tests code. Use `pull_request_target`
+only for metadata operations (labeling, commenting) that never check out fork code.
+
+**Minimum permissions on every job:**
+
+```yaml
+jobs:
+  build:
+    permissions:
+      contents: read # grant only what is needed — never write-all
+```
+
+→ Full technical details, the safe and dangerous patterns, and cache poisoning defense
+are in `references/security.md` Section 13.
+
+---
 
 Reference template for a professional CD pipeline with semantic versioning, Docker image tagging,
 and automated GitHub Releases. All corrections from code review applied inline.

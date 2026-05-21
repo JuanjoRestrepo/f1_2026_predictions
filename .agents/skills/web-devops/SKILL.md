@@ -21,7 +21,7 @@ description: >
 2. **Ask clarifying questions** if the stack or target platform is unclear — don't guess.
 3. **Produce outputs** in the format most useful: code files, configs, runbooks, or a combination.
 4. **Always apply** [Cross-Cutting Best Practices](#cross-cutting-best-practices) regardless of task type.
-5. **Explain decisions** — especially for infra and architecture choices, not just the "what" but the "why". Users learn more and trust the output more when reasoning is visible.
+5. **Explain decisions** — especially for infra and architecture. Say _why_, not just _what_.
 
 ### Quick Stack Decision Guide
 
@@ -45,10 +45,10 @@ Always ask before generating:
 - Framework/stack? (Next.js, T3, Vue/Nuxt, Express, FastAPI, Django, MERN, PERN)
 - TypeScript or JavaScript? (default TypeScript — strongly recommended)
 - Containerized? Target deployment platform?
-- Does it need auth, a database, an ORM?
-- Monorepo or standalone? (suggest monorepo with Turborepo for T3/multi-package setups)
+- Auth, database, ORM needed?
+- Monorepo or standalone? (suggest Turborepo for T3/multi-package setups)
 
-Generate: directory structure with explanation, core config files (`tsconfig.json`, `eslint.config.js`, `.env.example`, `.gitignore`, etc.), package manager setup (`package.json` / `pyproject.toml` / `requirements.txt`), README with setup, environment variables, and deployment instructions
+Generate: directory structure with explanation, core config files (`tsconfig.json`, `eslint.config.js`, `.env.example`, `.gitignore`), package manager setup, README with setup + deployment instructions.
 
 **T3 Stack — bootstrap with:**
 
@@ -285,8 +285,6 @@ See `references/github-actions.md` for the production-ready workflow template.
 
 ## Cross-Cutting Best Practices
 
-Apply these regardless of task type.
-
 ### Security
 
 Security has two mandatory layers: infrastructure and application. Both must be addressed.
@@ -297,7 +295,14 @@ Security has two mandatory layers: infrastructure and application. Both must be 
 - Validate env vars at startup: `@t3-oss/env-nextjs` (T3), `pydantic-settings` (Python)
 - Set security headers: CSP, HSTS, X-Frame-Options — `helmet` (Node.js), `next-safe` (Next.js)
 - Enforce HTTPS everywhere; redirect HTTP → HTTPS
-- Dependency scanning: `npm audit`, `pip-audit`, Dependabot / Renovate
+  **Active CVEs (check `references/security.md` Section 13 for full mitigations):**
+- **Next.js CVE-2025-29927** (CVSS 9.1, actively exploited): middleware auth bypass via `x-middleware-subrequest` header — upgrade to 15.2.3+; strip header at proxy if upgrade not feasible; never rely on middleware alone for authorization
+- **React 19 CVE-2025-55184/55183**: DoS + source code exposure in RSC — upgrade to React ≥19.3.0
+- **NGINX Rift CVE-2026-42945** (CVSS 9.2, actively exploited, PoC public): 18-year-old heap overflow in `ngx_http_rewrite_module` — upgrade to NGINX ≥1.30.1 immediately; replace unnamed captures with named captures if patching is delayed; verify ASLR is enabled
+- **GitHub Actions `pull_request_target` "Pwn Request"** (Grafana 2025/2026, TanStack CVE-2026-45321): never combine `pull_request_target` with `checkout` of fork code — secrets are exposed to the attacker; use `pull_request` for all workflows that run code
+- **VS Code extension supply chain** (Nx Console / GitHub breach May 2026, TeamPCP): disable `extensions.autoUpdate` on all developer machines; audit installed extensions; auto-updates on a 2.2M-install extension were live 11 minutes — enough to compromise thousands of machines
+- Dependency scanning: `npm audit`, `pip-audit`, Dependabot / Renovate; integrate Socket, Snyk, or Aikido for PR-level supply chain monitoring\*\* always track MFA state server-side; issue the full session token only after server-side OTP validation; use a short-lived `MFA_PENDING` intermediate token between password check and OTP check; enforce MFA for all auth paths including OAuth/password-reset; rate-limit OTP endpoints strictly (≤5 attempts per user per 15 min); encrypt TOTP secrets at rest; hash recovery codes; use `otpauth` library (not `speakeasy` — unmaintained)
+- **Supply chain attack defense:** installing (not just importing) a compromised package is enough to execute malicious code — `preinstall`/`postinstall` scripts run automatically on `npm install`, `yarn install`, and `bun install`; **migrate to pnpm v11** (scripts blocked + 1-day cooldown by default, zero config); for pnpm v10 add `minimumReleaseAge: "1440"` manually; for npm use `ignore-scripts=true`; for yarn use `enableScripts: false`; for bun use `trustedDependencies` allowlist; always commit lockfiles and install with `--frozen-lockfile` in CI
 - Enable a WAF in production (Cloudflare, AWS WAF, GCP Cloud Armor)
 - Never log sensitive values; rotate secrets regularly; add `SECURITY.md` to every project
 
@@ -401,10 +406,8 @@ Always explain _why_ a choice was made, not just _what_ to do — especially for
 
 ## Reference Files
 
-Read these when you need templates, full examples, or deeper patterns:
-
 - `references/git-versioning.md` — complete version control discipline: branching strategies (GitHub Flow, Git Flow, trunk-based), Conventional Commits full specification, commit message rules, branch naming, full toolchain setup (commitlint + husky + lint-staged), semantic versioning in depth, tagging and GPG signing, automated versioning (semantic-release, release-please, changesets), pull request conventions and templates, interactive rebase, repository governance (CODEOWNERS, branch protection, issue templates)
-- `references/security.md` — full application security: password hashing, JWT/refresh tokens, httpOnly cookies, session management, RBAC patterns, rate limiting (HTTP + WebSocket), IP controls, WAF guidance, generic error handling, backup strategy, and pre-launch security checklist
+- `references/security.md` — full application security: **active CVEs (Next.js CVE-2025-29927, React RSC, NGINX Rift CVE-2026-42945, GitHub Actions Pwn Request, VS Code extension attacks)**, supply chain attack defense, MFA implementation, password hashing, JWT/refresh tokens, session management, RBAC, rate limiting, IP controls, WAF, generic error handling, backup strategy, pre-launch checklist
 - `references/scaffolding.md` — directory structures for all stacks including T3, Next.js, Express, FastAPI, MERN; essential config file templates
 - `references/docker-kubernetes.md` — Dockerfile templates (Node.js, Python), docker-compose, Kubernetes manifests
 - `references/github-actions.md` — CI/CD workflow YAMLs for Node.js, Python, Docker, ECS, GitHub Releases, multi-environment deploys
