@@ -45,13 +45,13 @@ import pandas as pd
 import xgboost as xgb
 from lightgbm import LGBMRegressor
 
+from f1_predictions.modeling.tuning import OptunaTuner
 from f1_predictions.models import (
     F1PaceRegressor,
     LightGBMPaceRegressor,
     StackingPaceRegressor,
     prepare_feature_matrix,
 )
-from f1_predictions.modeling.tuning import OptunaTuner
 from f1_predictions.utils.config import get_settings
 from f1_predictions.utils.logging_setup import (
     configure_root_pipeline_logger,
@@ -443,7 +443,7 @@ def run_prediction_pipeline(
     predict_dir = reports_root / str(predict_year) / "predictions"
     predict_dir.mkdir(parents=True, exist_ok=True)
     logger.info("Predictions will be saved to: %s", predict_dir)
-    
+
     # Save the trained XGBoost model for API deployment
     model_path = Path(settings.data_outputs_dir) / "models" / "xgb_pace_model.joblib"
     xgb_model.save(model_path)

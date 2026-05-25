@@ -106,8 +106,13 @@ def load_predictions(predictions_path: Path) -> pd.DataFrame:
     df = pd.read_csv(predictions_path)
     if "predicted_laptime_xgb_s" in df.columns:
         df = df.rename(columns={"predicted_laptime_xgb_s": "Predicted_LapTime_s"})
-    if "Predicted_Position" not in df.columns and "Predicted_LapTime_s" in df.columns:
-        df["Predicted_Position"] = df["Predicted_LapTime_s"].rank(method="min").astype(int)
+    if (
+        "Predicted_Position" not in df.columns
+        and "Predicted_LapTime_s" in df.columns
+    ):
+        df["Predicted_Position"] = (
+            df["Predicted_LapTime_s"].rank(method="min").astype(int)
+        )
 
     missing = [c for c in _PRED_COLS if c not in df.columns]
     if missing:
@@ -141,11 +146,26 @@ def load_actuals(season: int, round_number: int) -> pd.DataFrame:
     try:
         session = fastf1.get_session(season, round_number, "R")
         session.load(laps=True, telemetry=False, weather=False, messages=False)
-        results: pd.DataFrame = session.results[["Abbreviation", "Position"]].copy()
+        results: pd.DataFrame = session.results[
+            ["Abbreviation", "Position"]
+        ].copy()
         if not session.laps.empty:
-            fastest_laps = session.laps.groupby("Driver")["LapTime"].min().reset_index()
-            fastest_laps = fastest_laps.rename(columns={"Driver": "Abbreviation", "LapTime": "FastestLapTime"})
-            results = results.merge(fastest_laps, on="Abbreviation", how="left")
+            fastest_laps = (
+                session.laps.groupby("Driver")["LapTime"]
+                .min()
+                .reset_index()
+            )
+            fastest_laps = fastest_laps.rename(
+                columns={
+                    "Driver": "Abbreviation",
+                    "LapTime": "FastestLapTime",
+                }
+            )
+            results = results.merge(
+                fastest_laps,
+                on="Abbreviation",
+                how="left",
+            )
         else:
             results["FastestLapTime"] = pd.NaT
         results["Position"] = results["Position"].astype(int)

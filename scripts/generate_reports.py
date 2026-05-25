@@ -34,8 +34,8 @@ import pandas as pd
 from f1_predictions.models import (
     F1PaceRegressor,
     LightGBMPaceRegressor,
-    StackingPaceRegressor,
     RegressionMetrics,
+    StackingPaceRegressor,
     chronological_split,
     prepare_feature_matrix,
 )

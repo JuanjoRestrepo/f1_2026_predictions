@@ -11,12 +11,16 @@ Rationale:
     baseline context for the XGBoost model.
 """
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 from f1_predictions.utils.logging_setup import get_logger
 
 logger = get_logger(__name__)
+
+_WEATHER_COLS: list[str] = [
+    "AirTemp", "TrackTemp", "Humidity", "Rainfall", "WindSpeed",
+]
 
 
 def add_weather_features(
@@ -25,9 +29,9 @@ def add_weather_features(
 ) -> pd.DataFrame:
     """Join weather summary data with laps.
 
-    The weather data provided by the pipeline is a session-level summary 
-    (e.g., Rainfall_any, AirTemp_mean). This function broadcasts those 
-    summary metrics to every lap in the session.
+    The weather data provided by the pipeline is a session-level
+    summary (e.g., Rainfall_any, AirTemp_mean). This function
+    broadcasts those summary metrics to every lap in the session.
 
     Args:
         df_laps: Clean laps DataFrame.
@@ -40,19 +44,30 @@ def add_weather_features(
         TypeError: If inputs are not pandas DataFrames.
     """
     if not isinstance(df_laps, pd.DataFrame):
-        msg = f"Expected df_laps to be pd.DataFrame, got {type(df_laps).__name__}"
+        msg = (
+            "Expected df_laps to be pd.DataFrame, "
+            f"got {type(df_laps).__name__}"
+        )
         raise TypeError(msg)
     if not isinstance(df_weather, pd.DataFrame):
-        msg = f"Expected df_weather to be pd.DataFrame, got {type(df_weather).__name__}"
+        msg = (
+            "Expected df_weather to be pd.DataFrame, "
+            f"got {type(df_weather).__name__}"
+        )
         raise TypeError(msg)
 
     laps = df_laps.copy()
-    
-    if df_weather.empty:
-        logger.warning("Weather DataFrame is empty. Filling weather features with NaN.")
-        return laps.assign(**{c: np.nan for c in ["AirTemp", "TrackTemp", "Humidity", "Rainfall", "WindSpeed"]})
 
-    # Weather data is session-level, extract the single row of aggregates
+    if df_weather.empty:
+        logger.warning(
+            "Weather DataFrame is empty. "
+            "Filling weather features with NaN."
+        )
+        return laps.assign(
+            **dict.fromkeys(_WEATHER_COLS, np.nan)
+        )
+
+    # Weather data is session-level; extract the single row
     weather_row = df_weather.iloc[0]
 
     # Map session-level aggregates to lap-level feature columns
@@ -62,10 +77,10 @@ def add_weather_features(
     laps["Rainfall"] = weather_row.get("Rainfall_any", np.nan)
     laps["WindSpeed"] = weather_row.get("WindSpeed_mean", np.nan)
 
-    # Some older pipelines might still produce raw fastf1 names, handle those safely
+    # Older pipelines may produce raw fastf1 column names
     if pd.isna(laps["Rainfall"].iloc[0]) and "Rainfall" in weather_row:
         laps["Rainfall"] = weather_row["Rainfall"]
-        
+
     # Ensure boolean type for Rainfall if it's not NaN
     if not laps["Rainfall"].isna().all():
         laps["Rainfall"] = laps["Rainfall"].astype(bool)

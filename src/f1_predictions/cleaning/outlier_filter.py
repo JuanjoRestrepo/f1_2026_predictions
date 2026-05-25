@@ -167,8 +167,9 @@ def filter_neutralised_laps(
         )
         return df
 
-    # FastF1 track statuses can be compound strings (e.g., '12' meaning started clear, ended yellow).
-    # We must flag the lap if ANY character in the string is a neutralised code.
+    # FastF1 track statuses can be compound strings (e.g., '12'
+    # meaning started clear, ended yellow).
+    # Flag the lap if ANY character is a neutralised code.
     def has_neutralised(val: object) -> bool:
         s_val = str(val)
         return any(c in neutralised_statuses for c in s_val)

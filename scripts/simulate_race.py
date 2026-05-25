@@ -7,7 +7,10 @@ from typing import Any, cast
 import numpy as np
 import pandas as pd
 
-from f1_predictions.models import F1PaceRegressor, LightGBMPaceRegressor, StackingPaceRegressor
+from f1_predictions.models import (
+    LightGBMPaceRegressor,
+    StackingPaceRegressor,
+)
 from f1_predictions.models.common import prepare_feature_matrix
 from f1_predictions.utils.analysis import build_driver_standings, build_predictions_df
 from f1_predictions.utils.config import get_settings
@@ -91,17 +94,17 @@ def _apply_track_pace_normalization(
     The simulation initially aggregates driver pace across all tracks in the 
     current season (e.g., 94.8s average for 2026 so far). We must translate this
     to the target track (e.g., Canada ~78s).
-    
+
     Math:
         Driver_Delta = Driver_Season_Median - Global_Season_Median
         Target_Pace = Track_Historical_Baseline + Driver_Delta
     """
     # 1. Get current season global baseline
     season_global_median = df_current["LapTime_s"].median()
-    
+
     # 2. Get target track historical baseline
     track_laps = gold_all[gold_all["EventName"].str.contains(event_name, case=False, na=False)]
-    
+
     # Filter by weather conditions to avoid wet/dry skew
     if "Rainfall" in track_laps.columns and not track_laps["Rainfall"].isna().all():
         cond_laps = track_laps[track_laps["Rainfall"] == is_wet_race]
@@ -118,7 +121,7 @@ def _apply_track_pace_normalization(
         track_baseline = season_global_median
     else:
         track_baseline = track_laps["LapTime_s"].median()
-        
+
     logger.info(
         "Pace normalization for %s: Historical Baseline = %.3fs, Current Season Global = %.3fs",
         event_name, track_baseline, season_global_median
@@ -129,24 +132,24 @@ def _apply_track_pace_normalization(
         "roll_laptime_3", "roll_laptime_5",
         "Sector1Time_s", "Sector2Time_s", "Sector3Time_s",
     ]
-    
+
     # For sectors, we apply a proportional adjustment based on the lap time shift
     # For lap times, we apply the additive delta
     for idx, row in df.iterrows():
         driver_season_pace = row["roll_laptime_3"] # This holds the driver's cross-track median
         driver_delta = driver_season_pace - season_global_median
         target_lap_pace = track_baseline + driver_delta
-        
+
         # Proportional scalar for sector times
         scalar = target_lap_pace / driver_season_pace if driver_season_pace > 0 else 1.0
-        
+
         for col in pace_cols:
             if col in df.columns:
                 if "Sector" in col:
                     df.at[idx, col] = row[col] * scalar
                 else:
                     df.at[idx, col] = target_lap_pace
-                    
+
     return df
 
 
@@ -288,7 +291,6 @@ def run_race_simulation(
     gold_all = pd.concat([pd.read_parquet(f) for f in gold_all_files])
     df_train_full = gold_all[gold_all["Season"].isin(train_years)]
 
-    from f1_predictions.features.era_normalization import apply_2026_regulations_penalty
 
     # ENRICH with track metadata
     logger.info("Enriching data and calculating temporal weights...")

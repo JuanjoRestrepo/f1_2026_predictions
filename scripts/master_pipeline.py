@@ -1,11 +1,14 @@
-import json
 import argparse
-import fastf1
-from google import genai
-import numpy as np
+import json
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any
+
+import fastf1
 import fastf1.core
+import numpy as np
+from google import genai
+
 from f1_predictions.utils.config import Settings, get_settings
 from f1_predictions.utils.logging_setup import (
     configure_root_pipeline_logger,
@@ -39,7 +42,7 @@ def setup_fastf1(cache_dir: Path) -> None:
     cache_dir.mkdir(parents=True, exist_ok=True)
     fastf1.Cache.enable_cache(str(cache_dir))
 
-def setup_gemini(settings: Settings) -> Optional[genai.Client]:
+def setup_gemini(settings: Settings) -> genai.Client | None:
     api_key = settings.gemini_api_key
     if not api_key:
         logger.warning("F1_GEMINI_API_KEY is not configured; AI narratives will use fallback copy.")
@@ -56,7 +59,7 @@ def get_gemini_model_sequence(settings: Settings) -> list[str]:
             sequence.append(model_name)
     return sequence
 
-def get_race_info(year: int, round_num: int) -> Dict[str, str]:
+def get_race_info(year: int, round_num: int) -> dict[str, str]:
     """Dynamically discover event info using FastF1 schedule."""
     schedule = fastf1.get_event_schedule(year)
     # FastF1 schedule uses 1-based indexing for rounds.
@@ -64,7 +67,7 @@ def get_race_info(year: int, round_num: int) -> Dict[str, str]:
     event = schedule[schedule['RoundNumber'] == round_num]
     if event.empty:
         return {"name": f"Round {round_num}", "dir": f"Round_{round_num}"}
-    
+
     event_name = event['EventName'].iloc[0]
     safe_name = event_name.replace(" ", "_")
     return {"name": event_name, "dir": safe_name}
@@ -75,27 +78,30 @@ def save_artifact(data: Any, filename: str, year: int, event_dir: str, is_json: 
     for p in [summary_path, event_path]:
         p.parent.mkdir(parents=True, exist_ok=True)
         if is_json:
-            with open(p, 'w', encoding='utf-8') as f: json.dump(data, f, indent=2)
+            with p.open('w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2)
         else:
-            with open(p, 'w', encoding='utf-8') as f: f.write(data)
+            with p.open('w', encoding='utf-8') as f:
+                f.write(data)
 
-def generate_lap_data(session: fastf1.core.Session, all_drivers: List[str], total_laps: int) -> Dict[str, Any]:
+def generate_lap_data(session: fastf1.core.Session, all_drivers: list[str], total_laps: int) -> dict[str, Any]:
     drivers_lap_list = []
     laps = session.laps
-    
+
     # Track assigned styles per team to differentiate teammates
-    team_driver_count: Dict[str, int] = {}
-    
+    team_driver_count: dict[str, int] = {}
+
     for drv in all_drivers:
         drv_laps = laps.pick_drivers(drv)
-        if drv_laps.empty: continue
-        
+        if drv_laps.empty:
+            continue
+
         team_name = drv_laps['Team'].iloc[0]
         team_driver_count[team_name] = team_driver_count.get(team_name, 0) + 1
-        
+
         # Pro F1 Tip: Use dashed lines for the 2nd driver of a team
         line_style = "solid" if team_driver_count[team_name] == 1 else "dashed"
-        
+
         pos_dict = {}
         for lap in range(1, total_laps + 1):
             lap_row = drv_laps[drv_laps['LapNumber'] == lap]
@@ -103,7 +109,7 @@ def generate_lap_data(session: fastf1.core.Session, all_drivers: List[str], tota
                 pos_dict[str(lap)] = int(lap_row['Position'].iloc[0])
             else:
                 pos_dict[str(lap)] = 22 # DNF Drop
-        
+
         # Sync final lap
         res_row = session.results[session.results['Abbreviation'] == drv]
         if not res_row.empty:
@@ -117,7 +123,7 @@ def generate_lap_data(session: fastf1.core.Session, all_drivers: List[str], tota
             "lineStyle": line_style,
             "positions": pos_dict
         })
-    
+
     return {
         "event": session.event['EventName'],
         "year": session.event['EventDate'].year,
@@ -125,17 +131,17 @@ def generate_lap_data(session: fastf1.core.Session, all_drivers: List[str], tota
         "drivers": drivers_lap_list
     }
 
-def generate_predicted_lap_data(session: fastf1.core.Session, all_drivers: List[str], total_laps: int, predicted_order: List[str]) -> Dict[str, Any]:
+def generate_predicted_lap_data(session: fastf1.core.Session, all_drivers: list[str], total_laps: int, predicted_order: list[str]) -> dict[str, Any]:
     import pandas as pd
     drivers_lap_list = []
-    team_driver_count: Dict[str, int] = {}
+    team_driver_count: dict[str, int] = {}
     for drv in all_drivers:
         # Default values for pre-race
         team_name = "TBD"
         color = "#888888"
         line_style = "solid"
         start_pos = 20
-        
+
         # Try to get real data if available
         try:
             if not session.laps.empty:
@@ -145,22 +151,22 @@ def generate_predicted_lap_data(session: fastf1.core.Session, all_drivers: List[
                     team_driver_count[team_name] = team_driver_count.get(team_name, 0) + 1
                     line_style = "solid" if team_driver_count[team_name] == 1 else "dashed"
                     color = TEAM_COLORS.get(team_name, "#888888")
-            
+
             if not session.results.empty:
                 res_row = session.results[session.results['Abbreviation'] == drv]
                 if not res_row.empty and not pd.isna(res_row['GridPosition'].iloc[0]) and int(res_row['GridPosition'].iloc[0]) > 0:
                     start_pos = int(res_row['GridPosition'].iloc[0])
-        except Exception:
-            pass # Stay with defaults
-        
+        except Exception as e:
+            logger.debug("Could not get grid pos for %s: %s", drv, e)
+
         end_pos = predicted_order.index(drv) + 1 if drv in predicted_order else 20
-        
+
         pos_dict = {}
         for lap in range(1, total_laps + 1):
             progress = lap / total_laps
             curr_pos = round(start_pos + (end_pos - start_pos) * progress)
             pos_dict[str(lap)] = curr_pos
-            
+
         drivers_lap_list.append({
             "driver": drv,
             "team": team_name,
@@ -178,11 +184,11 @@ def generate_predicted_lap_data(session: fastf1.core.Session, all_drivers: List[
 
 def call_ai_with_retry(
     prompt: str,
-    model: Optional[genai.Client],
+    model: genai.Client | None,
     model_names: Sequence[str],
     retries: int = 2,
     delay: int = DEFAULT_GEMINI_DELAY_SECONDS,
-) -> Optional[str]:
+) -> str | None:
     import time
 
     if not model:
@@ -249,12 +255,12 @@ def main() -> None:
             logger.info("No future races found. Defaulting to final round: %d", args.round)
 
     logger.info("Starting Autonomous F1 Intelligence Sync: %d Round %d", args.year, args.round)
-    
+
     ai_model = setup_gemini(settings)
     ai_model_names = get_gemini_model_sequence(settings)
     race_info = get_race_info(args.year, args.round)
     session = fastf1.get_session(args.year, args.round, 'R')
-    
+
     # Pre-race safety: On Friday, laps/results aren't available yet.
     # We load metadata first to see if we can proceed with a full sync.
     try:
@@ -270,14 +276,14 @@ def main() -> None:
         try:
             # Attempt 1: Get official entry list from event metadata
             all_drivers = session.event.get_entry_list()['Abbreviation'].tolist()
-        except:
+        except Exception:
             try:
                 # Attempt 2: Inherit from the previous race in the same year
                 prev_session = fastf1.get_session(args.year, args.round - 1, 'R')
                 prev_session.load(laps=False, telemetry=False, weather=False)
                 all_drivers = prev_session.results['Abbreviation'].tolist()
                 logger.info("Inherited driver list from Round %d", args.round - 1)
-            except:
+            except Exception:
                 # Attempt 3: Professional 2024/2026 grid fallback
                 all_drivers = ["VER", "PER", "LEC", "SAI", "HAM", "RUS", "NOR", "PIA", "ALO", "STR", 
                                "GAS", "OCO", "ALB", "SAR", "TSU", "RIC", "BOT", "ZHO", "MAG", "HUL"]
@@ -288,7 +294,7 @@ def main() -> None:
     else:
         # Fallback to metadata lap count (usually approx or 50)
         total_laps = 50 
-    
+
     # 1. Results (Skip if pre-race)
     if is_post_race:
         import pandas as pd
@@ -307,7 +313,7 @@ def main() -> None:
                     time_str = f"+{ts:.3f}s"
             else:
                 time_str = str(r['Status']) if r['Status'] not in ['Finished', ''] else ""
-                
+
             results_data.append({
                 "position": pos, 
                 "driver": r['Abbreviation'], 
@@ -330,11 +336,11 @@ def main() -> None:
 
     if is_post_race:
         save_artifact(generate_lap_data(session, all_drivers, total_laps), f"lap_positions_round_{args.round}.json", args.year, race_info['dir'])
-    
+
     save_artifact(generate_predicted_lap_data(session, all_drivers, total_laps, predicted_order), f"predicted_lap_positions_round_{args.round}.json", args.year, race_info['dir'])
-    
+
     # 3. Tyre
-    def process_tyre_data(limit: int = 18, is_predicted: bool = False) -> Dict[str, Any]:
+    def process_tyre_data(limit: int = 18, is_predicted: bool = False) -> dict[str, Any]:
         data = []
         compound_colors = {"SOFT": "#ef4444", "MEDIUM": "#facc15", "HARD": "#f8fafc", "INTERMEDIATE": "#22c55e", "WET": "#3b82f6"}
         for drv in all_drivers[:limit]:
@@ -351,14 +357,14 @@ def main() -> None:
                         res_row = session.results[session.results['Abbreviation'] == drv]
                         full_name = res_row['FullName'].iloc[0] if not res_row.empty else drv
                         stint_info = [{'stint': int(r['Stint']), 'compound': str(r['Compound']).upper(), 'laps': int(r['LapNumber']), 'color': compound_colors.get(str(r['Compound']).upper(), "#888888")} for _, r in stints.iterrows()]
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Could not process stint for %s: %s", drv, e)
 
             data.append({
                 'driver': drv, 'fullName': full_name, 'team': team, 
                 'stints': stint_info
             })
-            
+
         if is_predicted:
             for d in data:
                 m_laps = round(total_laps * 0.4)
@@ -397,26 +403,26 @@ def main() -> None:
             "avg_pit_stop": "2.45s" if not is_predicted else "2.50s (Est.)",
             "proven_strategy_insight": insight, "drivers": data
         }
-    
+
     if is_post_race:
         save_artifact(process_tyre_data(22, is_predicted=False), f"tyre_intelligence_round_{args.round}.json", args.year, race_info['dir'])
-    
+
     save_artifact(process_tyre_data(22, is_predicted=True), f"predicted_tyre_intelligence_round_{args.round}.json", args.year, race_info['dir'])
-    
+
     # 4. AI Narratives
     if ai_model:
         logger.info("Generating AI reports with Gemini models: %s", ", ".join(ai_model_names))
-        
+
         # Load SHAP metadata for technical reasoning
         shap_file = REPORTS_BASE / str(args.year) / race_info['dir'] / 'results' / 'shap_metadata.json'
         shap_context = ""
         if shap_file.exists():
-            with open(shap_file, 'r') as f:
+            with shap_file.open() as f:
                 shap_data = json.load(f)
                 shap_context = "\nMODEL EXPLAINABILITY DATA (SHAP):\n"
                 for feat, impact in shap_data.items():
                     shap_context += f"- Feature '{feat}': Relative Impact {impact:.4f}\n"
-        
+
         fallback = (
             f"### [STRATEGIC INTELLIGENCE] {session.event['EventName']} Narrative Synthesis Underway\n\n"
             f"Technical analysis of the delta between **Actual Race Telemetry** and **Predictive ML Simulations** for the {session.event['EventName']} is currently being synthesized. "
@@ -443,7 +449,7 @@ def main() -> None:
                 retries=settings.gemini_retries,
             )
             save_artifact(report or fallback, f"report_round_{args.round}.md", args.year, race_info['dir'], False)
-        
+
         # Load predicted order for the predicted report
         pred_file = REPORTS_BASE / str(args.year) / race_info['dir'] / 'results' / 'data' / 'predictions.csv'
         pred_results_str = ""
@@ -453,7 +459,7 @@ def main() -> None:
             pred_results_str = pred_df.head(10)[['Driver', 'predicted_laptime_xgb_s']].to_string()
         else:
             pred_results_str = "No prediction data available."
-            
+
         predicted_prompt = (
             f"PREDICTIVE ML SIMULATION ANALYSIS: {session.event['EventName']} 2026. "
             f"AI Simulated Results: {pred_results_str}. "
@@ -471,9 +477,9 @@ def main() -> None:
             ai_model_names,
             retries=settings.gemini_retries,
         )
-        
+
         save_artifact(pred_report or fallback, f"predicted_report_round_{args.round}.md", args.year, race_info['dir'], False)
-    
+
     logger.info("Round %d fully processed with Pro F1 Styles.", args.round)
 
 if __name__ == "__main__":
