@@ -23,14 +23,15 @@ def add_weather_features(
     df_laps: pd.DataFrame,
     df_weather: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Join weather timeseries data with laps using temporal alignment.
+    """Join weather summary data with laps.
 
-    Uses ``pd.merge_asof`` to find the weather sample closest to the start
-    of each lap. This provides high-fidelity environmental context.
+    The weather data provided by the pipeline is a session-level summary 
+    (e.g., Rainfall_any, AirTemp_mean). This function broadcasts those 
+    summary metrics to every lap in the session.
 
     Args:
-        df_laps: Clean laps DataFrame (must have 'Time' or 'LapStartTime').
-        df_weather: Weather timeseries DataFrame from FastF1.
+        df_laps: Clean laps DataFrame.
+        df_weather: Weather summary DataFrame with session aggregates.
 
     Returns:
         New laps DataFrame with weather features aligned to each lap.
@@ -45,34 +46,33 @@ def add_weather_features(
         msg = f"Expected df_weather to be pd.DataFrame, got {type(df_weather).__name__}"
         raise TypeError(msg)
 
+    laps = df_laps.copy()
+    
     if df_weather.empty:
         logger.warning("Weather DataFrame is empty. Filling weather features with NaN.")
-        return df_laps.assign(**{c: np.nan for c in ["AirTemp", "TrackTemp", "Humidity", "Rainfall", "WindSpeed"]})
+        return laps.assign(**{c: np.nan for c in ["AirTemp", "TrackTemp", "Humidity", "Rainfall", "WindSpeed"]})
 
-    if "Time" not in df_weather.columns:
-        logger.warning("Weather DataFrame missing 'Time' column. Cannot merge_asof. Filling with NaN.")
-        return df_laps.assign(**{c: np.nan for c in ["AirTemp", "TrackTemp", "Humidity", "Rainfall", "WindSpeed"]})
+    # Weather data is session-level, extract the single row of aggregates
+    weather_row = df_weather.iloc[0]
 
-    # Ensure both dataframes are sorted by time for merge_asof
-    laps = df_laps.copy().sort_values("Time")
-    weather = df_weather.copy().sort_values("Time")
+    # Map session-level aggregates to lap-level feature columns
+    laps["AirTemp"] = weather_row.get("AirTemp_mean", np.nan)
+    laps["TrackTemp"] = weather_row.get("TrackTemp_mean", np.nan)
+    laps["Humidity"] = weather_row.get("Humidity_mean", np.nan)
+    laps["Rainfall"] = weather_row.get("Rainfall_any", np.nan)
+    laps["WindSpeed"] = weather_row.get("WindSpeed_mean", np.nan)
 
-    # Select only relevant weather columns
-    weather = weather[
-        ["Time", "AirTemp", "TrackTemp", "Humidity", "Rainfall", "WindSpeed"]
-    ]
+    # Some older pipelines might still produce raw fastf1 names, handle those safely
+    if pd.isna(laps["Rainfall"].iloc[0]) and "Rainfall" in weather_row:
+        laps["Rainfall"] = weather_row["Rainfall"]
+        
+    # Ensure boolean type for Rainfall if it's not NaN
+    if not laps["Rainfall"].isna().all():
+        laps["Rainfall"] = laps["Rainfall"].astype(bool)
 
-    # Perform temporal join
-    # direction='backward' finds the last weather record BEFORE or AT the lap time
-    merged = pd.merge_asof(
-        laps,
-        weather,
-        on="Time",
-        direction="backward",
+    logger.debug(
+        "Added weather features to %d laps (Rainfall=%s).",
+        len(laps),
+        laps["Rainfall"].iloc[0] if not laps.empty else "N/A",
     )
-
-    logger.info(
-        "Weather features merged via temporal join (pd.merge_asof): %d rows",
-        len(merged),
-    )
-    return merged
+    return laps

@@ -83,7 +83,8 @@ def _apply_track_pace_normalization(
     df_sim: pd.DataFrame, 
     event_name: str, 
     gold_all: pd.DataFrame,
-    df_current: pd.DataFrame
+    df_current: pd.DataFrame,
+    is_wet_race: bool = False
 ) -> pd.DataFrame:
     """Normalize cross-track driver medians to the target track's baseline.
 
@@ -100,6 +101,18 @@ def _apply_track_pace_normalization(
     
     # 2. Get target track historical baseline
     track_laps = gold_all[gold_all["EventName"].str.contains(event_name, case=False, na=False)]
+    
+    # Filter by weather conditions to avoid wet/dry skew
+    if "Rainfall" in track_laps.columns and not track_laps["Rainfall"].isna().all():
+        cond_laps = track_laps[track_laps["Rainfall"] == is_wet_race]
+        if not cond_laps.empty:
+            track_laps = cond_laps
+        else:
+            logger.warning("No historical %s laps for '%s', using all available laps.", 
+                           "wet" if is_wet_race else "dry", event_name)
+    else:
+        logger.warning("Rainfall column missing or all NaN, cannot split baseline by weather.")
+
     if track_laps.empty:
         logger.warning("No historical data for '%s', falling back to season median", event_name)
         track_baseline = season_global_median
@@ -163,7 +176,11 @@ def _calculate_sample_weights(
 
 
 def run_race_simulation(
-    year: int, round_number: int, event_name: str, lap_number: int = 15
+    year: int, 
+    round_number: int, 
+    event_name: str, 
+    lap_number: int = 15,
+    is_wet_race: bool = False
 ) -> None:
     """Run a virtual race simulation with statistical rigor (Phase 2).
 
@@ -278,14 +295,12 @@ def run_race_simulation(
     df_train_full = _enrich_with_track_metadata(df_train_full)
     df_sim = _enrich_with_track_metadata(df_sim)
 
-    # NORMALIZE historical data to 2026 pace
-    if year == 2026:
-        logger.info("Applying 2026 Era Normalization to historical training data...")
-        df_train_full = apply_2026_regulations_penalty(df_train_full)
-
     # APPLY track pace normalization to simulation scenario.
-    logger.info("Normalizing cross-track driver paces to '%s' baseline...", event_name)
-    df_sim = _apply_track_pace_normalization(df_sim, event_name, df_train_full, df_current)
+    logger.info("Normalizing cross-track driver paces to '%s' %s baseline...", 
+                event_name, "wet" if is_wet_race else "dry")
+    df_sim = _apply_track_pace_normalization(
+        df_sim, event_name, df_train_full, df_current, is_wet_race=is_wet_race
+    )
 
     # Calculate Weights (Phase 2.2)
     sample_weights = _calculate_sample_weights(df_train_full, year, round_number)
@@ -338,6 +353,10 @@ if __name__ == "__main__":
     parser.add_argument("--round", type=int, required=True, help="Round number")
     parser.add_argument(
         "--event", type=str, required=True, help="Event name (e.g. 'Miami Grand Prix')"
+    )
+    parser.add_argument(
+        "--weather", type=str, choices=["dry", "wet"], default="dry", 
+        help="Simulate the race under dry or wet conditions (default: dry)"
     )
     parser.add_argument(
         "--lap", type=int, default=15, help="Hypothetical lap number to simulate"
