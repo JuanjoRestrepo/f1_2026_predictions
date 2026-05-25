@@ -75,6 +75,16 @@ export function RaceReport({ markdownContent }: RaceReportProps) {
             ),
             // ── Code blocks ─────────────────────────────────────────────────
             code: ({ node, className, children, ...props }) => {
+              // Check if inline
+              const contentStr = String(children);
+              const isInline = !contentStr.includes("\n");
+              if (!isInline) {
+                return (
+                  <code className="text-gray-300 font-mono block" {...props}>
+                    {children}
+                  </code>
+                );
+              }
               // Inline code
               return (
                 <code

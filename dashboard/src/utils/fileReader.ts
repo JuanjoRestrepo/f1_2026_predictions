@@ -155,9 +155,70 @@ export function getRacePredictions(year: number, eventDirName: string): Predicti
       skipEmptyLines: true,
     });
     
+    let rows = parsed.data;
+
+    // Map ensemble_laptime_s to predicted_laptime_stack_s if present
+    rows = rows.map(r => {
+      const anyRow = r as any;
+      if (anyRow.ensemble_laptime_s && !r.predicted_laptime_stack_s) {
+        r.predicted_laptime_stack_s = anyRow.ensemble_laptime_s;
+      }
+      return r;
+    });
+
+    // Check if the CSV is per-lap (multiple rows per driver)
+    const driverSet = new Set(rows.map(r => r.Driver).filter(Boolean));
+    if (rows.length > driverSet.size && driverSet.size > 0) {
+      // Aggregate by driver
+      const aggregatedMap = new Map<string, {
+        Driver: string;
+        Team: string;
+        xgbSum: number;
+        stackSum: number;
+        count: number;
+        Season?: string;
+        RoundNumber?: string;
+        EventName?: string;
+      }>();
+
+      rows.forEach(r => {
+        if (!r.Driver) return;
+        const xgbVal = parseFloat(r.predicted_laptime_xgb_s) || 0;
+        const stackVal = parseFloat(r.predicted_laptime_stack_s || "") || xgbVal;
+        
+        if (!aggregatedMap.has(r.Driver)) {
+          aggregatedMap.set(r.Driver, {
+            Driver: r.Driver,
+            Team: r.Team || "",
+            xgbSum: xgbVal,
+            stackSum: stackVal,
+            count: 1,
+            Season: r.Season,
+            RoundNumber: r.RoundNumber,
+            EventName: r.EventName
+          });
+        } else {
+          const existing = aggregatedMap.get(r.Driver)!;
+          existing.xgbSum += xgbVal;
+          existing.stackSum += stackVal;
+          existing.count += 1;
+        }
+      });
+
+      rows = Array.from(aggregatedMap.values()).map(item => ({
+        Driver: item.Driver,
+        Team: item.Team,
+        predicted_laptime_xgb_s: (item.xgbSum / item.count).toString(),
+        predicted_laptime_stack_s: (item.stackSum / item.count).toString(),
+        Season: item.Season,
+        RoundNumber: item.RoundNumber,
+        EventName: item.EventName
+      }));
+    }
+
     // Sort by predicted laptime ascending to get finishing order
     // Prioritize stack prediction if available, else fallback to xgb
-    const sorted = parsed.data
+    const sorted = rows
       .filter(r => r.Driver && (r.predicted_laptime_stack_s || r.predicted_laptime_xgb_s))
       .sort((a, b) => {
         const valA = parseFloat(a.predicted_laptime_stack_s || a.predicted_laptime_xgb_s);

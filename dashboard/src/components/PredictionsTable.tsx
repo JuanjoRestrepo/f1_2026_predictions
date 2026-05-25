@@ -10,13 +10,18 @@ const TEAM_COLORS: Record<string, string> = {
   Ferrari: "bg-[#dc0000]",
   McLaren: "bg-[#ff8700]",
   "Red Bull Racing": "bg-[#0600ef]",
+  "Red Bull": "bg-[#0600ef]",
   "Aston Martin": "bg-[#006f62]",
+  "Aston Martin Aramco": "bg-[#006f62]",
   Alpine: "bg-[#0090ff]",
   Williams: "bg-[#005aff]",
   "Racing Bulls": "bg-[#4e7c9b]",
+  "RB": "bg-[#4e7c9b]",
   Haas: "bg-[#b6babd]",
   "Haas F1 Team": "bg-[#b6babd]",
   Audi: "bg-[#a5a5a5]",
+  "Sauber": "bg-[#52e252]",
+  "Kick Sauber": "bg-[#52e252]",
   Cadillac: "bg-[#ffffff]",
 };
 
