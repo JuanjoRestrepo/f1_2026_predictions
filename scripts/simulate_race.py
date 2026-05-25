@@ -79,6 +79,64 @@ def _enrich_with_track_metadata(df: pd.DataFrame) -> pd.DataFrame:
     return enriched_df
 
 
+def _apply_track_pace_normalization(
+    df_sim: pd.DataFrame, 
+    event_name: str, 
+    gold_all: pd.DataFrame,
+    df_current: pd.DataFrame
+) -> pd.DataFrame:
+    """Normalize cross-track driver medians to the target track's baseline.
+
+    The simulation initially aggregates driver pace across all tracks in the 
+    current season (e.g., 94.8s average for 2026 so far). We must translate this
+    to the target track (e.g., Canada ~78s).
+    
+    Math:
+        Driver_Delta = Driver_Season_Median - Global_Season_Median
+        Target_Pace = Track_Historical_Baseline + Driver_Delta
+    """
+    # 1. Get current season global baseline
+    season_global_median = df_current["LapTime_s"].median()
+    
+    # 2. Get target track historical baseline
+    track_laps = gold_all[gold_all["EventName"].str.contains(event_name, case=False, na=False)]
+    if track_laps.empty:
+        logger.warning("No historical data for '%s', falling back to season median", event_name)
+        track_baseline = season_global_median
+    else:
+        track_baseline = track_laps["LapTime_s"].median()
+        
+    logger.info(
+        "Pace normalization for %s: Historical Baseline = %.3fs, Current Season Global = %.3fs",
+        event_name, track_baseline, season_global_median
+    )
+
+    df = df_sim.copy()
+    pace_cols = [
+        "roll_laptime_3", "roll_laptime_5",
+        "Sector1Time_s", "Sector2Time_s", "Sector3Time_s",
+    ]
+    
+    # For sectors, we apply a proportional adjustment based on the lap time shift
+    # For lap times, we apply the additive delta
+    for idx, row in df.iterrows():
+        driver_season_pace = row["roll_laptime_3"] # This holds the driver's cross-track median
+        driver_delta = driver_season_pace - season_global_median
+        target_lap_pace = track_baseline + driver_delta
+        
+        # Proportional scalar for sector times
+        scalar = target_lap_pace / driver_season_pace if driver_season_pace > 0 else 1.0
+        
+        for col in pace_cols:
+            if col in df.columns:
+                if "Sector" in col:
+                    df.at[idx, col] = row[col] * scalar
+                else:
+                    df.at[idx, col] = target_lap_pace
+                    
+    return df
+
+
 def _calculate_sample_weights(
     df: pd.DataFrame, target_year: int, target_round: int
 ) -> pd.Series:
@@ -224,6 +282,10 @@ def run_race_simulation(
     if year == 2026:
         logger.info("Applying 2026 Era Normalization to historical training data...")
         df_train_full = apply_2026_regulations_penalty(df_train_full)
+
+    # APPLY track pace normalization to simulation scenario.
+    logger.info("Normalizing cross-track driver paces to '%s' baseline...", event_name)
+    df_sim = _apply_track_pace_normalization(df_sim, event_name, df_train_full, df_current)
 
     # Calculate Weights (Phase 2.2)
     sample_weights = _calculate_sample_weights(df_train_full, year, round_number)

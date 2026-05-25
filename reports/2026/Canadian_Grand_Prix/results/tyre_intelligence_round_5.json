@@ -4,7 +4,7 @@
   "total_laps": 68,
   "winning_strategy": "Medium to Hard",
   "avg_pit_stop": "2.45s",
-  "proven_strategy_insight": "The optimum strategy for the Montreal GP centered on a highly managed one-stop Soft-to-Medium transition, with ANT, HAM, VER, and LEC successfully controlling thermal degradation on the traction-limited rear axle to protect track position. Conversely, HAD\u2019s aggressive three-stop conversion (S-M-S-S) failed to offset the high pit-lane loss time, confirming that minimizing stop frequency was the dominant performance vector despite late-race compound grip advantages.",
+  "proven_strategy_insight": "Montreal's low-abrasion track evolution validated a highly disciplined one-stop Soft-to-Medium strategy, with ANT, HAM, VER, and LEC successfully managing thermal degradation to minimize total pit-stop delta. In contrast, HAD's aggressive four-stop S-M-S-S alternative failed to generate sufficient tire offset to overcome the compounding track-position loss, confirming that maximizing stint efficiency was paramount over late-race compound freshness.",
   "drivers": [
     {
       "driver": "ANT",

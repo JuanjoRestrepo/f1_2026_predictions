@@ -12,6 +12,7 @@ Rationale:
 """
 
 import pandas as pd
+import numpy as np
 
 from f1_predictions.utils.logging_setup import get_logger
 
@@ -46,13 +47,13 @@ def add_weather_features(
 
     if df_weather.empty:
         logger.warning("Weather DataFrame is empty. Filling weather features with NaN.")
-        for col in ["AirTemp", "TrackTemp", "Humidity", "Rainfall", "WindSpeed"]:
-            df_laps[col] = float("nan")
-        return df_laps
+        return df_laps.assign(**{c: np.nan for c in ["AirTemp", "TrackTemp", "Humidity", "Rainfall", "WindSpeed"]})
+
+    if "Time" not in df_weather.columns:
+        logger.warning("Weather DataFrame missing 'Time' column. Cannot merge_asof. Filling with NaN.")
+        return df_laps.assign(**{c: np.nan for c in ["AirTemp", "TrackTemp", "Humidity", "Rainfall", "WindSpeed"]})
 
     # Ensure both dataframes are sorted by time for merge_asof
-    # Laps: we want weather at the START of the lap.
-    # Note: FastF1 'Time' is completion time. 'LapStartTime' is start time.
     laps = df_laps.copy().sort_values("Time")
     weather = df_weather.copy().sort_values("Time")
 
@@ -63,7 +64,7 @@ def add_weather_features(
 
     # Perform temporal join
     # direction='backward' finds the last weather record BEFORE or AT the lap time
-    result = pd.merge_asof(
+    merged = pd.merge_asof(
         laps,
         weather,
         on="Time",
@@ -72,6 +73,6 @@ def add_weather_features(
 
     logger.info(
         "Weather features merged via temporal join (pd.merge_asof): %d rows",
-        len(result),
+        len(merged),
     )
-    return result
+    return merged

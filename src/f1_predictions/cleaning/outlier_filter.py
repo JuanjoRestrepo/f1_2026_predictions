@@ -167,7 +167,13 @@ def filter_neutralised_laps(
         )
         return df
 
-    mask_neutralised = df[track_status_col].isin(neutralised_statuses)
+    # FastF1 track statuses can be compound strings (e.g., '12' meaning started clear, ended yellow).
+    # We must flag the lap if ANY character in the string is a neutralised code.
+    def has_neutralised(val: object) -> bool:
+        s_val = str(val)
+        return any(c in neutralised_statuses for c in s_val)
+
+    mask_neutralised = df[track_status_col].apply(has_neutralised)
     n_removed = int(mask_neutralised.sum())
     result = df[~mask_neutralised].copy()
     logger.debug(
