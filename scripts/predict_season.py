@@ -253,7 +253,9 @@ def predict_season(
 
     y_pred_xgb: np.ndarray = xgb_est.predict(x_aligned)
     y_pred_lgb: np.ndarray = lgb_est.predict(x_aligned)
-    y_pred_stack: np.ndarray = stack_model.predict(df_predict) # Uses internal feature alignment
+    y_pred_stack: np.ndarray = stack_model.predict(
+        df_predict
+    )  # Uses internal feature alignment
 
     logger.info(
         "Inference complete: %d laps | XGB mean=%.3fs | LGB mean=%.3fs | Stack mean=%.3fs",
@@ -449,11 +451,15 @@ def run_prediction_pipeline(
     xgb_model.save(model_path)
 
     # ── 3. Predict ─────────────────────────────────────────────────────────
-    y_pred_xgb, y_pred_lgb, y_pred_stack, _ = predict_season(xgb_model, lgb_model, stack_model, df_predict)
+    y_pred_xgb, y_pred_lgb, y_pred_stack, _ = predict_season(
+        xgb_model, lgb_model, stack_model, df_predict
+    )
 
     # ── 4. Build & save outputs (Season Level) ────────────────────────────
     metadata = extract_metadata(df_predict)
-    predictions_df = build_predictions_df(metadata, y_pred_xgb, y_pred_lgb, y_pred_stack)
+    predictions_df = build_predictions_df(
+        metadata, y_pred_xgb, y_pred_lgb, y_pred_stack
+    )
     saved = save_outputs(predictions_df, predict_year, train_years, predict_dir)
 
     # ── 5. Save per-GP Results (Elite Structure) ─────────────────────────

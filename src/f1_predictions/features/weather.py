@@ -19,7 +19,11 @@ from f1_predictions.utils.logging_setup import get_logger
 logger = get_logger(__name__)
 
 _WEATHER_COLS: list[str] = [
-    "AirTemp", "TrackTemp", "Humidity", "Rainfall", "WindSpeed",
+    "AirTemp",
+    "TrackTemp",
+    "Humidity",
+    "Rainfall",
+    "WindSpeed",
 ]
 
 
@@ -44,28 +48,17 @@ def add_weather_features(
         TypeError: If inputs are not pandas DataFrames.
     """
     if not isinstance(df_laps, pd.DataFrame):
-        msg = (
-            "Expected df_laps to be pd.DataFrame, "
-            f"got {type(df_laps).__name__}"
-        )
+        msg = f"Expected df_laps to be pd.DataFrame, got {type(df_laps).__name__}"
         raise TypeError(msg)
     if not isinstance(df_weather, pd.DataFrame):
-        msg = (
-            "Expected df_weather to be pd.DataFrame, "
-            f"got {type(df_weather).__name__}"
-        )
+        msg = f"Expected df_weather to be pd.DataFrame, got {type(df_weather).__name__}"
         raise TypeError(msg)
 
     laps = df_laps.copy()
 
     if df_weather.empty:
-        logger.warning(
-            "Weather DataFrame is empty. "
-            "Filling weather features with NaN."
-        )
-        return laps.assign(
-            **dict.fromkeys(_WEATHER_COLS, np.nan)
-        )
+        logger.warning("Weather DataFrame is empty. Filling weather features with NaN.")
+        return laps.assign(**dict.fromkeys(_WEATHER_COLS, np.nan))
 
     # Weather data is session-level; extract the single row
     weather_row = df_weather.iloc[0]

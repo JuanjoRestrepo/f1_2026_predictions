@@ -11,7 +11,9 @@ from f1_predictions.utils.logging_setup import get_logger
 logger = get_logger(__name__)
 
 
-def extract_quali_features(year: int, round_num: int | str, event_name: str) -> pd.DataFrame | None:
+def extract_quali_features(
+    year: int, round_num: int | str, event_name: str
+) -> pd.DataFrame | None:
     """Extract features from the Qualifying session to predict race pace.
 
     Args:
@@ -25,7 +27,9 @@ def extract_quali_features(year: int, round_num: int | str, event_name: str) -> 
     settings = get_settings()
     fastf1.Cache.enable_cache(str(settings.fastf1_cache_dir))
 
-    logger.info("Loading Qualifying data for %s (%d) Round %s...", event_name, year, round_num)
+    logger.info(
+        "Loading Qualifying data for %s (%d) Round %s...", event_name, year, round_num
+    )
     try:
         session = fastf1.get_session(year, round_num, "Q")
         session.load(laps=True, telemetry=False, weather=False, messages=False)
@@ -42,7 +46,6 @@ def extract_quali_features(year: int, round_num: int | str, event_name: str) -> 
     # FastF1 Results for Q session contain Q1, Q2, Q3 times.
     # We want the absolute fastest time set by the driver across the whole session
     # or just use the delta to the pole position.
-
 
     # If the session laps object is empty, we must rely on the results table
     if session.laps.empty:
@@ -73,12 +76,14 @@ def extract_quali_features(year: int, round_num: int | str, event_name: str) -> 
         if pd.notna(pole_time) and pd.notna(best_q_time):
             delta_to_pole_s = (best_q_time - pole_time).total_seconds()
 
-        features.append({
-            "Driver": driver,
-            "Team": team,
-            "Grid_Position": pos,
-            "Quali_Pace_Delta_s": delta_to_pole_s,
-        })
+        features.append(
+            {
+                "Driver": driver,
+                "Team": team,
+                "Grid_Position": pos,
+                "Quali_Pace_Delta_s": delta_to_pole_s,
+            }
+        )
 
     df = pd.DataFrame(features)
     logger.info("Extracted %d driver qualifying features.", len(df))
@@ -90,7 +95,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Extract Qualifying features.")
     parser.add_argument("--year", type=int, default=2026, help="Season year")
     parser.add_argument("--round", type=str, default="4", help="Round number")
-    parser.add_argument("--event", type=str, default="Miami Grand Prix", help="Event name")
+    parser.add_argument(
+        "--event", type=str, default="Miami Grand Prix", help="Event name"
+    )
 
     args = parser.parse_args()
 
@@ -98,6 +105,7 @@ def main() -> None:
     if df is not None:
         print("\nQualifying Features Preview:")
         print(df.head(10))
+
 
 if __name__ == "__main__":
     main()

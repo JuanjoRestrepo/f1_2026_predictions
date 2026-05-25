@@ -1,4 +1,5 @@
 """Script to rebuild all Silver and Gold Parquet files from Raw data."""
+
 import re
 import sys
 from pathlib import Path
@@ -13,6 +14,7 @@ from f1_predictions.utils.logging_setup import (
 
 configure_root_pipeline_logger("INFO")
 logger = get_logger(__name__)
+
 
 def rebuild_all():
     raw_dir = Path("data/raw/laps")
@@ -40,15 +42,20 @@ def rebuild_all():
             round_num = int(round_match.group(1))
 
             # Event name is not strictly needed for path resolution, just pass a dummy string
-            key = SessionKey(year=year, round_number=round_num, identifier="R", event_name="Unknown")
+            key = SessionKey(
+                year=year, round_number=round_num, identifier="R", event_name="Unknown"
+            )
 
-            logger.info("[%d/%d] Rebuilding %s Round %s...", idx, len(files), year, round_num)
+            logger.info(
+                "[%d/%d] Rebuilding %s Round %s...", idx, len(files), year, round_num
+            )
 
             run_cleaning_pipeline(key, session_type="race", overwrite=True)
             run_feature_pipeline(key, overwrite=True)
 
         except Exception:
             logger.exception("Failed to rebuild %s", f)
+
 
 if __name__ == "__main__":
     rebuild_all()

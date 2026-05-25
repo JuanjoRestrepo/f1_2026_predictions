@@ -416,7 +416,9 @@ def run_report_pipeline(
     )
 
     # ── 5. Save metrics JSON ──────────────────────────────────────────────
-    save_metrics_json(metrics_xgb, metrics_lgb, metrics_stack, train_years, test_year, reports_dir)
+    save_metrics_json(
+        metrics_xgb, metrics_lgb, metrics_stack, train_years, test_year, reports_dir
+    )
 
     # ── 6. Generate figures ───────────────────────────────────────────────
     figure_paths: dict[str, Path] = {}
