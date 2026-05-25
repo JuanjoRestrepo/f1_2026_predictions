@@ -75,9 +75,9 @@ def save_artifact(data: Any, filename: str, year: int, event_dir: str, is_json: 
     for p in [summary_path, event_path]:
         p.parent.mkdir(parents=True, exist_ok=True)
         if is_json:
-            with open(p, 'w') as f: json.dump(data, f, indent=2)
+            with open(p, 'w', encoding='utf-8') as f: json.dump(data, f, indent=2)
         else:
-            with open(p, 'w') as f: f.write(data)
+            with open(p, 'w', encoding='utf-8') as f: f.write(data)
 
 def generate_lap_data(session: fastf1.core.Session, all_drivers: List[str], total_laps: int) -> Dict[str, Any]:
     drivers_lap_list = []
@@ -319,7 +319,7 @@ def main() -> None:
 
     # 2. Lap Positions (Actual AND Predicted)
     import pandas as pd
-    predictions_path = REPORTS_BASE / str(args.year) / race_info['dir'] / "results" / "data" / "predictions.csv"
+    predictions_path = REPORTS_BASE / str(args.year) / race_info['dir'] / "results" / "predictions.csv"
     predicted_order = []
     if predictions_path.exists():
         preds_df = pd.read_csv(predictions_path)

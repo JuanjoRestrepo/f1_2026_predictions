@@ -111,8 +111,8 @@ jobs:
             echo "race_found=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Run ML simulation (Pre-Race only)
-        if: steps.resolve.outputs.race_found == 'true' && steps.resolve.outputs.mode == 'pre-race'
+      - name: Run ML simulation
+        if: steps.resolve.outputs.race_found == 'true'
         run: |
           uv run python scripts/simulate_race.py \
             --round ${{ steps.resolve.outputs.round }} \
@@ -150,9 +150,9 @@ jobs:
           )
           round_num = int('${{ steps.resolve.outputs.round }}')
           season = int('${{ inputs.season || 2026 }}')
-          predictions_path = Path('data/outputs') / f'round_{round_num:02d}_predictions.csv'
-          if not predictions_path.exists():
-              predictions_path = Path('data/outputs') / 'predictions.csv'
+          event_name = '${{ steps.resolve.outputs.event }}'
+          safe_event = event_name.replace(' ', '_')
+          predictions_path = Path('reports') / str(season) / safe_event / 'results' / 'predictions.csv'
           predictions = load_predictions(predictions_path)
           actuals = load_actuals(season, round_num)
           verdict = compute_verdict(predictions, actuals, round_num, 'Grand Prix')
