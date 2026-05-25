@@ -45,10 +45,26 @@ export function PredictionsTable({ data, view }: PredictionsTableProps) {
               ? (row as PredictionRow).predicted_position 
               : (row as ActualResult).position;
             
-            // For predicted, we show the laptime delta. For actual, we show the time/gap string.
+            // For predicted: P1 shows its absolute predicted lap time, others show gap to P1
+            const p1LapTime = isPredicted
+              ? parseFloat(
+                  (data[0] as PredictionRow).predicted_laptime_stack_s ||
+                    (data[0] as PredictionRow).predicted_laptime_xgb_s
+                )
+              : 0;
+
+            const myLapTime = isPredicted
+              ? parseFloat(
+                  (row as PredictionRow).predicted_laptime_stack_s ||
+                    (row as PredictionRow).predicted_laptime_xgb_s
+                )
+              : 0;
+
             const displayTime = isPredicted
-              ? (idx === 0 ? "1:23:06.801" : `+${parseFloat((row as PredictionRow).predicted_laptime_stack_s || (row as PredictionRow).predicted_laptime_xgb_s).toFixed(3)}s`)
-              : (row as ActualResult).time || (row as ActualResult).gap;
+              ? idx === 0
+                ? `${myLapTime.toFixed(3)}s`
+                : `+${(myLapTime - p1LapTime).toFixed(3)}s`
+              : (row as ActualResult).time ?? (row as ActualResult).gap ?? "--";
 
             return (
               <tr key={idx} className="hover:bg-white/5 transition-colors group">

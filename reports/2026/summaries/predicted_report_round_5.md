@@ -9,7 +9,7 @@
 
 To contextualize the technical breakdown, the model's global predictions are governed by the following SHAP (SHapley Additive exPlanations) feature importance values, calculated across a 10,000-run Monte Carlo simulation of the Circuit Gilles Villeneuve:
 
-| Feature Name | Feature Description | Mean |SHAP| Value (seconds/lap) |
+| Feature Name | Feature Description | Mean SHAP Value (seconds/lap) |
 | :--- | :--- | :--- |
 | `Energy_Recuperation_MGU-K` | Efficiency of harvesting 350kW kinetic energy under braking | $+0.245\text{ s}$ |
 | `Aero_Profile_Transition_Latency` | Latency (ms) shifting between active aero Z-mode (corners) and X-mode (straights) | $+0.188\text{ s}$ |
@@ -57,10 +57,10 @@ Active Aero Transition Profile (Simulated Lap):
 *   **Active Aerodynamics: Z-Mode to X-Mode Switching Dynamics:**  
     The 2026 regulations introduce active aerodynamics, shifting between high-downforce "Z-mode" (wing elements open) and low-drag "X-mode" (wing elements shedding drag). The model’s second most critical feature is `Aero_Profile_Transition_Latency`. 
     
-    In the simulation, the transition timing on the approach to and exit from the fast chicanes (Turns 3-4 and 8-9) is critical. If a car experiences a transition latency of $>150\text{ ms}$ when engaging Z-mode for corner entry, the front-wing aero balance shifts rearward too slowly. This results in severe transient understeer and a loss of up to $0.08\text{ s}$ per corner entry.
+    In the simulation, the transition timing on the approach to and exit from the fast chicanes (Turns 3-4 and 8-9) is critical. If a car experiences a transition latency of over $150\text{ ms}$ when engaging Z-mode for corner entry, the front-wing aero balance shifts rearward too slowly. This results in severe transient understeer and a loss of up to $0.08\text{ s}$ per corner entry.
 
 *   **Drag Mitigation (X-Mode) Dominance on Pont de la Concorde:**  
-    The model predicts that drag-reduction efficiency in X-mode along the $1.04\text{ km}$ back straight is the primary differentiator for absolute lap-time delta, overshadowing cornering speeds. The SHAP value of `Aero_Profile` shows that reducing the drag coefficient ($C_d$) to $<0.32$ in X-mode yields a top-speed delta of $+14\text{ km/h}$ compared to the 2025 ground-effect baselines. 
+    The model predicts that drag-reduction efficiency in X-mode along the $1.04\text{ km}$ back straight is the primary differentiator for absolute lap-time delta, overshadowing cornering speeds. The SHAP value of `Aero_Profile` shows that reducing the drag coefficient ($C_d$) to under $0.32$ in X-mode yields a top-speed delta of $+14\text{ km/h}$ compared to the 2025 ground-effect baselines. 
     
     This heavily penalizes cars designed with high-drag cooling configurations, forcing teams to run tight bodywork packaging at the risk of thermal limits on the power unit.
 

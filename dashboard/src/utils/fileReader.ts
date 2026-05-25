@@ -58,15 +58,35 @@ export function getAvailableRaces(year: number): RaceInfo[] {
  * Works both locally and on Vercel.
  */
 function getReportsDirectory() {
-  // process.cwd() in Next.js is usually the `dashboard` folder
-  return path.join(process.cwd(), "..", "reports");
+  // process.cwd() in Next.js is the `dashboard` folder locally,
+  // but on Vercel it may be the repo root. We check both paths to
+  // ensure the correct one is used regardless of the deployment context.
+  const cwd = process.cwd();
+  const fromDashboard = path.join(cwd, "..", "reports");
+  const fromRoot = path.join(cwd, "reports");
+
+  if (fs.existsSync(fromDashboard)) return fromDashboard;
+  if (fs.existsSync(fromRoot)) return fromRoot;
+  // Default fallback — same as original
+  return fromDashboard;
 }
 
 export interface PredictionRow {
+  // Core identity
+  Season?: string;
+  RoundNumber?: string;
+  EventName?: string;
   Driver: string;
   Team: string;
+  // XGBoost prediction (primary)
   predicted_laptime_xgb_s: string;
+  // LightGBM percentile predictions (optional)
+  predicted_laptime_lgb_p05_s?: string;
+  predicted_laptime_lgb_p50_s?: string;
+  predicted_laptime_lgb_p95_s?: string;
+  // Stack/ensemble prediction (optional, preferred when present)
   predicted_laptime_stack_s?: string;
+  // Computed during sort
   predicted_position?: number;
 }
 
@@ -122,7 +142,6 @@ export function getRacePredictions(year: number, eventDirName: string): Predicti
       year.toString(),
       eventDirName,
       "results",
-      "data",
       "predictions.csv"
     );
     
