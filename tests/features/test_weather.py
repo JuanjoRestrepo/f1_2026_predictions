@@ -220,4 +220,4 @@ class TestAddWeatherFeaturesRainfall:
         # Should broadcast row 0 to all laps
         assert result["AirTemp"].iloc[0] == 25.0
         assert result["AirTemp"].iloc[1] == 25.0
-        assert result["Rainfall"].iloc[0] == False
+        assert not result["Rainfall"].iloc[0]
