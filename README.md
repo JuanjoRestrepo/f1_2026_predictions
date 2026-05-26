@@ -32,13 +32,17 @@ Expert-level race reporting powered by configurable **Gemini 3.1 Pro** primary g
 ---
 
 ## [v4.4.3] - 2026-05-25
+
 ### 🎨 Autonomous UI & End-to-End Formatting
+
 - **Feature**: End-to-End Fastest Lap automation dynamically extracting telemetry without hardcoded fallbacks.
 - **Improved**: Integrated KaTeX plugins to perfectly render complex LaTeX SHAP formulas in AI reports.
 - **Fixed**: Eliminated duplicate driver rows in the Predictions table by accurately aggregating multi-lap ML forecasts.
 
 ## [v4.2.0] - 2026-05-06
+
 ### 🎨 The "High-Fidelity UI" Release
+
 - **Feature**: Systematic readability overhaul across the entire dashboard.
 - **Improved**: Hierarchical typography for section titles and subtitles (16px/14px desktop scale).
 - **Improved**: Increased legibility for tyre stints, metric labels, and search fields.
@@ -46,22 +50,25 @@ Expert-level race reporting powered by configurable **Gemini 3.1 Pro** primary g
 - **Fixed**: Syntax nesting issues in `TyreIntelligence` component and React title tag warnings.
 
 ## [v4.1.0] - 2026-05-06
+
 ### 🚀 The "Autonomous Autopilot" Release
+
 - **Feature**: Implemented Friday Pre-Race automation. The system now proactively predicts the race hierarchy before the weekend starts.
 - **Feature**: Added `detect_upcoming_race` logic to the core orchestration engine.
 - **Improved**: Hardened `master_pipeline.py` to handle "Prediction Mode" gracefully without actual race data.
 - **Improved**: Unified GitHub Actions workflow for both Friday (Preview) and Monday (Audit) cycles.
 
 ## [v4.0.0] - 2026-05-06
+
 ### 🏁 Industrialization & Stability Milestone
 
 ## 🌟 Key Features
 
 - **Industrialized Inference API**: High-performance FastAPI microservice for real-time lap time predictions.
 - **🔄 Autonomous Workflow (Event-Driven)**: The system operates on a professional, autonomous cycle via GitHub Actions:
-    1. **Friday @ 18:00 UTC**: **Pre-Race Mode**. Runs ML simulations to generate the "Prediction Preview" briefing.
-    2. **Monday @ 09:00 UTC**: **Post-Race Mode**. Syncs actual results, calculates MAE/Accuracy, and sends the "Race Verdict" audit.
-    3. **Wednesday @ 09:00 UTC**: **Safety Sync**. Re-verifies data in case of official delays.
+  1. **Friday @ 18:00 UTC**: **Pre-Race Mode**. Runs ML simulations to generate the "Prediction Preview" briefing.
+  2. **Monday @ 09:00 UTC**: **Post-Race Mode**. Syncs actual results, calculates MAE/Accuracy, and sends the "Race Verdict" audit.
+  3. **Wednesday @ 09:00 UTC**: **Safety Sync**. Re-verifies data in case of official delays.
 - **Multi-Channel Intelligence Dispatch**: Automated race briefings delivered via F1-branded HTML emails and Discord cards.
 - **Multi-Platform Docker Infrastructure**: Automated builds for `amd64` (servers) and `arm64` (Apple Silicon) using parallel GitHub Actions pipelines.
 - **2026 Regulation Awareness**: Custom feature engineering including `Era Normalization` (adjusting historical times to 2026 rules) and `PU Strain Index`.
@@ -69,16 +76,20 @@ Expert-level race reporting powered by configurable **Gemini 3.1 Pro** primary g
 - **Differentiated Analysis**: Unique AI narratives for both **Actual Results** (post-race debrief) and **Predicted ML Simulations** (pre-race forecasting).
 
 ### 🧠 Advanced Predictive Engine (v4.4.0+)
+
 - **Meta-Learning (Stacking)**: Blends XGBoost and LightGBM base models using a Bayesian Ridge meta-regressor, achieving exceptional sub-0.150s MAE precision.
 - **Leak-Free Validation**: Internal 5-fold cross-validation ensures meta-models train without data leakage.
 
 ### 🤖 Autonomous Orchestration (v4.3.0+)
+
 The engine now features durable, long-running workflows powered by **Trigger.dev v3**. This enables:
+
 - **Friday Forecasts**: Automatic pre-race predictions based on practice data.
 - **Monday Audits**: Automatic post-race telemetry analysis and AI narrative synthesis.
 - **Manual Sync**: On-demand race processing via the Trigger.dev Cloud Dashboard.
 
 #### Setup Orchestration
+
 1. Install dependencies: `npm install`
 2. Connect to your Trigger.dev project: `npx trigger.dev@latest login`
 3. Start local development worker:
@@ -91,12 +102,14 @@ The engine now features durable, long-running workflows powered by **Trigger.dev
    ```
 
 ### 🛠️ Core Engine Setup
+
 1. **Environment**: Ensure you have `uv` installed.
 2. **Sync**: `uv sync`
 3. **API Keys**: Add `F1_GEMINI_API_KEY` and `TRIGGER_SECRET_KEY` to your `.env`.
 4. **Gemini Models**: The default AI narrative stack is `F1_GEMINI_MODEL=gemini-3.1-pro-preview` with `F1_GEMINI_FALLBACK_MODEL=gemini-3.5-flash`. `gemini-3.1-pro-preview` requires usable API quota/billing in Google AI Studio; otherwise the pipeline falls back to Flash or local engineering copy.
 
 ### 🛠️ Technical Retrospective & Lessons Learned
+
 - **The "Headless" Dependency Trap**: Encountered a build failure where `kaleido` (the static chart engine) required Linux system libraries (`libnss3`, `libatk`, etc.) that were missing in the slim Docker image. Resolved by adding a dedicated graphics-dep layer to the `Dockerfile`.
 - **CI Linting Granularity**: Discovered that `ruff check` passes don't guarantee `ruff format --check` passes. Standardized the local development workflow to always run `uv run ruff format` before pushing to avoid CI blocking.
 - **Strategy Pattern Payoff**: The decision to use the Strategy Pattern for notifications allowed us to pivot from a simple print statement to a full Gmail/Discord integration in under an hour without touching core business logic.
@@ -167,7 +180,15 @@ uv run scripts/master_pipeline.py --round [ROUND_NUM]
 ---
 
 ## 🔮 Future Vision: The "Invincible" Race Agent
+
 The long-term vision for this platform is to move beyond scheduled reporting and into **Durable Agentic Orchestration**. By potentially integrating frameworks like **Trigger.dev**, we aim to build a "Live Race Assistant" capable of:
-*   **Durable State**: Handling multi-hour race events with automatic retries and state persistence across API failures or system restarts.
-*   **Human-in-the-Loop**: Transitioning to a model where the AI proposes strategic shifts (e.g., "Box now for Intermediates") and waits for human validation before broadcasting briefings.
-*   **Multi-Agent Coordination**: Scaling to a swarm of specialized agents (Strategy, Weather, and Telemetry) that collaborate via a central durable execution bus.
+
+- **Durable State**: Handling multi-hour race events with automatic retries and state persistence across API failures or system restarts.
+- **Human-in-the-Loop**: Transitioning to a model where the AI proposes strategic shifts (e.g., "Box now for Intermediates") and waits for human validation before broadcasting briefings.
+- **Multi-Agent Coordination**: Scaling to a swarm of specialized agents (Strategy, Weather, and Telemetry) that collaborate via a central durable execution bus.
+
+---
+
+Operational note (Trigger.dev):
+
+- Trigger tasks in `src/trigger` execute Python scripts under `scripts/`. To avoid "Script does not exist" errors when the Trigger worker's current working directory differs from the repository root, tasks resolve absolute script paths from `process.cwd()` (see `src/trigger/f1_tasks.ts`).

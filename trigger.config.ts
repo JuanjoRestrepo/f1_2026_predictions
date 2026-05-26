@@ -1,10 +1,10 @@
-import { defineConfig } from "@trigger.dev/sdk/v3";
-import { pythonExtension } from "@trigger.dev/python/extension";
+import { defineConfig } from '@trigger.dev/sdk/v3';
+import { pythonExtension } from '@trigger.dev/python/extension';
 
 export default defineConfig({
-  project: "proj_qikobyuvvlwjvmdaaqwk",
-  runtime: "node",
-  logLevel: "log",
+  project: 'proj_qikobyuvvlwjvmdaaqwk',
+  runtime: 'node',
+  logLevel: 'log',
   // The max compute seconds a task is allowed to run. If the task run exceeds this duration, it will be stopped.
   // You can override this on an individual task.
   // See https://trigger.dev/docs/runs/max-duration
@@ -19,13 +19,14 @@ export default defineConfig({
       randomize: true,
     },
   },
-  dirs: ["./src/trigger"],
+  dirs: ['./src/trigger'],
   build: {
     extensions: [
       pythonExtension({
-        requirementsFile: "trigger_requirements.txt",
-        devPythonBinaryPath: ".venv/Scripts/python.exe",
+        requirementsFile: 'trigger_requirements.txt',
+        devPythonBinaryPath: '.venv/Scripts/python.exe',
       }),
+      // Note: tasks resolve Python script paths from process.cwd() to avoid worker CWD issues.
     ],
   },
 });
