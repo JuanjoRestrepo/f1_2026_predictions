@@ -1,5 +1,8 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 
 interface RaceReportProps {
   markdownContent: string;
@@ -10,7 +13,8 @@ export function RaceReport({ markdownContent }: RaceReportProps) {
     <div className="w-full">
       <div className="prose prose-invert prose-sm md:prose-base max-w-none text-gray-300">
         <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
+          remarkPlugins={[remarkGfm, remarkMath]}
+          rehypePlugins={[rehypeKatex]}
           components={{
             h1: ({ node, ...props }) => (
               <h1
