@@ -34,8 +34,10 @@ interface RacePageProps {
   availableRaces: RaceInfo[];
   markdownReport: string | null;
   predictedMarkdownReport: string | null;
-  predictions: PredictionRow[] | null;
-  actualResults: ActualResult[] | null;
+  predictions: PredictionRow[];
+  actualResults: ActualResult[];
+  predictedFastest: { driver: string; time_s: number } | null;
+  actualFastest: { driver: string; time: string; time_s?: number } | null;
   lapPositions: LapPositionData | null;
   predictedLapPositions: LapPositionData | null;
   tyreData: TyreIntelligenceData | null;
@@ -61,15 +63,22 @@ export async function getStaticProps({ params }: { params: { round: string } }) 
 
   const markdownReport = getRaceSummary(year, race.dirName, roundNum);
   const predictedMarkdownReport = getPredictedRaceSummary(year, roundNum);
-  const predictions = getRacePredictions(year, race.dirName) ?? [];
-  const actualResults = getActualResults(year, roundNum) ?? [];
+  
+  const predsPayload = getRacePredictions(year, race.dirName);
+  const predictions = predsPayload?.predictions ?? [];
+  const predictedFastest = predsPayload?.fastest_lap ?? null;
+
+  const actualPayload = getActualResults(year, roundNum);
+  const actualResults = actualPayload?.results ?? [];
+  const actualFastest = actualPayload?.fastest_lap ?? null;
+
   const lapPositions = getLapPositions(year, roundNum);
   const predictedLapPositions = getPredictedLapPositions(year, roundNum);
   const tyreData = getTyreIntelligence(year, roundNum);
   const predictedTyreData = getPredictedTyreIntelligence(year, roundNum);
 
   return {
-    props: { race, availableRaces, markdownReport, predictedMarkdownReport, predictions, actualResults, lapPositions, predictedLapPositions, tyreData, predictedTyreData },
+    props: { race, availableRaces, markdownReport, predictedMarkdownReport, predictions, actualResults, predictedFastest, actualFastest, lapPositions, predictedLapPositions, tyreData, predictedTyreData },
     revalidate: 3600,
   };
 }
@@ -81,6 +90,8 @@ export default function RacePage({
   predictedMarkdownReport,
   predictions, 
   actualResults, 
+  predictedFastest,
+  actualFastest,
   lapPositions, 
   predictedLapPositions,
   tyreData,
@@ -105,9 +116,27 @@ export default function RacePage({
     ? (actualResults && actualResults.length > 1 ? actualResults[1] : null)
     : (predictions && predictions.length > 1 ? predictions[1] : null);
 
-  const fastestLap = headerView === "actual"
-    ? (race.round === 4 ? { driver: 'RUS', time: '1:27.452' } : { driver: '--', time: '--' })
-    : (race.round === 4 ? { driver: 'HAM', time: '1:28.102' } : { driver: '--', time: '--' });
+  // Helper to format raw seconds (e.g. 75.287s) to standard F1 style (e.g. 1:15.287)
+  const formatLapTime = (seconds: number): string => {
+    if (isNaN(seconds) || seconds <= 0) return "--";
+    const mins = Math.floor(seconds / 60);
+    const secs = (seconds % 60).toFixed(3);
+    if (mins > 0) {
+      const paddedSecs = parseFloat(secs) < 10 ? `0${secs}` : secs;
+      return `${mins}:${paddedSecs}`;
+    }
+    return `${secs}s`;
+  };
+
+  const predictedFL = predictedFastest
+    ? { driver: predictedFastest.driver, time: formatLapTime(predictedFastest.time_s) }
+    : { driver: "--", time: "--" };
+
+  const actualFL = actualFastest
+    ? { driver: actualFastest.driver, time: actualFastest.time }
+    : { driver: "--", time: "--" };
+
+  const fastestLap = headerView === "actual" ? actualFL : predictedFL;
 
   return (
     <>

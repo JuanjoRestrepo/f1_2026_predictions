@@ -4,7 +4,7 @@
   "total_laps": 68,
   "winning_strategy": "AI Optimal (M-H)",
   "avg_pit_stop": "2.50s (Est.)",
-  "proven_strategy_insight": "Analysis of the top five profiles indicates a consensus one-stop Medium-to-Hard strategy as the mathematically optimal path, prioritizing track position on a low-grip, traction-limited Montreal circuit. Drivers must strictly monitor rear thermal degradation during the initial Medium phase to defer the pit stop until the optimal crossover window, thereby securing a robust Hard compound stint capable of absorbing late-race safety car interventions while mitigating undercut vulnerability.",
+  "proven_strategy_insight": "Simulation data for Montreal projects a highly convergent one-stop strategy, with the top five competitors utilizing an identical Medium-to-Hard transition to optimize absolute race time against the high eighteen-second pit lane loss. Under this baseline, track position remains paramount, requiring drivers to manage rear-axle thermal degradation through the traction phases to delay their stops until the lap twenty-four to thirty window, thereby maximizing undercut protection and maintaining flexibility for high-probability Safety Car neutralization.",
   "drivers": [
     {
       "driver": "NOR",
@@ -45,9 +45,9 @@
       ]
     },
     {
-      "driver": "PIA",
-      "fullName": "Oscar Piastri",
-      "team": "McLaren",
+      "driver": "LEC",
+      "fullName": "Charles Leclerc",
+      "team": "Ferrari",
       "stints": [
         {
           "stint": 1,
@@ -83,9 +83,9 @@
       ]
     },
     {
-      "driver": "LEC",
-      "fullName": "Charles Leclerc",
-      "team": "Ferrari",
+      "driver": "VER",
+      "fullName": "Max Verstappen",
+      "team": "Red Bull Racing",
       "stints": [
         {
           "stint": 1,
@@ -102,9 +102,9 @@
       ]
     },
     {
-      "driver": "VER",
-      "fullName": "Max Verstappen",
-      "team": "Red Bull Racing",
+      "driver": "PIA",
+      "fullName": "Oscar Piastri",
+      "team": "McLaren",
       "stints": [
         {
           "stint": 1,
@@ -216,25 +216,6 @@
       ]
     },
     {
-      "driver": "OCO",
-      "fullName": "Esteban Ocon",
-      "team": "Haas F1 Team",
-      "stints": [
-        {
-          "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 27,
-          "color": "#facc15"
-        },
-        {
-          "stint": 2,
-          "compound": "HARD",
-          "laps": 41,
-          "color": "#f8fafc"
-        }
-      ]
-    },
-    {
       "driver": "BEA",
       "fullName": "Oliver Bearman",
       "team": "Haas F1 Team",
@@ -273,28 +254,9 @@
       ]
     },
     {
-      "driver": "STR",
-      "fullName": "Lance Stroll",
-      "team": "Aston Martin",
-      "stints": [
-        {
-          "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 27,
-          "color": "#facc15"
-        },
-        {
-          "stint": 2,
-          "compound": "HARD",
-          "laps": 41,
-          "color": "#f8fafc"
-        }
-      ]
-    },
-    {
-      "driver": "LIN",
-      "fullName": "LIN",
-      "team": "TBD",
+      "driver": "OCO",
+      "fullName": "Esteban Ocon",
+      "team": "Haas F1 Team",
       "stints": [
         {
           "stint": 1,
@@ -330,6 +292,44 @@
       ]
     },
     {
+      "driver": "LIN",
+      "fullName": "LIN",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 27,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 41,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "STR",
+      "fullName": "Lance Stroll",
+      "team": "Aston Martin",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 27,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 41,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
       "driver": "PER",
       "fullName": "Sergio Perez",
       "team": "Cadillac",
@@ -349,9 +349,9 @@
       ]
     },
     {
-      "driver": "ALO",
-      "fullName": "Fernando Alonso",
-      "team": "Aston Martin",
+      "driver": "HAD",
+      "fullName": "Isack Hadjar",
+      "team": "Red Bull Racing",
       "stints": [
         {
           "stint": 1,
@@ -387,9 +387,9 @@
       ]
     },
     {
-      "driver": "HAD",
-      "fullName": "Isack Hadjar",
-      "team": "Red Bull Racing",
+      "driver": "ALO",
+      "fullName": "Fernando Alonso",
+      "team": "Aston Martin",
       "stints": [
         {
           "stint": 1,

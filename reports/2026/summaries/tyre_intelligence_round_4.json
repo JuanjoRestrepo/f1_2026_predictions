@@ -4,7 +4,7 @@
   "total_laps": 57,
   "winning_strategy": "Medium to Hard",
   "avg_pit_stop": "2.45s",
-  "proven_strategy_insight": "The ubiquitous Medium-Hard strategy among the top five drivers confirmed its status as the optimal single-stop approach for Miami, leveraging the Medium's initial pace for critical track position without significant premature degradation. This universal adoption underscored a critical interaction between the circuit's demands and tire degradation profiles, with the Hard compound delivering unmatched consistency and minimal performance drop-off during the extended final stint, effectively neutralizing any alternative strategic pathways.",
+  "proven_strategy_insight": "The 2026 Miami Grand Prix yielded absolute strategic convergence among the top five finishers, who all executed an identical Medium-to-Hard one-stop strategy to combat high thermal degradation and exploit the optimum safety car window. With zero tactical offset between ANT, NOR, PIA, RUS, and VER, the final classification was ultimately decided by out-lap tire warm-up efficiency and superior management of the hard compound's degradation phase in dirty air.",
   "drivers": [
     {
       "driver": "ANT",

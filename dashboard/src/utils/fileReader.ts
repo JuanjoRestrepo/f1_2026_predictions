@@ -132,10 +132,15 @@ export function getPredictedRaceSummary(year: number, roundNum: number): string 
   }
 }
 
+export interface PredictedResultsPayload {
+  fastest_lap?: { driver: string; time_s: number } | null;
+  predictions: PredictionRow[];
+}
+
 /**
  * Reads the predictions CSV file.
  */
-export function getRacePredictions(year: number, eventDirName: string): PredictionRow[] | null {
+export function getRacePredictions(year: number, eventDirName: string): PredictedResultsPayload | null {
   try {
     const filePath = path.join(
       getReportsDirectory(),
@@ -168,6 +173,24 @@ export function getRacePredictions(year: number, eventDirName: string): Predicti
 
     // Check if the CSV is per-lap (multiple rows per driver)
     const driverSet = new Set(rows.map(r => r.Driver).filter(Boolean));
+    
+    // Find absolute fastest lap before aggregating
+    let absoluteFastestDriver = "--";
+    let absoluteFastestTime = Infinity;
+    rows.forEach(r => {
+      if (!r.Driver) return;
+      const val = parseFloat(r.predicted_laptime_stack_s || r.predicted_laptime_xgb_s);
+      if (!isNaN(val) && val < absoluteFastestTime) {
+        absoluteFastestTime = val;
+        absoluteFastestDriver = r.Driver;
+      }
+    });
+
+    let predictedFastestLap = null;
+    if (absoluteFastestTime !== Infinity) {
+      predictedFastestLap = { driver: absoluteFastestDriver, time_s: absoluteFastestTime };
+    }
+
     if (rows.length > driverSet.size && driverSet.size > 0) {
       // Aggregate by driver
       const aggregatedMap = new Map<string, {
@@ -227,7 +250,7 @@ export function getRacePredictions(year: number, eventDirName: string): Predicti
       })
       .map((row, idx) => ({ ...row, predicted_position: idx + 1 }));
 
-    return sorted;
+    return { predictions: sorted, fastest_lap: predictedFastestLap };
   } catch (error) {
     console.error("Failed to read predictions CSV:", error);
     return null;
@@ -242,10 +265,15 @@ export interface ActualResult {
   gap: string;
 }
 
+export interface ActualResultsPayload {
+  fastest_lap?: { driver: string; time: string; time_s?: number };
+  results: ActualResult[];
+}
+
 /**
  * Reads the actual race results JSON generated post-race.
  */
-export function getActualResults(year: number, roundNum: number): ActualResult[] | null {
+export function getActualResults(year: number, roundNum: number): ActualResultsPayload | null {
   try {
     const filePath = path.join(
       getReportsDirectory(),
@@ -255,7 +283,12 @@ export function getActualResults(year: number, roundNum: number): ActualResult[]
     );
     if (!fs.existsSync(filePath)) return null;
     const raw = fs.readFileSync(filePath, "utf8");
-    return JSON.parse(raw) as ActualResult[];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      // Backwards compatibility for old runs
+      return { results: parsed };
+    }
+    return parsed as ActualResultsPayload;
   } catch (error) {
     console.error("Failed to read actual results:", error);
     return null;

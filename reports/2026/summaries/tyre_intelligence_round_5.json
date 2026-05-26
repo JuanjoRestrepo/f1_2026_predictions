@@ -4,7 +4,7 @@
   "total_laps": 68,
   "winning_strategy": "Medium to Hard",
   "avg_pit_stop": "2.45s",
-  "proven_strategy_insight": "Montreal's low-abrasion track evolution validated a highly disciplined one-stop Soft-to-Medium strategy, with ANT, HAM, VER, and LEC successfully managing thermal degradation to minimize total pit-stop delta. In contrast, HAD's aggressive four-stop S-M-S-S alternative failed to generate sufficient tire offset to overcome the compounding track-position loss, confirming that maximizing stint efficiency was paramount over late-race compound freshness.",
+  "proven_strategy_insight": "Optimizing track position on a low-degradation track evolution, the leading quartet of ANT, HAM, VER, and LEC successfully executed a highly efficient Soft-to-Medium one-stop strategy, maximizing stint lengths while managing thermal degradation. Conversely, HAD's aggressive three-stop S-M-S-S configuration failed to generate the requisite tire offset delta to overcome Montreal's high pit lane loss time, consolidating the superiority of the simplified one-stop baseline.",
   "drivers": [
     {
       "driver": "ANT",

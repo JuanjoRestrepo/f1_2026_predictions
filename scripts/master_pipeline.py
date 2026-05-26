@@ -389,8 +389,30 @@ def main() -> None:
                     "time": time_str,
                 }
             )
+
+        fastest_lap_data = None
+        try:
+            if not session.laps.empty:
+                fl = session.laps.pick_fastest()
+                if not fl.empty:
+                    fl_driver = fl["Driver"]
+                    fl_time = fl["LapTime"].total_seconds()
+                    mins = int(fl_time // 60)
+                    secs = fl_time % 60
+                    time_fmt = f"{mins}:{secs:06.3f}" if mins > 0 else f"{secs:.3f}s"
+                    fastest_lap_data = {
+                        "driver": fl_driver,
+                        "time": time_fmt,
+                        "time_s": fl_time
+                    }
+        except Exception as e:
+            logger.debug(f"Could not extract fastest lap: {e}")
+
         save_artifact(
-            results_data,
+            {
+                "fastest_lap": fastest_lap_data,
+                "results": results_data
+            },
             f"actual_results_round_{args.round}.json",
             args.year,
             race_info["dir"],
