@@ -1,5 +1,15 @@
 # Project Releases & Versioning 🏁📜
 
+## v4.4.3 - Autonomous UI & End-to-End Formatting
+**Date**: May 2026
+
+### 🎨 Visual & Telemetry Perfection
+- **End-to-End Fastest Lap**: Completely automated the extraction of the actual Fastest Lap via `fastf1` in the python backend (`master_pipeline.py`) and dynamically bound both predicted and actual Fastest Laps to the frontend UI, eliminating all hardcoded placeholders.
+- **KaTeX Math Rendering**: Integrated `remark-math` and `rehype-katex` into the AI Race Analysis React markdown engine, perfectly rendering complex LaTeX SHAP formulas (e.g., `$\Delta t$`) with official KaTeX styling.
+- **Predictions Deduplication**: Refactored `fileReader.ts` to intelligently aggregate per-lap ML predictions, resolving duplicate driver rows in the Finishing Order table by precisely averaging multi-lap forecasts into a single robust performance delta.
+
+---
+
 ## v4.4.2 - Gemini Model Migration & AI Pipeline Cleanup
 **Date**: May 2026
 

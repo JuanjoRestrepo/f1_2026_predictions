@@ -31,6 +31,12 @@ Expert-level race reporting powered by configurable **Gemini 3.1 Pro** primary g
 
 ---
 
+## [v4.4.3] - 2026-05-25
+### 🎨 Autonomous UI & End-to-End Formatting
+- **Feature**: End-to-End Fastest Lap automation dynamically extracting telemetry without hardcoded fallbacks.
+- **Improved**: Integrated KaTeX plugins to perfectly render complex LaTeX SHAP formulas in AI reports.
+- **Fixed**: Eliminated duplicate driver rows in the Predictions table by accurately aggregating multi-lap ML forecasts.
+
 ## [v4.2.0] - 2026-05-06
 ### 🎨 The "High-Fidelity UI" Release
 - **Feature**: Systematic readability overhaul across the entire dashboard.
