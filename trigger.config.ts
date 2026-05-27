@@ -1,6 +1,11 @@
 import { defineConfig } from '@trigger.dev/sdk/v3';
 import { pythonExtension } from '@trigger.dev/python/extension';
 
+const devPythonBinaryPath =
+  process.platform === 'win32'
+    ? '.venv/Scripts/python.exe'
+    : '.venv/bin/python3';
+
 export default defineConfig({
   project: 'proj_qikobyuvvlwjvmdaaqwk',
   runtime: 'node',
@@ -19,12 +24,13 @@ export default defineConfig({
       randomize: true,
     },
   },
-  dirs: ['./src/trigger'],
+  // Include the `scripts` folder so Python entrypoints are packaged with builds
+  dirs: ['./src/trigger', './scripts'],
   build: {
     extensions: [
       pythonExtension({
         requirementsFile: 'trigger_requirements.txt',
-        devPythonBinaryPath: '.venv/Scripts/python.exe',
+        devPythonBinaryPath,
       }),
       // Note: tasks resolve Python script paths from process.cwd() to avoid worker CWD issues.
     ],
