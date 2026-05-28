@@ -356,7 +356,9 @@ def run_race_simulation(
     res_dir.mkdir(parents=True, exist_ok=True)
 
     metadata = df_sim[["Season", "RoundNumber", "EventName", "Driver", "Team"]]
-    predictions_df = build_predictions_df(metadata, y_pred_baseline, quantile_preds)
+    predictions_df = build_predictions_df(
+        metadata, y_pred_baseline, quantile_preds
+    ).sort_values("predicted_laptime_xgb_s")
 
     # Save CSVs
     standings = build_driver_standings(predictions_df)

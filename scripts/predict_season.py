@@ -469,7 +469,9 @@ def run_prediction_pipeline(
         gp_dir = reports_root / str(predict_year) / safe_gp_name / "results"
         gp_dir.mkdir(parents=True, exist_ok=True)
 
-        gp_data = predictions_df[predictions_df["EventName"] == gp_name]
+        gp_data = predictions_df[predictions_df["EventName"] == gp_name].sort_values(
+            "predicted_laptime_xgb_s"
+        )
         gp_data.to_csv(gp_dir / "predictions.csv", index=False)
 
         # Save local standings for this GP
