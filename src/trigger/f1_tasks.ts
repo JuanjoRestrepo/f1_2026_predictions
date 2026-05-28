@@ -1,6 +1,34 @@
 import { task, schedules } from '@trigger.dev/sdk/v3';
 import { python } from '@trigger.dev/python';
+import { existsSync } from 'node:fs';
 import * as path from 'path';
+
+const PYTHON_SOURCE_DIR = 'src';
+const PIPELINE_SCRIPT = 'master_pipeline.py';
+
+function resolvePythonScript(scriptName: string): string {
+  const scriptPath = path.join(process.cwd(), 'scripts', scriptName);
+  if (!existsSync(scriptPath)) {
+    throw new Error(
+      `Python script is missing from the Trigger build: ${scriptPath}. ` +
+        'Check trigger.config.ts pythonExtension({ scripts }) includes scripts/**/*.py.',
+    );
+  }
+  return scriptPath;
+}
+
+function pythonRunOptions(): { env: Record<string, string> } {
+  const pythonPath = path.join(process.cwd(), PYTHON_SOURCE_DIR);
+  const existingPythonPath = process.env.PYTHONPATH;
+
+  return {
+    env: {
+      PYTHONPATH: existingPythonPath
+        ? `${pythonPath}${path.delimiter}${existingPythonPath}`
+        : pythonPath,
+    },
+  };
+}
 
 /**
  * F1 Intelligence Sync - Manual/On-demand Trigger
@@ -21,12 +49,8 @@ export const f1ManualSync = task({
       args.push('--round', payload.round.toString());
     }
 
-    const scriptPath = path.join(
-      process.cwd(),
-      'scripts',
-      'master_pipeline.py',
-    );
-    const result = await python.runScript(scriptPath, args);
+    const scriptPath = resolvePythonScript(PIPELINE_SCRIPT);
+    const result = await python.runScript(scriptPath, args, pythonRunOptions());
 
     if (result.exitCode !== 0) {
       throw new Error(
@@ -57,12 +81,12 @@ export const f1FridayForecast = schedules.task({
 
     // In a real scenario, we'd fetch the current round number here.
     // For this demo, let's assume master_pipeline handles 'next' if round=0
-    const scriptPath = path.join(
-      process.cwd(),
-      'scripts',
-      'master_pipeline.py',
+    const scriptPath = resolvePythonScript(PIPELINE_SCRIPT);
+    const result = await python.runScript(
+      scriptPath,
+      ['--auto'],
+      pythonRunOptions(),
     );
-    const result = await python.runScript(scriptPath, ['--auto']);
 
     return { success: result.exitCode === 0 };
   },
@@ -79,12 +103,12 @@ export const f1MondayAudit = schedules.task({
   run: async (payload) => {
     console.log('Monday Audit Triggered. Processing race results...');
 
-    const scriptPath = path.join(
-      process.cwd(),
-      'scripts',
-      'master_pipeline.py',
+    const scriptPath = resolvePythonScript(PIPELINE_SCRIPT);
+    const result = await python.runScript(
+      scriptPath,
+      ['--auto'],
+      pythonRunOptions(),
     );
-    const result = await python.runScript(scriptPath, ['--auto']);
 
     return { success: result.exitCode === 0 };
   },
@@ -95,12 +119,12 @@ export const f1Healthcheck = task({
   id: 'f1-healthcheck',
   maxDuration: 60,
   run: async () => {
-    const scriptPath = path.join(
-      process.cwd(),
-      'scripts',
-      'master_pipeline.py',
+    const scriptPath = resolvePythonScript(PIPELINE_SCRIPT);
+    const result = await python.runScript(
+      scriptPath,
+      ['--help'],
+      pythonRunOptions(),
     );
-    const result = await python.runScript(scriptPath, ['--help']);
     if (result.exitCode !== 0) {
       throw new Error(`Healthcheck failed: ${result.stderr}`);
     }

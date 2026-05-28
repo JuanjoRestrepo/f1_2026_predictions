@@ -6,6 +6,14 @@ const devPythonBinaryPath =
     ? '.venv/Scripts/python.exe'
     : '.venv/bin/python3';
 
+const pythonBuildFiles = [
+  'scripts/**/*.py',
+  'src/f1_predictions/**/*.py',
+  'src/f1_predictions/templates/**/*',
+  'data/external/**/*',
+  'data/outputs/models/**/*',
+];
+
 export default defineConfig({
   project: 'proj_qikobyuvvlwjvmdaaqwk',
   runtime: 'node',
@@ -24,15 +32,14 @@ export default defineConfig({
       randomize: true,
     },
   },
-  // Include the `scripts` folder so Python entrypoints are packaged with builds
-  dirs: ['./src/trigger', './scripts'],
+  dirs: ['./src/trigger'],
   build: {
     extensions: [
       pythonExtension({
         requirementsFile: 'trigger_requirements.txt',
         devPythonBinaryPath,
+        scripts: pythonBuildFiles,
       }),
-      // Note: tasks resolve Python script paths from process.cwd() to avoid worker CWD issues.
     ],
   },
 });
