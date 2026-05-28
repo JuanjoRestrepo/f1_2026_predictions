@@ -5,6 +5,7 @@ import * as path from 'path';
 
 const PYTHON_SOURCE_DIR = 'src';
 const PIPELINE_SCRIPT = 'master_pipeline.py';
+const SMOKECHECK_SCRIPT = 'trigger_smokecheck.py';
 
 function resolvePythonScript(scriptName: string): string {
   const scriptPath = path.join(process.cwd(), 'scripts', scriptName);
@@ -119,10 +120,10 @@ export const f1Healthcheck = task({
   id: 'f1-healthcheck',
   maxDuration: 60,
   run: async () => {
-    const scriptPath = resolvePythonScript(PIPELINE_SCRIPT);
+    const scriptPath = resolvePythonScript(SMOKECHECK_SCRIPT);
     const result = await python.runScript(
       scriptPath,
-      ['--help'],
+      [],
       pythonRunOptions(),
     );
     if (result.exitCode !== 0) {
