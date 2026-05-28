@@ -1,4 +1,5 @@
 import { defineConfig } from '@trigger.dev/sdk/v3';
+import { aptGet } from '@trigger.dev/build/extensions/core';
 import { pythonExtension } from '@trigger.dev/python/extension';
 
 const devPythonBinaryPath =
@@ -35,6 +36,9 @@ export default defineConfig({
   dirs: ['./src/trigger'],
   build: {
     extensions: [
+      aptGet({
+        packages: ['libgomp1'],
+      }),
       pythonExtension({
         requirementsFile: 'trigger_requirements.txt',
         devPythonBinaryPath,
