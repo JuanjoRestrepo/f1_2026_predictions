@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import pytest
-
 from f1_predictions.features.encoding import (
     CategoricalFeatureEncoder,
     add_grid_position_features,

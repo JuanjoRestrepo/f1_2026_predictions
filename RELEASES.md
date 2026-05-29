@@ -1,5 +1,15 @@
 # Project Releases & Versioning 🏁📜
 
+## v4.4.4 - DevOps & Data Science Alignment
+**Date**: May 2026
+
+### 🛡️ Code Quality & Security Hardening
+- **Strict Pre-Commit Enforcement**: Integrated `pre-commit` hooks orchestrating `ruff`, `mypy`, and `pytest` locally to ensure 100% type safety and zero linting errors prior to commit.
+- **NPM Supply-Chain Fixes**: Implemented strict package overrides in `package.json` to resolve 12 deep transitive vulnerabilities stemming from the Trigger.dev SDK.
+- **CI Synchronization**: Ensured GitHub Actions workflow perfectly matches local validation standards by executing `mypy` locally via the `uv` environment, exposing all typing stubs (`fastapi`, `pydantic`).
+
+---
+
 ## v4.4.3 - Autonomous UI & End-to-End Formatting
 **Date**: May 2026
 

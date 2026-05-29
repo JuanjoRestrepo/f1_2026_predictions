@@ -11,7 +11,6 @@ import tempfile
 from pathlib import Path
 
 import pytest
-
 from f1_predictions.evaluation.post_race_verdict import RaceVerdict
 from f1_predictions.utils.email_builder import build_email_html, build_subject
 

@@ -17,7 +17,7 @@
 
 [project]
 name            = "f1-2026-predictions"
-version         = "1.0.0"
+version         = "4.4.4"
 description     = "F1 2026 race prediction pipeline: FastF1 telemetry ingestion, cleaning, EDA, and XGBoost modeling."
 readme          = "README.md"
 license         = { text = "MIT" }
@@ -148,6 +148,7 @@ dev = [
     "ipykernel>=6.29.0",
     "jupyter>=1.0.0",
     "nbformat>=5.10.0",
+    "pre-commit>=4.6.0",
 ]
 
 # ---------------------------------------------------------------------------
@@ -196,6 +197,8 @@ ignore = [
     "D213",  # multi-line-summary-second-line: conflicts with D212
     "S101",  # assert in tests: standard pytest pattern
     "TRY003", # long exception messages in raise: acceptable for pipeline errors
+    "ANN101", # Missing type annotation for `self` in method
+    "ANN102", # Missing type annotation for `cls` in classmethod
 ]
 
 [tool.ruff.lint.per-file-ignores]

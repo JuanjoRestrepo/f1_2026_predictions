@@ -10,7 +10,6 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 import pandas as pd
-
 from f1_predictions.utils.race_detector import find_last_completed_race
 
 

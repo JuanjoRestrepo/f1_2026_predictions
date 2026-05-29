@@ -1,0 +1,28 @@
+# .pre-commit-config.yaml
+# Install: uv add --dev pre-commit && pre-commit install
+# Run manually on all files: pre-commit run --all-files
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.0
+    hooks:
+      - id: ruff # Linter — must pass before commit
+        args: [--fix] # Auto-fix safe violations in-place
+      - id: ruff-format # Formatter — enforces code style
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: uv run mypy src/ --strict
+        language: system
+        pass_filenames: false
+
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: uv run pytest tests/ -v --tb=short -q
+        language: system
+        pass_filenames: false
+        always_run: true

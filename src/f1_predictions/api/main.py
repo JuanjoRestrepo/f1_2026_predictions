@@ -5,12 +5,11 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 import pandas as pd
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
-
 from f1_predictions.models.base import BasePaceRegressor
 from f1_predictions.utils.config import get_settings
 from f1_predictions.utils.logging_setup import get_logger
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
 
 logger = get_logger(__name__)
 
