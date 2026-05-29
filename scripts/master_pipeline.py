@@ -268,16 +268,44 @@ def main() -> None:
     parser.add_argument(
         "--auto", action="store_true", help="Run in non-interactive mode (for CI/CD)"
     )
+    parser.add_argument(
+        "--mode",
+        choices=["manual", "forecast", "audit"],
+        default="manual",
+        help="Execution mode for intelligent schedule detection",
+    )
     args = parser.parse_args()
 
-    if args.round is None:
-        logger.info("No round specified. Attempting auto-detection...")
+    import sys
+
+    if args.mode == "forecast":
+        from f1_predictions.utils.race_detector import detect_upcoming_race
+
+        race = detect_upcoming_race(args.year, days_ahead=4)
+        if not race:
+            logger.info(
+                "Forecast Mode: No upcoming race this weekend. Exiting cleanly."
+            )
+            sys.exit(0)
+        args.round = race["round"]
+    elif args.mode == "audit":
+        from f1_predictions.utils.race_detector import detect_last_race
+
+        race = detect_last_race(args.year, days_back=3)
+        if not race:
+            logger.info(
+                "Audit Mode: No recently completed race to analyze. Exiting cleanly."
+            )
+            sys.exit(0)
+        args.round = race["round"]
+    elif args.round is None:
+        logger.info(
+            "Manual Mode: No round specified. Attempting fallback auto-detection..."
+        )
         from datetime import datetime
 
         schedule = fastf1.get_event_schedule(args.year)
-        # Find the event where the date is closest to now
         now = datetime.now()
-        # FastF1 dates are often at the end of the weekend, so we look for the next one
         future_races = schedule[schedule["EventDate"] >= now]
         if not future_races.empty:
             args.round = int(future_races.iloc[0]["RoundNumber"])
@@ -287,7 +315,6 @@ def main() -> None:
                 args.round,
             )
         else:
-            # If no future races, pick the last one of the season
             args.round = int(schedule["RoundNumber"].max())
             logger.info(
                 "No future races found. Defaulting to final round: %d", args.round
