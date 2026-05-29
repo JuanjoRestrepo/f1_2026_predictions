@@ -89,7 +89,13 @@ export const f1FridayForecast = schedules.task({
       pythonRunOptions(),
     );
 
-    return { success: result.exitCode === 0 };
+    if (result.exitCode !== 0) {
+      throw new Error(
+        `Forecast pipeline failed with exit code ${result.exitCode}: ${result.stderr}`,
+      );
+    }
+
+    return { success: true };
   },
 });
 
@@ -111,7 +117,13 @@ export const f1MondayAudit = schedules.task({
       pythonRunOptions(),
     );
 
-    return { success: result.exitCode === 0 };
+    if (result.exitCode !== 0) {
+      throw new Error(
+        `Audit pipeline failed with exit code ${result.exitCode}: ${result.stderr}`,
+      );
+    }
+
+    return { success: true };
   },
 });
 
