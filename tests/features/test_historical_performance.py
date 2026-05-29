@@ -12,6 +12,7 @@ Tests cover all branches of add_historical_points:
 
 import pandas as pd
 import pytest
+
 from f1_predictions.features.historical_performance import add_historical_points
 
 # ---------------------------------------------------------------------------

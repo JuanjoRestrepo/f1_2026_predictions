@@ -12,6 +12,7 @@ Tests cover all branches of add_weather_features:
 import numpy as np
 import pandas as pd
 import pytest
+
 from f1_predictions.features.weather import add_weather_features
 
 # ---------------------------------------------------------------------------

@@ -197,8 +197,6 @@ ignore = [
     "D213",  # multi-line-summary-second-line: conflicts with D212
     "S101",  # assert in tests: standard pytest pattern
     "TRY003", # long exception messages in raise: acceptable for pipeline errors
-    "ANN101", # Missing type annotation for `self` in method
-    "ANN102", # Missing type annotation for `cls` in classmethod
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -206,6 +204,7 @@ ignore = [
 "notebooks/**/*.py" = ["ALL"]   # Generated .py from notebooks: no enforcement
 "scripts/**/*.py" = ["D", "ANN", "E501", "W291"] # Support: relax docstrings, types, lines
 "scratch/**/*.py" = ["D", "ANN", "E501", "W291"] # Scratch: relax docstrings, types, lines
+"src/f1_predictions/models/explainability.py" = ["ANN401"]  # model: Any is correct for SHAP-compatible estimators
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"  # Enforce Google-style docstrings across all modules

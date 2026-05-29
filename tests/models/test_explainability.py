@@ -11,12 +11,12 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import xgboost as xgb
 
 from f1_predictions.models.explainability import (
     get_top_shap_features,
     save_tree_shap_artifacts,
 )
-import xgboost as xgb
 
 
 def test_save_tree_shap_artifacts_creates_pngs() -> None:
@@ -77,6 +77,7 @@ def test_save_tree_shap_artifacts_creates_pngs() -> None:
     assert artifacts["bar"].exists()
     assert artifacts["summary"].stat().st_size > 0
     assert artifacts["bar"].stat().st_size > 0
+
 
 def test_get_top_shap_features_returns_sorted_dict() -> None:
     """get_top_shap_features should return top features by importance."""

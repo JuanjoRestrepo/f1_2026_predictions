@@ -5,6 +5,7 @@ global fallback logic).
 """
 
 import pandas as pd
+
 from f1_predictions.cleaning.imputer import (
     drop_null_lap_times,
     impute_speed_traps,

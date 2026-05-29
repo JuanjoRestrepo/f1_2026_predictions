@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+
 from f1_predictions.features.tyre_degradation import (
     add_normalised_tyre_life,
     add_tyre_degradation_slope,

@@ -17,6 +17,7 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+
 from f1_predictions.utils.logging_setup import (
     _ROOT_LOGGER_NAME,
     configure_root_pipeline_logger,
@@ -97,8 +98,9 @@ class TestSettings:
         """An unrecognized log level raises ValidationError on instantiation."""
         monkeypatch.chdir(tmp_path)
         monkeypatch.setenv("F1_LOG_LEVEL", "VERBOSE")
-        from f1_predictions.utils.config import Settings
         from pydantic import ValidationError
+
+        from f1_predictions.utils.config import Settings
 
         with pytest.raises(ValidationError, match="log_level"):
             Settings()
@@ -120,9 +122,9 @@ class TestSettings:
             "models_dir",
             "reports_dir",
         ):
-            assert getattr(
-                s, field_name
-            ).exists(), f"{field_name} directory was not created by resolve_and_mkdir"
+            assert getattr(s, field_name).exists(), (
+                f"{field_name} directory was not created by resolve_and_mkdir"
+            )
 
     def test_target_season_bounds(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -130,8 +132,9 @@ class TestSettings:
         """target_season below 2018 raises ValidationError."""
         monkeypatch.chdir(tmp_path)
         monkeypatch.setenv("F1_TARGET_SEASON", "2010")
-        from f1_predictions.utils.config import Settings
         from pydantic import ValidationError
+
+        from f1_predictions.utils.config import Settings
 
         with pytest.raises(ValidationError):
             Settings()

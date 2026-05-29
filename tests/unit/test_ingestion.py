@@ -18,6 +18,7 @@ from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
+
 from f1_predictions.ingestion.fastf1_client import SessionKey, load_session
 from f1_predictions.ingestion.parquet_writer import (
     DataType,

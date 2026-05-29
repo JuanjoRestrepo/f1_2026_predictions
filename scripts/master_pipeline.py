@@ -403,16 +403,13 @@ def main() -> None:
                     fastest_lap_data = {
                         "driver": fl_driver,
                         "time": time_fmt,
-                        "time_s": fl_time
+                        "time_s": fl_time,
                     }
         except Exception as e:
-            logger.debug(f"Could not extract fastest lap: {e}")
+            logger.debug("Could not extract fastest lap: %s", e)
 
         save_artifact(
-            {
-                "fastest_lap": fastest_lap_data,
-                "results": results_data
-            },
+            {"fastest_lap": fastest_lap_data, "results": results_data},
             f"actual_results_round_{args.round}.json",
             args.year,
             race_info["dir"],

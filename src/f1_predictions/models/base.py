@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Any, Self, cast
 
 import joblib  # type: ignore[import-untyped]
-
 import numpy as np
 import pandas as pd
 
@@ -108,10 +107,10 @@ class BasePaceRegressor(ABC):
         if not self.features:
             msg = "Cannot save an untrained model."
             raise RuntimeError(msg)
-        
+
         path_obj = Path(path)
         path_obj.parent.mkdir(parents=True, exist_ok=True)
-        
+
         state = {
             "model": self.model,
             "features": self.features,
@@ -127,13 +126,17 @@ class BasePaceRegressor(ABC):
         if not path_obj.exists():
             msg = f"Model file not found at {path_obj}"
             raise FileNotFoundError(msg)
-            
+
         state = joblib.load(path_obj)
-        
+
         # Instantiate class and overwrite state
         instance = cls(random_state=state["random_state"])
         instance.model = state["model"]
         instance.features = state["features"]
-        
-        logger.info("Model loaded from %s (Features: %d)", path_obj, len(instance.features))
+
+        logger.info(
+            "Model loaded from %s (Features: %d)",
+            path_obj,
+            len(instance.features),
+        )
         return instance

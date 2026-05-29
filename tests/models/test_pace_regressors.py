@@ -103,4 +103,3 @@ def test_stacking_regressor_train_predict(sample_model_df: pd.DataFrame) -> None
     preds = regressor.predict(inference_df)
 
     assert len(preds) == len(inference_df)
-

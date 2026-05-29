@@ -10,6 +10,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 from f1_predictions.evaluation.post_race_verdict import RaceVerdict
 from f1_predictions.utils.notifications import (
     DiscordWebhookChannel,
