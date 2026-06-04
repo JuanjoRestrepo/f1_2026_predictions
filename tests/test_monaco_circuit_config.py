@@ -43,7 +43,8 @@ class TestMonacoCircuitConfig:
         """Monaco overtake difficulty must be ≥ 0.90 (highest on calendar)."""
         cfg = get_circuit_config("Monaco Grand Prix")
         assert cfg.overtake_difficulty >= 0.90, (
-            f"Monaco overtake_difficulty should be ≥ 0.90, got {cfg.overtake_difficulty}. "
+            f"Monaco overtake_difficulty should be >= 0.90, "
+            f"got {cfg.overtake_difficulty}. "
             "Qualifying position determines ~87% of Monaco race finishing order."
         )
 
@@ -106,7 +107,8 @@ class TestCircuitConfigFallback:
         cfg = get_circuit_config("Monaco GP")
         # Should not be the generic default (total_laps == 78 is Monaco-specific)
         assert cfg.total_laps == 78, (
-            "Fuzzy match failed: 'Monaco GP' should resolve to Monaco Grand Prix config."
+            "Fuzzy match failed: 'Monaco GP' should resolve to "
+            "Monaco Grand Prix config."
         )
 
 

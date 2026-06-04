@@ -210,7 +210,7 @@ def run_feature_pipeline(
         )
 
     # ── Step 6b: Circuit overtake difficulty ──────────────────────────────
-    # Adds a scalar numeric feature (0.0–1.0) encoding how strongly qualifying
+    # Adds a scalar numeric feature (0.0-1.0) encoding how strongly qualifying
     # grid position determines finishing order on this specific circuit.
     # Monaco (0.95) amplifies grid_position_gap in the XGBoost split rules;
     # Bahrain (0.25) down-weights it. This is the correct architectural fix

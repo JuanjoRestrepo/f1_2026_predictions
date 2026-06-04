@@ -55,7 +55,7 @@ class CircuitConfig(BaseModel):
         tyre_wear_type: Dominant tyre degradation mechanism.
             ``"thermal"`` — sustained high-speed cornering degrades surface rubber.
             ``"mechanical"`` — low-speed heavy-braking zones wear carcass structure.
-        safety_car_probability: Historical VSC/SC deployment rate (0.0–1.0).
+        safety_car_probability: Historical VSC/SC deployment rate (0.0-1.0).
         pit_loss_time_s: Average time delta lost per pit stop in seconds
             (pit entry + stop + exit, incl. speed-limiter penalty).
         typical_strategy: Dominant 1-stop compound sequence (ordered list).
@@ -178,8 +178,8 @@ def get_circuit_config(event_name: str) -> CircuitConfig:
         logger.info("Circuit config matched (exact): '%s'", event_name)
         return CircuitConfig(**raw)
 
-    # Case-insensitive fuzzy match based on the first word (usually the country/city name)
-    # handles "Monaco GP" → "Monaco Grand Prix"
+    # Case-insensitive fuzzy match based on the first word
+    # (usually the country/city name) handles "Monaco GP" → "Monaco Grand Prix"
     event_parts = event_name.lower().split()
     if event_parts:
         first_word = event_parts[0]
