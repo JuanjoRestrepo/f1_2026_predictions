@@ -25,6 +25,7 @@ def add_track_evolution_factor(df: pd.DataFrame, window: int = 5) -> pd.DataFram
     """
     if "LapTime_s" not in df.columns or "LapNumber" not in df.columns:
         df["Track_Evolution_Factor"] = 0.0
+        df["Rolling_Track_Grip"] = 0.0
         return df
 
     # Group by LapNumber to get the median of the top 3 fastest times per lap
@@ -41,15 +42,29 @@ def add_track_evolution_factor(df: pd.DataFrame, window: int = 5) -> pd.DataFram
         periods=window
     )
 
+    # Calculate global grid parity track grip
+    # This takes the median of ALL drivers for a given lap, capturing
+    # the macro rubbering-in effect across all compounds and traffic.
+    grid_pace = (
+        df.groupby("LapNumber")["LapTime_s"].median().reset_index(name="grid_median_s")
+    )
+
+    # Negative means global track grip is improving
+    lap_pace["Rolling_Track_Grip"] = grid_pace["grid_median_s"].diff(periods=window)
+
     # Fill early laps with 0 (no evolution context yet)
     lap_pace["Track_Evolution_Factor"] = lap_pace["Track_Evolution_Factor"].fillna(0.0)
+    lap_pace["Rolling_Track_Grip"] = lap_pace["Rolling_Track_Grip"].fillna(0.0)
 
     # Merge back
     df = df.merge(
-        lap_pace[["LapNumber", "Track_Evolution_Factor"]], on="LapNumber", how="left"
+        lap_pace[["LapNumber", "Track_Evolution_Factor", "Rolling_Track_Grip"]],
+        on="LapNumber",
+        how="left",
     )
 
     # Forward fill any missing values just in case
     df["Track_Evolution_Factor"] = df["Track_Evolution_Factor"].ffill().fillna(0.0)
+    df["Rolling_Track_Grip"] = df["Rolling_Track_Grip"].ffill().fillna(0.0)
 
     return df

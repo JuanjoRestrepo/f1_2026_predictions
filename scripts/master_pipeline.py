@@ -9,7 +9,9 @@ import fastf1.core
 import numpy as np
 from google import genai
 
+from f1_predictions.ingestion.weather_api import get_forecast
 from f1_predictions.utils.circuit_config import get_circuit_config
+from f1_predictions.utils.cloud_cache import download_cache, upload_cache
 from f1_predictions.utils.config import Settings, get_settings
 from f1_predictions.utils.logging_setup import (
     configure_root_pipeline_logger,
@@ -258,7 +260,6 @@ def call_ai_with_retry(
 def main() -> None:
     settings = get_settings()
     configure_root_pipeline_logger(level=settings.log_level)
-    setup_fastf1(settings.fastf1_cache_dir)
     parser = argparse.ArgumentParser(
         description="Professional F1 2026 Prediction Pipeline"
     )
@@ -275,7 +276,27 @@ def main() -> None:
         default="manual",
         help="Execution mode for intelligent schedule detection",
     )
+    parser.add_argument(
+        "--use-cloud-cache",
+        action="store_true",
+        help=(
+            "Download FastF1 cache from Supabase S3 before run and upload after. "
+            "Requires SUPABASE_S3_* environment variables. "
+            "Eliminates cold-start re-download latency on serverless workers."
+        ),
+    )
     args = parser.parse_args()
+
+    # ── Cloud cache pre-run download ─────────────────────────────────────────
+    # Download the persisted FastF1 cache from Supabase before enabling it
+    # locally. This warms FastF1's cache so session data is served from disk
+    # rather than re-downloaded from the FastF1 CDN on every serverless run.
+    # Skipped when --use-cloud-cache is not set (local dev / standard CI).
+    if args.use_cloud_cache:
+        logger.info("Cloud cache: downloading pre-run cache from Supabase S3...")
+        download_cache(settings.fastf1_cache_dir)
+
+    setup_fastf1(settings.fastf1_cache_dir)
 
     import sys
 
@@ -340,9 +361,52 @@ def main() -> None:
         session.load(laps=False, telemetry=False, weather=False)
         is_post_race = False
 
+    # ── External weather override (pre-race forecast mode) ────────────────────
+    # When running pre-race (Friday forecast), FastF1 has no historical weather
+    # for the upcoming session. We call the free Open-Meteo API to inject
+    # AirTemp, TrackTemp, and Rainfall so downstream feature pipelines have
+    # real environmental context instead of silent NaN gaps.
+    #
+    # This override is applied only when is_post_race=False; post-race audit
+    # runs always use authoritative FastF1 telemetry weather data.
+    external_weather: dict[str, object] | None = None
+    if not is_post_race:
+        try:
+            event_date = session.event["EventDate"]
+            # Prefer Location (city) over Country for finer geocoding accuracy
+            event_city = str(
+                session.event.get("Location", session.event.get("Country", ""))
+            )
+            date_str = (
+                event_date.strftime("%Y-%m-%d")
+                if hasattr(event_date, "strftime")
+                else str(event_date)[:10]
+            )
+            logger.info(
+                "Pre-race mode: fetching Open-Meteo forecast for %s on %s",
+                event_city,
+                date_str,
+            )
+            external_weather = get_forecast(event_city, date_str)
+            if external_weather:
+                logger.info(
+                    "Weather override active: AirTemp=%.1f°C, TrackTemp=%.1f°C, Rainfall=%s",
+                    external_weather.get("AirTemp_mean", float("nan")),
+                    external_weather.get("TrackTemp_mean", float("nan")),
+                    external_weather.get("Rainfall_any", False),
+                )
+            else:
+                logger.warning(
+                    "Open-Meteo forecast unavailable for '%s' — weather features will be NaN.",
+                    event_city,
+                )
+        except Exception as exc:
+            logger.warning("External weather fetch failed (non-fatal): %s", exc)
+
     # Load circuit-specific configuration for Monaco-aware modelling.
     # Falls back to sensible defaults for unknown/new circuits.
     circuit_cfg = get_circuit_config(race_info["name"])
+
     logger.info(
         "Circuit config loaded: %s | laps=%d | overtake_difficulty=%.2f | "
         "type=%s | SC_prob=%.0f%%",
@@ -784,6 +848,14 @@ def main() -> None:
         )
 
     logger.info("Round %d fully processed with Pro F1 Styles.", args.round)
+
+    # ── Cloud cache post-run upload ───────────────────────────────────────────
+    # Zip and upload the updated FastF1 cache so newly-fetched session data
+    # persists for subsequent serverless runs. This is non-fatal: a failed
+    # upload means the next run will have a slightly cold cache, not a failure.
+    if args.use_cloud_cache:
+        logger.info("Cloud cache: uploading post-run cache to Supabase S3...")
+        upload_cache(settings.fastf1_cache_dir)
 
 
 if __name__ == "__main__":
