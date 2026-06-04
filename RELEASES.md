@@ -1,4 +1,13 @@
-# Project Releases & Versioning 🏁📜
+# F1 2026 Predictions - Release Notes
+
+## [v4.4.4] - 2026-06-03
+### Data Science & Pipeline Resilience
+- **Monaco Circuit Metadata Engine**: Integrated an advanced F1 circuit metadata configuration (`config.yaml`) defining circuit characteristics including `overtake_difficulty`, `tyre_wear_type`, and `safety_car_probability`.
+- **Intelligent ML Features**: Added `circuit_overtake_difficulty` to the Gold-layer feature matrix, amplifying the importance of qualifying performance at street circuits like Monaco.
+- **Dynamic Context Injection**: Configured Gemini to analyze predictive outputs conditionally based on circuit types (e.g. emphasizing pit loss time for street circuits).
+- **Automated Fallbacks**: Hardened pipeline lap generation to automatically detect circuit total laps instead of defaulting to 50.
+
+---
 
 ## v4.4.4 - DevOps & Data Science Alignment
 **Date**: May 2026

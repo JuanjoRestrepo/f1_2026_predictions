@@ -1,0 +1,320 @@
+# =============================================================================
+# F1 2026 Circuit Configuration Registry
+# Single source of truth for all circuit-specific parameters.
+#
+# Fields per circuit:
+#   base_lap_time_s       : Nominal dry-weather pole-lap reference time (seconds).
+#                           Used as a normalisation anchor for delta features.
+#   total_laps            : Official race distance in laps.
+#   overtake_difficulty   : 0.0 (trivial) → 1.0 (impossible). Encodes how much
+#                           qualifying grid position determines finishing order.
+#                           Derived from historical overtake frequency per circuit
+#                           (source: F1 Metrics / RacingReference).
+#   tyre_wear_type        : "thermal" | "mechanical". Governs which degradation
+#                           slope prior the pipeline uses.
+#   safety_car_probability: Historical VSC/SC deployment rate (0.0–1.0).
+#   pit_loss_time_s       : Average time delta lost per pit stop (entry + stop + exit).
+#   typical_strategy      : Dominant 1-stop compound sequence (ordered list).
+#   alt_strategy          : Alternate 2-stop or soft-start strategy.
+#   drs_zones             : Number of DRS activation zones.
+#   circuit_type          : "street" | "permanent" | "hybrid"
+# =============================================================================
+
+circuits:
+
+  # ── Round 1: Australia ──────────────────────────────────────────────────────
+  "Australian Grand Prix":
+    base_lap_time_s: 80.2
+    total_laps: 58
+    overtake_difficulty: 0.45
+    tyre_wear_type: thermal
+    safety_car_probability: 0.65
+    pit_loss_time_s: 19.5
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "MEDIUM", "HARD"]
+    drs_zones: 4
+    circuit_type: street
+
+  # ── Round 2: China ─────────────────────────────────────────────────────────
+  "Chinese Grand Prix":
+    base_lap_time_s: 93.5
+    total_laps: 56
+    overtake_difficulty: 0.30
+    tyre_wear_type: thermal
+    safety_car_probability: 0.40
+    pit_loss_time_s: 20.5
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "HARD"]
+    drs_zones: 2
+    circuit_type: permanent
+
+  # ── Round 3: Japan ─────────────────────────────────────────────────────────
+  "Japanese Grand Prix":
+    base_lap_time_s: 91.3
+    total_laps: 53
+    overtake_difficulty: 0.55
+    tyre_wear_type: mechanical
+    safety_car_probability: 0.45
+    pit_loss_time_s: 21.0
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "MEDIUM"]
+    drs_zones: 2
+    circuit_type: permanent
+
+  # ── Round 4: Bahrain ───────────────────────────────────────────────────────
+  "Bahrain Grand Prix":
+    base_lap_time_s: 91.6
+    total_laps: 57
+    overtake_difficulty: 0.25
+    tyre_wear_type: thermal
+    safety_car_probability: 0.35
+    pit_loss_time_s: 19.8
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "MEDIUM", "HARD"]
+    drs_zones: 3
+    circuit_type: permanent
+
+  # ── Round 5: Canada ────────────────────────────────────────────────────────
+  "Canadian Grand Prix":
+    base_lap_time_s: 73.8
+    total_laps: 70
+    overtake_difficulty: 0.35
+    tyre_wear_type: mechanical
+    safety_car_probability: 0.70
+    pit_loss_time_s: 20.0
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "HARD"]
+    drs_zones: 3
+    circuit_type: permanent
+
+  # ── Round 6: Monaco ────────────────────────────────────────────────────────
+  # Monaco is the single biggest outlier on the F1 calendar.
+  # Key characteristics:
+  #   - Lowest average speed (~161 km/h vs. ~230 km/h elsewhere)
+  #   - Highest overtake_difficulty on the calendar — qualifying = destiny
+  #   - Highest safety_car_probability (barriers everywhere, zero run-off)
+  #   - Highest pit_loss_time_s (tight pit lane entry, mandatory speed limiter)
+  #   - Mechanical tyre wear (slow corners, no sustained high-speed loading)
+  #   - Single mandatory stop; undercuts almost never succeed
+  "Monaco Grand Prix":
+    base_lap_time_s: 74.0
+    total_laps: 78
+    overtake_difficulty: 0.95
+    tyre_wear_type: mechanical
+    safety_car_probability: 0.85
+    pit_loss_time_s: 22.0
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "MEDIUM"]
+    drs_zones: 1
+    circuit_type: street
+
+  # ── Round 7: Spain ─────────────────────────────────────────────────────────
+  "Spanish Grand Prix":
+    base_lap_time_s: 76.3
+    total_laps: 66
+    overtake_difficulty: 0.50
+    tyre_wear_type: thermal
+    safety_car_probability: 0.30
+    pit_loss_time_s: 20.2
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "MEDIUM", "HARD"]
+    drs_zones: 2
+    circuit_type: permanent
+
+  # ── Round 8: Austria ───────────────────────────────────────────────────────
+  "Austrian Grand Prix":
+    base_lap_time_s: 64.9
+    total_laps: 71
+    overtake_difficulty: 0.35
+    tyre_wear_type: thermal
+    safety_car_probability: 0.45
+    pit_loss_time_s: 18.5
+    typical_strategy: ["SOFT", "MEDIUM"]
+    alt_strategy: ["SOFT", "SOFT", "MEDIUM"]
+    drs_zones: 3
+    circuit_type: permanent
+
+  # ── Round 9: Great Britain ─────────────────────────────────────────────────
+  "British Grand Prix":
+    base_lap_time_s: 88.5
+    total_laps: 52
+    overtake_difficulty: 0.40
+    tyre_wear_type: thermal
+    safety_car_probability: 0.50
+    pit_loss_time_s: 20.8
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "MEDIUM", "HARD"]
+    drs_zones: 2
+    circuit_type: permanent
+
+  # ── Round 10: Hungary ──────────────────────────────────────────────────────
+  "Hungarian Grand Prix":
+    base_lap_time_s: 77.0
+    total_laps: 70
+    overtake_difficulty: 0.65
+    tyre_wear_type: thermal
+    safety_car_probability: 0.40
+    pit_loss_time_s: 19.5
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "MEDIUM"]
+    drs_zones: 1
+    circuit_type: permanent
+
+  # ── Round 11: Belgium ──────────────────────────────────────────────────────
+  "Belgian Grand Prix":
+    base_lap_time_s: 103.5
+    total_laps: 44
+    overtake_difficulty: 0.30
+    tyre_wear_type: mechanical
+    safety_car_probability: 0.55
+    pit_loss_time_s: 22.0
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "MEDIUM"]
+    drs_zones: 2
+    circuit_type: permanent
+
+  # ── Round 12: Netherlands ──────────────────────────────────────────────────
+  "Dutch Grand Prix":
+    base_lap_time_s: 72.0
+    total_laps: 72
+    overtake_difficulty: 0.60
+    tyre_wear_type: thermal
+    safety_car_probability: 0.45
+    pit_loss_time_s: 20.0
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "MEDIUM"]
+    drs_zones: 2
+    circuit_type: permanent
+
+  # ── Round 13: Italy ────────────────────────────────────────────────────────
+  "Italian Grand Prix":
+    base_lap_time_s: 82.3
+    total_laps: 53
+    overtake_difficulty: 0.30
+    tyre_wear_type: mechanical
+    safety_car_probability: 0.60
+    pit_loss_time_s: 21.0
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "HARD"]
+    drs_zones: 2
+    circuit_type: permanent
+
+  # ── Round 14: Azerbaijan ───────────────────────────────────────────────────
+  "Azerbaijan Grand Prix":
+    base_lap_time_s: 102.4
+    total_laps: 51
+    overtake_difficulty: 0.35
+    tyre_wear_type: mechanical
+    safety_car_probability: 0.75
+    pit_loss_time_s: 21.5
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "MEDIUM"]
+    drs_zones: 2
+    circuit_type: street
+
+  # ── Round 15: Singapore ────────────────────────────────────────────────────
+  "Singapore Grand Prix":
+    base_lap_time_s: 99.8
+    total_laps: 62
+    overtake_difficulty: 0.80
+    tyre_wear_type: mechanical
+    safety_car_probability: 0.80
+    pit_loss_time_s: 22.5
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "MEDIUM"]
+    drs_zones: 3
+    circuit_type: street
+
+  # ── Round 16: United States (Austin) ───────────────────────────────────────
+  "United States Grand Prix":
+    base_lap_time_s: 96.2
+    total_laps: 56
+    overtake_difficulty: 0.40
+    tyre_wear_type: thermal
+    safety_car_probability: 0.50
+    pit_loss_time_s: 20.5
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "MEDIUM", "HARD"]
+    drs_zones: 2
+    circuit_type: permanent
+
+  # ── Round 17: Mexico ───────────────────────────────────────────────────────
+  "Mexico City Grand Prix":
+    base_lap_time_s: 79.7
+    total_laps: 71
+    overtake_difficulty: 0.40
+    tyre_wear_type: thermal
+    safety_car_probability: 0.40
+    pit_loss_time_s: 19.8
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "MEDIUM"]
+    drs_zones: 3
+    circuit_type: permanent
+
+  # ── Round 18: Brazil ───────────────────────────────────────────────────────
+  "São Paulo Grand Prix":
+    base_lap_time_s: 73.0
+    total_laps: 71
+    overtake_difficulty: 0.30
+    tyre_wear_type: thermal
+    safety_car_probability: 0.65
+    pit_loss_time_s: 20.0
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "HARD"]
+    drs_zones: 2
+    circuit_type: permanent
+
+  # ── Round 19: Las Vegas ────────────────────────────────────────────────────
+  "Las Vegas Grand Prix":
+    base_lap_time_s: 93.5
+    total_laps: 50
+    overtake_difficulty: 0.30
+    tyre_wear_type: mechanical
+    safety_car_probability: 0.60
+    pit_loss_time_s: 21.0
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "HARD"]
+    drs_zones: 2
+    circuit_type: street
+
+  # ── Round 20: Qatar ────────────────────────────────────────────────────────
+  "Qatar Grand Prix":
+    base_lap_time_s: 83.9
+    total_laps: 57
+    overtake_difficulty: 0.45
+    tyre_wear_type: thermal
+    safety_car_probability: 0.50
+    pit_loss_time_s: 19.5
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "MEDIUM"]
+    drs_zones: 2
+    circuit_type: permanent
+
+  # ── Round 21: Abu Dhabi ────────────────────────────────────────────────────
+  "Abu Dhabi Grand Prix":
+    base_lap_time_s: 86.4
+    total_laps: 58
+    overtake_difficulty: 0.40
+    tyre_wear_type: thermal
+    safety_car_probability: 0.35
+    pit_loss_time_s: 20.5
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "MEDIUM"]
+    drs_zones: 2
+    circuit_type: permanent
+
+# =============================================================================
+# Default fallback — used when EventName does not match any key above.
+# Applies handle_unknown="ignore" logic consistent with the OHE encoder.
+# =============================================================================
+defaults:
+  base_lap_time_s: 85.0
+  total_laps: 57
+  overtake_difficulty: 0.45
+  tyre_wear_type: thermal
+  safety_car_probability: 0.45
+  pit_loss_time_s: 20.0
+  typical_strategy: ["MEDIUM", "HARD"]
+  alt_strategy: ["SOFT", "MEDIUM"]
+  drs_zones: 2
+  circuit_type: permanent

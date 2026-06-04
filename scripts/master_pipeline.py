@@ -9,6 +9,7 @@ import fastf1.core
 import numpy as np
 from google import genai
 
+from f1_predictions.utils.circuit_config import get_circuit_config
 from f1_predictions.utils.config import Settings, get_settings
 from f1_predictions.utils.logging_setup import (
     configure_root_pipeline_logger,
@@ -339,6 +340,19 @@ def main() -> None:
         session.load(laps=False, telemetry=False, weather=False)
         is_post_race = False
 
+    # Load circuit-specific configuration for Monaco-aware modelling.
+    # Falls back to sensible defaults for unknown/new circuits.
+    circuit_cfg = get_circuit_config(race_info["name"])
+    logger.info(
+        "Circuit config loaded: %s | laps=%d | overtake_difficulty=%.2f | "
+        "type=%s | SC_prob=%.0f%%",
+        race_info["name"],
+        circuit_cfg.total_laps,
+        circuit_cfg.overtake_difficulty,
+        circuit_cfg.circuit_type,
+        circuit_cfg.safety_car_probability * 100,
+    )
+
     all_drivers = (
         session.results["Abbreviation"].tolist() if not session.results.empty else []
     )
@@ -378,12 +392,14 @@ def main() -> None:
                     "HUL",
                 ]
 
-    # Determine lap count from schedule if session not yet run
+    # Determine lap count: use actual telemetry post-race, circuit config pre-race.
+    # Replaces the generic hardcoded fallback of 50 laps, which is wrong for
+    # Monaco (78), Belgium (44), Austria (71), etc.
     if is_post_race:
         total_laps = int(session.laps["LapNumber"].max())
     else:
-        # Fallback to metadata lap count (usually approx or 50)
-        total_laps = 50
+        total_laps = circuit_cfg.total_laps
+        logger.info("Pre-race mode: using circuit config lap count: %d", total_laps)
 
     # 1. Results (Skip if pre-race)
     if is_post_race:
@@ -529,23 +545,36 @@ def main() -> None:
             )
 
         if is_predicted:
+            # Build predicted stints from circuit config strategy, not a
+            # generic M-H 40/60 split. Monaco = M→H with circuit-correct lap counts.
+            strategy = circuit_cfg.typical_strategy
+            n_stops = len(strategy) - 1
+            # Distribute laps evenly across stints; last stint absorbs remainder
+            base_stint_laps = total_laps // len(strategy)
+            remainder = total_laps - base_stint_laps * len(strategy)
             for d in data:
-                m_laps = round(total_laps * 0.4)
-                h_laps = total_laps - m_laps
-                d["stints"] = [
-                    {
-                        "stint": 1,
-                        "compound": "MEDIUM",
-                        "laps": m_laps,
-                        "color": compound_colors["MEDIUM"],
-                    },
-                    {
-                        "stint": 2,
-                        "compound": "HARD",
-                        "laps": h_laps,
-                        "color": compound_colors["HARD"],
-                    },
-                ]
+                stints_out = []
+                for i, compound in enumerate(strategy):
+                    stint_laps = base_stint_laps + (
+                        remainder if i == len(strategy) - 1 else 0
+                    )
+                    stints_out.append(
+                        {
+                            "stint": i + 1,
+                            "compound": compound,
+                            "laps": stint_laps,
+                            "color": compound_colors.get(compound, "#888888"),
+                        }
+                    )
+                d["stints"] = stints_out
+            logger.info(
+                "Predicted tyre strategy for %s: %s (%d stop%s, %d laps)",
+                race_info["name"],
+                circuit_cfg.strategy_label,
+                n_stops,
+                "s" if n_stops != 1 else "",
+                total_laps,
+            )
             data.sort(
                 key=lambda x: (
                     predicted_order.index(x["driver"])
@@ -575,7 +604,21 @@ def main() -> None:
                 if is_predicted
                 else "actual post-race strategy analysis"
             )
-            prompt = f"Write a professional 2-sentence F1 strategy intelligence report for the {session.event['EventName']} 2026 ({prompt_type}). Top 5 drivers stints: {stint_summary}. Be highly analytical like an F1 race engineer. Do not use markdown."
+            # Inject circuit-specific context so Gemini's narrative is
+            # technically accurate (critical for Monaco vs. generic circuits).
+            circuit_context = (
+                f" Circuit characteristics: {circuit_cfg.circuit_type} circuit, "
+                f"overtake difficulty {circuit_cfg.overtake_difficulty:.0%}, "
+                f"safety car probability {circuit_cfg.safety_car_probability:.0%}, "
+                f"pit loss time {circuit_cfg.pit_loss_time_s:.1f}s, "
+                f"tyre wear mode: {circuit_cfg.tyre_wear_type}."
+            )
+            prompt = (
+                f"Write a professional 2-sentence F1 strategy intelligence report for the "
+                f"{session.event['EventName']} 2026 ({prompt_type}). "
+                f"Top 5 drivers stints: {stint_summary}.{circuit_context} "
+                f"Be highly analytical like an F1 race engineer. Do not use markdown."
+            )
             res = call_ai_with_retry(
                 prompt,
                 ai_model,
@@ -585,14 +628,18 @@ def main() -> None:
             if res:
                 insight = res
 
+        strategy_label = circuit_cfg.strategy_label
+        avg_pit = f"{circuit_cfg.pit_loss_time_s:.1f}s"
         return {
             "gp": session.event["EventName"],
             "year": args.year,
             "total_laps": total_laps,
-            "winning_strategy": "Medium to Hard"
+            "winning_strategy": f"{strategy_label} (1-stop)"
             if not is_predicted
-            else "AI Optimal (M-H)",
-            "avg_pit_stop": "2.45s" if not is_predicted else "2.50s (Est.)",
+            else f"AI Optimal ({strategy_label})",
+            "avg_pit_stop": avg_pit
+            if not is_predicted
+            else f"{circuit_cfg.pit_loss_time_s + 0.5:.1f}s (Est.)",
             "proven_strategy_insight": insight,
             "drivers": data,
         }
@@ -643,14 +690,31 @@ def main() -> None:
             "The full strategic narrative will be published once the cross-verification between real-world results and AI simulations is complete."
         )
 
+        # Build circuit-specific context string for both actual and predicted prompts.
+        # This is the key differentiator for Monaco vs. generic circuits.
+        circuit_context_for_prompt = (
+            f"Circuit profile: {circuit_cfg.circuit_type.upper()} street circuit "
+            if circuit_cfg.is_street_circuit
+            else f"Circuit profile: {circuit_cfg.circuit_type.upper()} permanent circuit "
+        )
+        circuit_context_for_prompt += (
+            f"| Overtake difficulty: {circuit_cfg.overtake_difficulty:.0%} "
+            f"| Safety car probability: {circuit_cfg.safety_car_probability:.0%} "
+            f"| Pit loss time: {circuit_cfg.pit_loss_time_s:.1f}s "
+            f"| Tyre wear mode: {circuit_cfg.tyre_wear_type} "
+            f"| Typical strategy: {circuit_cfg.strategy_label}"
+        )
+
         if is_post_race:
             actual_prompt = (
                 f"TECHNICAL RACE ANALYSIS: {session.event['EventName']} 2026. "
                 f"Actual Results: {session.results.head(10)[['Abbreviation', 'Position']].to_string()}. "
                 f"{shap_context}"
+                f"\nCIRCUIT CONTEXT: {circuit_context_for_prompt}\n"
                 "\nINSTRUCTIONS:\n"
                 "Write a professional, high-level technical breakdown of the race. "
                 "Use the SHAP data provided to explain *why* the performance hierarchies shifted (e.g., if 'TrackTemp' has high impact, discuss thermal management). "
+                "Factor in the circuit-specific characteristics: on a high-overtake-difficulty circuit like Monaco, emphasise qualifying impact and safety car strategy pivots. "
                 "Do not use the phrase 'Expert F1 Analysis' or generic filler. "
                 "Structure the report using professional numbered headers (1. Stint Dynamics & Tire Management, 2. Aerodynamic Efficiency & Car Performance, 3. Driver Performance Deltas) "
                 "with detailed technical bullet points. Focus on stint dynamics, aerodynamic efficiency, and driver performance deltas."
@@ -693,9 +757,13 @@ def main() -> None:
             f"PREDICTIVE ML SIMULATION ANALYSIS: {session.event['EventName']} 2026. "
             f"AI Simulated Results: {pred_results_str}. "
             f"{shap_context}"
+            f"\nCIRCUIT CONTEXT: {circuit_context_for_prompt}\n"
             "\nINSTRUCTIONS:\n"
             "Write a serious, high-level technical breakdown of these simulated results. "
             "Use the provided SHAP importance values to justify the model's predictions. "
+            "Factor in the circuit-specific characteristics when explaining predictions: "
+            "for high overtake_difficulty circuits, GridPosition should be heavily weighted; "
+            "for street circuits, pit_loss_time and safety_car_probability dominate strategy. "
             "Explain how the top features (like Aero_Profile or TireLife) drove the predicted gaps. "
             "Structure the report using professional numbered headers (1. Stint Dynamics & Tire Management, 2. Aerodynamic Efficiency & Car Performance, 3. Driver Performance Deltas) "
             "with detailed technical bullet points. Focus on why the ML model predicted these specific stint dynamics and aerodynamic efficiencies compared to typical expectations."

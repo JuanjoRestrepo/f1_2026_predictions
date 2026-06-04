@@ -30,26 +30,56 @@ export function getAvailableRaces(year: number): RaceInfo[] {
     if (match && match[1]) rounds.add(parseInt(match[1]));
   });
 
-  // Map rounds to names (Full 2026 Season Mapping)
+  const fullCalendar = getFullCalendar(year);
+  
+  return Array.from(rounds).sort((a, b) => a - b).map(r => {
+    const raceDef = fullCalendar.find(race => race.round === r);
+    return {
+      round: r,
+      name: raceDef?.name || `Round ${r}`,
+      year,
+      dirName: raceDef?.dirName || `Round_${r}`,
+      date: raceDef?.date || "TBD"
+    };
+  });
+}
+
+/**
+ * Returns the full 21-race calendar for the 2026 F1 season.
+ */
+export function getFullCalendar(year: number): RaceInfo[] {
+  // Using realistic 2026 round assignments based on the platform's config registry
   const roundNames: Record<number, { name: string; dir: string; date: string }> = {
     1: { name: "Bahrain Grand Prix", dir: "Bahrain_Grand_Prix", date: "March 01, 2026" },
     2: { name: "Saudi Arabian Grand Prix", dir: "Saudi_Arabian_Grand_Prix", date: "March 08, 2026" },
     3: { name: "Australian Grand Prix", dir: "Australian_Grand_Prix", date: "March 22, 2026" },
     4: { name: "Miami Grand Prix", dir: "Miami_Grand_Prix", date: "May 03, 2026" },
-    5: { name: "Canadian Grand Prix", dir: "Canadian_Grand_Prix", date: "June 07, 2026" },
-    6: { name: "Spanish Grand Prix", dir: "Spanish_Grand_Prix", date: "June 21, 2026" },
-    7: { name: "Austrian Grand Prix", dir: "Austrian_Grand_Prix", date: "July 05, 2026" },
-    8: { name: "British Grand Prix", dir: "British_Grand_Prix", date: "July 19, 2026" },
-    9: { name: "Hungarian Grand Prix", dir: "Hungarian_Grand_Prix", date: "August 02, 2026" },
-    10: { name: "Belgian Grand Prix", dir: "Belgian_Grand_Prix", date: "August 30, 2026" },
+    5: { name: "Emilia Romagna Grand Prix", dir: "Emilia_Romagna_Grand_Prix", date: "May 24, 2026" },
+    6: { name: "Monaco Grand Prix", dir: "Monaco_Grand_Prix", date: "June 07, 2026" },
+    7: { name: "Canadian Grand Prix", dir: "Canadian_Grand_Prix", date: "June 21, 2026" },
+    8: { name: "Spanish Grand Prix", dir: "Spanish_Grand_Prix", date: "July 05, 2026" },
+    9: { name: "Austrian Grand Prix", dir: "Austrian_Grand_Prix", date: "July 12, 2026" },
+    10: { name: "British Grand Prix", dir: "British_Grand_Prix", date: "July 19, 2026" },
+    11: { name: "Hungarian Grand Prix", dir: "Hungarian_Grand_Prix", date: "August 02, 2026" },
+    12: { name: "Belgian Grand Prix", dir: "Belgian_Grand_Prix", date: "August 30, 2026" },
+    13: { name: "Dutch Grand Prix", dir: "Dutch_Grand_Prix", date: "September 06, 2026" },
+    14: { name: "Italian Grand Prix", dir: "Italian_Grand_Prix", date: "September 13, 2026" },
+    15: { name: "Azerbaijan Grand Prix", dir: "Azerbaijan_Grand_Prix", date: "September 27, 2026" },
+    16: { name: "Singapore Grand Prix", dir: "Singapore_Grand_Prix", date: "October 04, 2026" },
+    17: { name: "United States Grand Prix", dir: "United_States_Grand_Prix", date: "October 25, 2026" },
+    18: { name: "Mexico City Grand Prix", dir: "Mexico_City_Grand_Prix", date: "November 01, 2026" },
+    19: { name: "São Paulo Grand Prix", dir: "Sao_Paulo_Grand_Prix", date: "November 15, 2026" },
+    20: { name: "Las Vegas Grand Prix", dir: "Las_Vegas_Grand_Prix", date: "November 28, 2026" },
+    21: { name: "Qatar Grand Prix", dir: "Qatar_Grand_Prix", date: "December 06, 2026" },
+    22: { name: "Abu Dhabi Grand Prix", dir: "Abu_Dhabi_Grand_Prix", date: "December 13, 2026" },
   };
 
-  return Array.from(rounds).sort((a, b) => a - b).map(r => ({
-    round: r,
-    name: roundNames[r]?.name || `Round ${r}`,
+  return Object.entries(roundNames).map(([roundStr, data]) => ({
+    round: parseInt(roundStr),
+    name: data.name,
     year,
-    dirName: roundNames[r]?.dir || `Round_${r}`,
-    date: roundNames[r]?.date || "TBD"
+    dirName: data.dir,
+    date: data.date
   }));
 }
 
