@@ -432,9 +432,7 @@ def summarize_weather_risk(
         else f"{race_day.rain_probability:.0%}"
     )
     temp = (
-        "unknown"
-        if race_day.air_temp_c is None
-        else f"{race_day.air_temp_c:.1f}C air"
+        "unknown" if race_day.air_temp_c is None else f"{race_day.air_temp_c:.1f}C air"
     )
     wind = (
         "unknown wind"
@@ -459,9 +457,7 @@ def simulation_weather_features(
         or is_wet_race
     )
     air_temp = (
-        race_day.air_temp_c
-        if race_day and race_day.air_temp_c is not None
-        else 22.0
+        race_day.air_temp_c if race_day and race_day.air_temp_c is not None else 22.0
     )
     humidity = (
         race_day.humidity_pct

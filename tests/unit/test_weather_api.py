@@ -5,6 +5,7 @@ requests.get. The module's external dependencies (Open-Meteo geocoding
 and weather endpoints) are never called during the test suite.
 """
 
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -14,7 +15,7 @@ import pytest
 # ---------------------------------------------------------------------------
 
 
-def _make_geo_response(results: list | None = None) -> MagicMock:
+def _make_geo_response(results: list[dict[str, Any]] | None = None) -> MagicMock:
     """Build a mock requests.Response for the geocoding endpoint."""
     resp = MagicMock()
     resp.raise_for_status = MagicMock()
