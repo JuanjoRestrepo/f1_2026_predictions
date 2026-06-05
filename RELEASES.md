@@ -1,5 +1,26 @@
 # F1 2026 Predictions - Release Notes
 
+## [v5.1.0] - 2026-06-05
+### Dynamic Calendar Integration & Vercel 404 Fix (Phase 14 Partial)
+
+#### 🗓️ Automated Calendar Sync
+- **`src/scripts/sync_calendar.py`** (new): Fetches the official 2026 F1 event schedule directly from the FastF1 API and writes `reports/2026/calendar.json` as the single source of truth. Eliminates all manual date hardcoding.
+- Identified and corrected a critical calendar error: Round 5 is the **Canadian Grand Prix** (May 24), not Emilia Romagna (which is not on the 2026 calendar).
+- All 22 rounds correctly mapped with official FIA names, dates, and filesystem slugs.
+
+#### 🛠️ Dashboard Calendar Reader
+- **`dashboard/src/utils/fileReader.ts`**: `getFullCalendar()` now reads `reports/<year>/calendar.json` dynamically. Removed the 38-line manually-guessed dictionary. Includes graceful fallback with a `console.warn` if the JSON is missing.
+
+#### 🔒 Vercel 404 Fix
+- **`dashboard/src/components/RaceSelector.tsx`**: Upgraded to accept a `fullCalendar` prop. Rounds without built pages (upcoming races) are now rendered as `disabled` `<option>` elements — clicking them is blocked at the HTML level, preventing 404 errors on Vercel.
+- **`dashboard/src/pages/race/[round].tsx`**: Passes `fullCalendar` via `getStaticProps` to `RaceSelector`.
+- **`dashboard/src/pages/index.tsx`**: "Next Race" card and calendar grid now compute the upcoming round dynamically from real dates instead of hardcoding Round 6.
+
+#### ⚙️ Infrastructure
+- `.gitignore`: Added `!reports/**/calendar.json` exception so the build artifact is tracked in git (all other JSON in `reports/` remains ignored).
+
+---
+
 ## [v5.0.0] - 2026-06-05
 ### Cloud Scalability & Durable Worker (Phase 12 Complete)
 - **Cloud Caching Ingestion**: Implemented a Supabase S3 cloud caching layer (`f1-cache`) using Boto3 to persist race artifacts and FastF1 cached files, enabling zero-dependency serverless worker execution.
