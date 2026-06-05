@@ -1,6 +1,6 @@
 {
   "name": "f1-2026-predictions",
-  "version": "4.4.4",
+  "version": "4.4.5",
   "dependencies": {
     "@trigger.dev/python": "4.4.6",
     "@trigger.dev/sdk": "4.4.6"
