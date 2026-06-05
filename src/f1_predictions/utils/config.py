@@ -36,6 +36,9 @@ Environment variables (see .env.example for full reference):
     F1_GEMINI_MODEL     : Primary Gemini model for AI race narratives.
     F1_GEMINI_FALLBACK_MODEL: Fallback Gemini model for automated reports.
     F1_GEMINI_RETRIES   : Retry attempts per Gemini model before fallback.
+    F1_WEATHER_PROVIDER : External weather provider for Friday forecasts.
+    F1_VISUAL_CROSSING_API_KEY: Optional Visual Crossing Timeline API key.
+    F1_OPENWEATHER_API_KEY: Optional OpenWeather One Call API key.
 """
 
 import functools
@@ -105,6 +108,31 @@ class Settings(BaseSettings):
         ge=0,
         le=10,
         description="Retry attempts per Gemini model before trying the fallback.",
+    )
+    weather_provider: str = Field(
+        default="visualcrossing",
+        min_length=1,
+        description="External forecast provider: visualcrossing or openweather.",
+    )
+    visual_crossing_api_key: str | None = Field(
+        default=None,
+        description="Visual Crossing Timeline Weather API key.",
+    )
+    openweather_api_key: str | None = Field(
+        default=None,
+        description="OpenWeather One Call 3.0 API key.",
+    )
+    weather_timeout_seconds: float = Field(
+        default=8.0,
+        ge=1.0,
+        le=30.0,
+        description="HTTP timeout for external weather forecast requests.",
+    )
+    weather_forecast_days: int = Field(
+        default=7,
+        ge=1,
+        le=15,
+        description="Lookahead window for proactive Friday weather intelligence.",
     )
 
     # ── Notification system (all optional — pipeline runs without them) ──
@@ -196,6 +224,17 @@ class Settings(BaseSettings):
         normalized = v.upper()
         if normalized not in valid_levels:
             msg = f"log_level must be one of {valid_levels}, got '{v}'"
+            raise ValueError(msg)
+        return normalized
+
+    @field_validator("weather_provider")
+    @classmethod
+    def validate_weather_provider(cls, v: str) -> str:
+        """Ensure the external weather provider value is supported."""
+        normalized = v.lower()
+        valid_providers = {"visualcrossing", "openweather"}
+        if normalized not in valid_providers:
+            msg = f"weather_provider must be one of {valid_providers}, got '{v}'"
             raise ValueError(msg)
         return normalized
 

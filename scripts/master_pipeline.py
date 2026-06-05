@@ -9,6 +9,12 @@ import fastf1.core
 import numpy as np
 from google import genai
 
+from f1_predictions.features.external_weather import (
+    RISK_MIXED,
+    RISK_WET,
+    WeatherIntelligence,
+    build_weather_intelligence,
+)
 from f1_predictions.utils.config import Settings, get_settings
 from f1_predictions.utils.logging_setup import (
     configure_root_pipeline_logger,
@@ -75,7 +81,12 @@ def get_race_info(year: int, round_num: int) -> dict[str, str]:
 
     event_name = event["EventName"].iloc[0]
     safe_name = event_name.replace(" ", "_")
-    return {"name": event_name, "dir": safe_name}
+    event_date = event["EventDate"].iloc[0]
+    return {
+        "name": event_name,
+        "dir": safe_name,
+        "event_date": str(event_date.date()),
+    }
 
 
 def save_artifact(
@@ -91,6 +102,105 @@ def save_artifact(
         else:
             with p.open("w", encoding="utf-8") as f:
                 f.write(data)
+
+
+def _weather_prompt_context(weather: WeatherIntelligence) -> str:
+    """Format external weather intelligence for concise AI prompt grounding."""
+    if weather.race_day is None:
+        return f"WEATHER INTELLIGENCE: {weather.summary}"
+    race_day = weather.race_day
+    rain = (
+        "unknown"
+        if weather.rain_probability is None
+        else f"{weather.rain_probability:.0%}"
+    )
+    air_temp = (
+        "unknown"
+        if race_day.air_temp_c is None
+        else f"{race_day.air_temp_c:.1f}C"
+    )
+    humidity = (
+        "unknown"
+        if race_day.humidity_pct is None
+        else f"{race_day.humidity_pct:.0f}%"
+    )
+    wind = (
+        "unknown"
+        if race_day.wind_speed_mps is None
+        else f"{race_day.wind_speed_mps:.1f}m/s"
+    )
+    return (
+        "WEATHER INTELLIGENCE: "
+        f"provider={weather.provider}, risk={weather.risk_level}, "
+        f"rain_probability={rain}, air_temp={air_temp}, "
+        f"humidity={humidity}, wind={wind}. {weather.summary}"
+    )
+
+
+def _predicted_weather_strategy_stints(
+    total_laps: int,
+    weather: WeatherIntelligence,
+    compound_colors: dict[str, str],
+) -> list[dict[str, Any]]:
+    """Return a weather-aware baseline stint plan for predicted strategy JSON."""
+    if weather.risk_level == RISK_WET:
+        inter_laps = max(1, round(total_laps * 0.3))
+        medium_laps = max(1, round(total_laps * 0.35))
+        hard_laps = max(1, total_laps - inter_laps - medium_laps)
+        return [
+            {
+                "stint": 1,
+                "compound": "INTERMEDIATE",
+                "laps": inter_laps,
+                "color": compound_colors["INTERMEDIATE"],
+            },
+            {
+                "stint": 2,
+                "compound": "MEDIUM",
+                "laps": medium_laps,
+                "color": compound_colors["MEDIUM"],
+            },
+            {
+                "stint": 3,
+                "compound": "HARD",
+                "laps": hard_laps,
+                "color": compound_colors["HARD"],
+            },
+        ]
+    if weather.risk_level == RISK_MIXED:
+        medium_laps = max(1, round(total_laps * 0.35))
+        hard_laps = max(1, total_laps - medium_laps)
+        return [
+            {
+                "stint": 1,
+                "compound": "MEDIUM",
+                "laps": medium_laps,
+                "color": compound_colors["MEDIUM"],
+            },
+            {
+                "stint": 2,
+                "compound": "HARD",
+                "laps": hard_laps,
+                "color": compound_colors["HARD"],
+            },
+        ]
+
+    medium_laps = round(total_laps * 0.4)
+    hard_laps = total_laps - medium_laps
+    return [
+        {
+            "stint": 1,
+            "compound": "MEDIUM",
+            "laps": medium_laps,
+            "color": compound_colors["MEDIUM"],
+        },
+        {
+            "stint": 2,
+            "compound": "HARD",
+            "laps": hard_laps,
+            "color": compound_colors["HARD"],
+        },
+    ]
 
 
 def generate_lap_data(
@@ -300,6 +410,18 @@ def main() -> None:
     ai_model = setup_gemini(settings)
     ai_model_names = get_gemini_model_sequence(settings)
     race_info = get_race_info(args.year, args.round)
+    weather_intelligence = build_weather_intelligence(
+        settings=settings,
+        event_name=race_info["name"],
+        target_date=race_info.get("event_date"),
+    )
+    save_artifact(
+        weather_intelligence.as_dict(),
+        f"weather_intelligence_round_{args.round}.json",
+        args.year,
+        race_info["dir"],
+    )
+    logger.info("External weather intelligence: %s", weather_intelligence.summary)
     session = fastf1.get_session(args.year, args.round, "R")
 
     # Pre-race safety: On Friday, laps/results aren't available yet.
@@ -406,7 +528,7 @@ def main() -> None:
                         "time_s": fl_time
                     }
         except Exception as e:
-            logger.debug(f"Could not extract fastest lap: {e}")
+            logger.debug("Could not extract fastest lap: %s", e)
 
         save_artifact(
             {
@@ -505,23 +627,11 @@ def main() -> None:
             )
 
         if is_predicted:
+            predicted_stints = _predicted_weather_strategy_stints(
+                total_laps, weather_intelligence, compound_colors
+            )
             for d in data:
-                m_laps = round(total_laps * 0.4)
-                h_laps = total_laps - m_laps
-                d["stints"] = [
-                    {
-                        "stint": 1,
-                        "compound": "MEDIUM",
-                        "laps": m_laps,
-                        "color": compound_colors["MEDIUM"],
-                    },
-                    {
-                        "stint": 2,
-                        "compound": "HARD",
-                        "laps": h_laps,
-                        "color": compound_colors["HARD"],
-                    },
-                ]
+                d["stints"] = [stint.copy() for stint in predicted_stints]
             data.sort(
                 key=lambda x: (
                     predicted_order.index(x["driver"])
@@ -552,6 +662,8 @@ def main() -> None:
                 else "actual post-race strategy analysis"
             )
             prompt = f"Write a professional 2-sentence F1 strategy intelligence report for the {session.event['EventName']} 2026 ({prompt_type}). Top 5 drivers stints: {stint_summary}. Be highly analytical like an F1 race engineer. Do not use markdown."
+            if is_predicted:
+                prompt = f"{prompt} {_weather_prompt_context(weather_intelligence)}"
             res = call_ai_with_retry(
                 prompt,
                 ai_model,
@@ -567,8 +679,11 @@ def main() -> None:
             "total_laps": total_laps,
             "winning_strategy": "Medium to Hard"
             if not is_predicted
-            else "AI Optimal (M-H)",
+            else f"AI Weather-Adjusted ({weather_intelligence.risk_level})",
             "avg_pit_stop": "2.45s" if not is_predicted else "2.50s (Est.)",
+            "weather_intelligence": weather_intelligence.as_dict()
+            if is_predicted
+            else None,
             "proven_strategy_insight": insight,
             "drivers": data,
         }
@@ -651,7 +766,6 @@ def main() -> None:
             / str(args.year)
             / race_info["dir"]
             / "results"
-            / "data"
             / "predictions.csv"
         )
         pred_results_str = ""
@@ -669,9 +783,11 @@ def main() -> None:
             f"PREDICTIVE ML SIMULATION ANALYSIS: {session.event['EventName']} 2026. "
             f"AI Simulated Results: {pred_results_str}. "
             f"{shap_context}"
+            f"\n{_weather_prompt_context(weather_intelligence)}"
             "\nINSTRUCTIONS:\n"
             "Write a serious, high-level technical breakdown of these simulated results. "
             "Use the provided SHAP importance values to justify the model's predictions. "
+            "Explicitly account for rain probability, track temperature, humidity, and wind risk when discussing tyre warm-up, degradation, and stint flexibility. "
             "Explain how the top features (like Aero_Profile or TireLife) drove the predicted gaps. "
             "Structure the report using professional numbered headers (1. Stint Dynamics & Tire Management, 2. Aerodynamic Efficiency & Car Performance, 3. Driver Performance Deltas) "
             "with detailed technical bullet points. Focus on why the ML model predicted these specific stint dynamics and aerodynamic efficiencies compared to typical expectations."

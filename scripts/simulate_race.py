@@ -7,6 +7,10 @@ from typing import Any, cast
 import numpy as np
 import pandas as pd
 
+from f1_predictions.features.external_weather import (
+    WeatherIntelligence,
+    simulation_weather_features,
+)
 from f1_predictions.models import (
     LightGBMPaceRegressor,
     StackingPaceRegressor,
@@ -194,12 +198,34 @@ def _calculate_sample_weights(
     return cast(pd.Series, weights / weights.mean())
 
 
+def _apply_weather_scenario_features(
+    df_sim: pd.DataFrame,
+    *,
+    is_wet_race: bool,
+    weather_intelligence: WeatherIntelligence | None = None,
+) -> pd.DataFrame:
+    """Apply Friday forecast weather assumptions to simulation rows.
+
+    The historical training matrix already contains FastF1 weather features.
+    Before race sessions exist, this function fills equivalent feature columns
+    for the simulated race scenario from external forecast intelligence.
+    """
+    df = df_sim.copy()
+    values = simulation_weather_features(
+        weather_intelligence, is_wet_race=is_wet_race
+    )
+    for column, value in values.items():
+        df[column] = value
+    return df
+
+
 def run_race_simulation(
     year: int,
     round_number: int,
     event_name: str,
     lap_number: int = 15,
     is_wet_race: bool = False,
+    weather_intelligence: WeatherIntelligence | None = None,
 ) -> None:
     """Run a virtual race simulation with statistical rigor (Phase 2).
 
@@ -321,6 +347,11 @@ def run_race_simulation(
     df_sim = _apply_track_pace_normalization(
         df_sim, event_name, df_train_full, df_current, is_wet_race=is_wet_race
     )
+    df_sim = _apply_weather_scenario_features(
+        df_sim,
+        is_wet_race=is_wet_race,
+        weather_intelligence=weather_intelligence,
+    )
 
     # Calculate Weights (Phase 2.2)
     sample_weights = _calculate_sample_weights(df_train_full, year, round_number)
@@ -396,4 +427,5 @@ if __name__ == "__main__":
         round_number=args.round,
         event_name=args.event,
         lap_number=args.lap,
+        is_wet_race=args.weather == "wet",
     )
