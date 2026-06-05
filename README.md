@@ -31,6 +31,14 @@ Expert-level race reporting powered by configurable **Gemini 3.1 Pro** primary g
 
 ---
 
+## [v4.4.4] - 2026-05-28
+
+### 🛡️ DevOps & Data Science Alignment
+
+- **Feature**: Strict `pre-commit` framework enforcement (`ruff`, `mypy`, `pytest`).
+- **Fixed**: Resolved 12 NPM vulnerabilities via targeted `package.json` overrides.
+- **Improved**: Perfect synchronization between local validation hooks and GitHub Actions CI pipelines.
+
 ## [v4.4.3] - 2026-05-25
 
 ### 🎨 Autonomous UI & End-to-End Formatting

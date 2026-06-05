@@ -15,6 +15,9 @@ from f1_predictions.features.external_weather import (
     WeatherIntelligence,
     build_weather_intelligence,
 )
+from f1_predictions.ingestion.weather_api import get_forecast
+from f1_predictions.utils.circuit_config import get_circuit_config
+from f1_predictions.utils.cloud_cache import download_cache, upload_cache
 from f1_predictions.utils.config import Settings, get_settings
 from f1_predictions.utils.logging_setup import (
     configure_root_pipeline_logger,
@@ -367,7 +370,6 @@ def call_ai_with_retry(
 def main() -> None:
     settings = get_settings()
     configure_root_pipeline_logger(level=settings.log_level)
-    setup_fastf1(settings.fastf1_cache_dir)
     parser = argparse.ArgumentParser(
         description="Professional F1 2026 Prediction Pipeline"
     )
@@ -378,16 +380,64 @@ def main() -> None:
     parser.add_argument(
         "--auto", action="store_true", help="Run in non-interactive mode (for CI/CD)"
     )
+    parser.add_argument(
+        "--mode",
+        choices=["manual", "forecast", "audit"],
+        default="manual",
+        help="Execution mode for intelligent schedule detection",
+    )
+    parser.add_argument(
+        "--use-cloud-cache",
+        action="store_true",
+        help=(
+            "Download FastF1 cache from Supabase S3 before run and upload after. "
+            "Requires SUPABASE_S3_* environment variables. "
+            "Eliminates cold-start re-download latency on serverless workers."
+        ),
+    )
     args = parser.parse_args()
 
-    if args.round is None:
-        logger.info("No round specified. Attempting auto-detection...")
+    # ── Cloud cache pre-run download ─────────────────────────────────────────
+    # Download the persisted FastF1 cache from Supabase before enabling it
+    # locally. This warms FastF1's cache so session data is served from disk
+    # rather than re-downloaded from the FastF1 CDN on every serverless run.
+    # Skipped when --use-cloud-cache is not set (local dev / standard CI).
+    if args.use_cloud_cache:
+        logger.info("Cloud cache: downloading pre-run cache from Supabase S3...")
+        download_cache(settings.fastf1_cache_dir)
+
+    setup_fastf1(settings.fastf1_cache_dir)
+
+    import sys
+
+    if args.mode == "forecast":
+        from f1_predictions.utils.race_detector import detect_upcoming_race
+
+        race = detect_upcoming_race(args.year, days_ahead=4)
+        if not race:
+            logger.info(
+                "Forecast Mode: No upcoming race this weekend. Exiting cleanly."
+            )
+            sys.exit(0)
+        args.round = race["round"]
+    elif args.mode == "audit":
+        from f1_predictions.utils.race_detector import detect_last_race
+
+        race = detect_last_race(args.year, days_back=3)
+        if not race:
+            logger.info(
+                "Audit Mode: No recently completed race to analyze. Exiting cleanly."
+            )
+            sys.exit(0)
+        args.round = race["round"]
+    elif args.round is None:
+        logger.info(
+            "Manual Mode: No round specified. Attempting fallback auto-detection..."
+        )
         from datetime import datetime
 
         schedule = fastf1.get_event_schedule(args.year)
-        # Find the event where the date is closest to now
         now = datetime.now()
-        # FastF1 dates are often at the end of the weekend, so we look for the next one
         future_races = schedule[schedule["EventDate"] >= now]
         if not future_races.empty:
             args.round = int(future_races.iloc[0]["RoundNumber"])
@@ -397,7 +447,6 @@ def main() -> None:
                 args.round,
             )
         else:
-            # If no future races, pick the last one of the season
             args.round = int(schedule["RoundNumber"].max())
             logger.info(
                 "No future races found. Defaulting to final round: %d", args.round
@@ -433,6 +482,62 @@ def main() -> None:
         logger.info("Post-race data not yet available (expected on Friday): %s", e)
         session.load(laps=False, telemetry=False, weather=False)
         is_post_race = False
+
+    # ── External weather override (pre-race forecast mode) ────────────────────
+    # When running pre-race (Friday forecast), FastF1 has no historical weather
+    # for the upcoming session. We call the free Open-Meteo API to inject
+    # AirTemp, TrackTemp, and Rainfall so downstream feature pipelines have
+    # real environmental context instead of silent NaN gaps.
+    #
+    # This override is applied only when is_post_race=False; post-race audit
+    # runs always use authoritative FastF1 telemetry weather data.
+    external_weather: dict[str, object] | None = None
+    if not is_post_race:
+        try:
+            event_date = session.event["EventDate"]
+            # Prefer Location (city) over Country for finer geocoding accuracy
+            event_city = str(
+                session.event.get("Location", session.event.get("Country", ""))
+            )
+            date_str = (
+                event_date.strftime("%Y-%m-%d")
+                if hasattr(event_date, "strftime")
+                else str(event_date)[:10]
+            )
+            logger.info(
+                "Pre-race mode: fetching Open-Meteo forecast for %s on %s",
+                event_city,
+                date_str,
+            )
+            external_weather = get_forecast(event_city, date_str)
+            if external_weather:
+                logger.info(
+                    "Weather override active: AirTemp=%.1f°C, TrackTemp=%.1f°C, Rainfall=%s",
+                    external_weather.get("AirTemp_mean", float("nan")),
+                    external_weather.get("TrackTemp_mean", float("nan")),
+                    external_weather.get("Rainfall_any", False),
+                )
+            else:
+                logger.warning(
+                    "Open-Meteo forecast unavailable for '%s' — weather features will be NaN.",
+                    event_city,
+                )
+        except Exception as exc:
+            logger.warning("External weather fetch failed (non-fatal): %s", exc)
+
+    # Load circuit-specific configuration for Monaco-aware modelling.
+    # Falls back to sensible defaults for unknown/new circuits.
+    circuit_cfg = get_circuit_config(race_info["name"])
+
+    logger.info(
+        "Circuit config loaded: %s | laps=%d | overtake_difficulty=%.2f | "
+        "type=%s | SC_prob=%.0f%%",
+        race_info["name"],
+        circuit_cfg.total_laps,
+        circuit_cfg.overtake_difficulty,
+        circuit_cfg.circuit_type,
+        circuit_cfg.safety_car_probability * 100,
+    )
 
     all_drivers = (
         session.results["Abbreviation"].tolist() if not session.results.empty else []
@@ -473,12 +578,14 @@ def main() -> None:
                     "HUL",
                 ]
 
-    # Determine lap count from schedule if session not yet run
+    # Determine lap count: use actual telemetry post-race, circuit config pre-race.
+    # Replaces the generic hardcoded fallback of 50 laps, which is wrong for
+    # Monaco (78), Belgium (44), Austria (71), etc.
     if is_post_race:
         total_laps = int(session.laps["LapNumber"].max())
     else:
-        # Fallback to metadata lap count (usually approx or 50)
-        total_laps = 50
+        total_laps = circuit_cfg.total_laps
+        logger.info("Pre-race mode: using circuit config lap count: %d", total_laps)
 
     # 1. Results (Skip if pre-race)
     if is_post_race:
@@ -525,16 +632,13 @@ def main() -> None:
                     fastest_lap_data = {
                         "driver": fl_driver,
                         "time": time_fmt,
-                        "time_s": fl_time
+                        "time_s": fl_time,
                     }
         except Exception as e:
             logger.debug("Could not extract fastest lap: %s", e)
 
         save_artifact(
-            {
-                "fastest_lap": fastest_lap_data,
-                "results": results_data
-            },
+            {"fastest_lap": fastest_lap_data, "results": results_data},
             f"actual_results_round_{args.round}.json",
             args.year,
             race_info["dir"],
@@ -627,11 +731,43 @@ def main() -> None:
             )
 
         if is_predicted:
-            predicted_stints = _predicted_weather_strategy_stints(
-                total_laps, weather_intelligence, compound_colors
-            )
+            if weather_intelligence.risk_level in (RISK_WET, RISK_MIXED):
+                predicted_stints = _predicted_weather_strategy_stints(
+                    total_laps, weather_intelligence, compound_colors
+                )
+                strategy_label = "Weather-Adjusted"
+                n_stops = len(predicted_stints) - 1
+            else:
+                strategy = circuit_cfg.typical_strategy
+                n_stops = len(strategy) - 1
+                base_stint_laps = total_laps // len(strategy)
+                remainder = total_laps - base_stint_laps * len(strategy)
+                predicted_stints = []
+                for i, compound in enumerate(strategy):
+                    stint_laps = base_stint_laps + (
+                        remainder if i == len(strategy) - 1 else 0
+                    )
+                    predicted_stints.append(
+                        {
+                            "stint": i + 1,
+                            "compound": compound,
+                            "laps": stint_laps,
+                            "color": compound_colors.get(compound, "#888888"),
+                        }
+                    )
+                strategy_label = circuit_cfg.strategy_label
+
             for d in data:
                 d["stints"] = [stint.copy() for stint in predicted_stints]
+
+            logger.info(
+                "Predicted tyre strategy for %s: %s (%d stop%s, %d laps)",
+                race_info["name"],
+                strategy_label,
+                n_stops,
+                "s" if n_stops != 1 else "",
+                total_laps,
+            )
             data.sort(
                 key=lambda x: (
                     predicted_order.index(x["driver"])
@@ -661,7 +797,21 @@ def main() -> None:
                 if is_predicted
                 else "actual post-race strategy analysis"
             )
-            prompt = f"Write a professional 2-sentence F1 strategy intelligence report for the {session.event['EventName']} 2026 ({prompt_type}). Top 5 drivers stints: {stint_summary}. Be highly analytical like an F1 race engineer. Do not use markdown."
+            # Inject circuit-specific context so Gemini's narrative is
+            # technically accurate (critical for Monaco vs. generic circuits).
+            circuit_context = (
+                f" Circuit characteristics: {circuit_cfg.circuit_type} circuit, "
+                f"overtake difficulty {circuit_cfg.overtake_difficulty:.0%}, "
+                f"safety car probability {circuit_cfg.safety_car_probability:.0%}, "
+                f"pit loss time {circuit_cfg.pit_loss_time_s:.1f}s, "
+                f"tyre wear mode: {circuit_cfg.tyre_wear_type}."
+            )
+            prompt = (
+                f"Write a professional 2-sentence F1 strategy intelligence report for the "
+                f"{session.event['EventName']} 2026 ({prompt_type}). "
+                f"Top 5 drivers stints: {stint_summary}.{circuit_context} "
+                f"Be highly analytical like an F1 race engineer. Do not use markdown."
+            )
             if is_predicted:
                 prompt = f"{prompt} {_weather_prompt_context(weather_intelligence)}"
             res = call_ai_with_retry(
@@ -673,14 +823,18 @@ def main() -> None:
             if res:
                 insight = res
 
+        strategy_label = circuit_cfg.strategy_label
+        avg_pit = f"{circuit_cfg.pit_loss_time_s:.1f}s"
         return {
             "gp": session.event["EventName"],
             "year": args.year,
             "total_laps": total_laps,
-            "winning_strategy": "Medium to Hard"
+            "winning_strategy": f"{strategy_label} (1-stop)"
             if not is_predicted
-            else f"AI Weather-Adjusted ({weather_intelligence.risk_level})",
-            "avg_pit_stop": "2.45s" if not is_predicted else "2.50s (Est.)",
+            else (f"AI Weather-Adjusted ({weather_intelligence.risk_level})" if weather_intelligence.risk_level in (RISK_WET, RISK_MIXED) else f"AI Optimal ({strategy_label})"),
+            "avg_pit_stop": avg_pit
+            if not is_predicted
+            else f"{circuit_cfg.pit_loss_time_s + 0.5:.1f}s (Est.)",
             "weather_intelligence": weather_intelligence.as_dict()
             if is_predicted
             else None,
@@ -734,14 +888,31 @@ def main() -> None:
             "The full strategic narrative will be published once the cross-verification between real-world results and AI simulations is complete."
         )
 
+        # Build circuit-specific context string for both actual and predicted prompts.
+        # This is the key differentiator for Monaco vs. generic circuits.
+        circuit_context_for_prompt = (
+            f"Circuit profile: {circuit_cfg.circuit_type.upper()} street circuit "
+            if circuit_cfg.is_street_circuit
+            else f"Circuit profile: {circuit_cfg.circuit_type.upper()} permanent circuit "
+        )
+        circuit_context_for_prompt += (
+            f"| Overtake difficulty: {circuit_cfg.overtake_difficulty:.0%} "
+            f"| Safety car probability: {circuit_cfg.safety_car_probability:.0%} "
+            f"| Pit loss time: {circuit_cfg.pit_loss_time_s:.1f}s "
+            f"| Tyre wear mode: {circuit_cfg.tyre_wear_type} "
+            f"| Typical strategy: {circuit_cfg.strategy_label}"
+        )
+
         if is_post_race:
             actual_prompt = (
                 f"TECHNICAL RACE ANALYSIS: {session.event['EventName']} 2026. "
                 f"Actual Results: {session.results.head(10)[['Abbreviation', 'Position']].to_string()}. "
                 f"{shap_context}"
+                f"\nCIRCUIT CONTEXT: {circuit_context_for_prompt}\n"
                 "\nINSTRUCTIONS:\n"
                 "Write a professional, high-level technical breakdown of the race. "
                 "Use the SHAP data provided to explain *why* the performance hierarchies shifted (e.g., if 'TrackTemp' has high impact, discuss thermal management). "
+                "Factor in the circuit-specific characteristics: on a high-overtake-difficulty circuit like Monaco, emphasise qualifying impact and safety car strategy pivots. "
                 "Do not use the phrase 'Expert F1 Analysis' or generic filler. "
                 "Structure the report using professional numbered headers (1. Stint Dynamics & Tire Management, 2. Aerodynamic Efficiency & Car Performance, 3. Driver Performance Deltas) "
                 "with detailed technical bullet points. Focus on stint dynamics, aerodynamic efficiency, and driver performance deltas."
@@ -783,11 +954,15 @@ def main() -> None:
             f"PREDICTIVE ML SIMULATION ANALYSIS: {session.event['EventName']} 2026. "
             f"AI Simulated Results: {pred_results_str}. "
             f"{shap_context}"
+            f"\nCIRCUIT CONTEXT: {circuit_context_for_prompt}\n"
             f"\n{_weather_prompt_context(weather_intelligence)}"
             "\nINSTRUCTIONS:\n"
             "Write a serious, high-level technical breakdown of these simulated results. "
             "Use the provided SHAP importance values to justify the model's predictions. "
             "Explicitly account for rain probability, track temperature, humidity, and wind risk when discussing tyre warm-up, degradation, and stint flexibility. "
+            "Factor in the circuit-specific characteristics when explaining predictions: "
+            "for high overtake_difficulty circuits, GridPosition should be heavily weighted; "
+            "for street circuits, pit_loss_time and safety_car_probability dominate strategy. "
             "Explain how the top features (like Aero_Profile or TireLife) drove the predicted gaps. "
             "Structure the report using professional numbered headers (1. Stint Dynamics & Tire Management, 2. Aerodynamic Efficiency & Car Performance, 3. Driver Performance Deltas) "
             "with detailed technical bullet points. Focus on why the ML model predicted these specific stint dynamics and aerodynamic efficiencies compared to typical expectations."
@@ -808,6 +983,14 @@ def main() -> None:
         )
 
     logger.info("Round %d fully processed with Pro F1 Styles.", args.round)
+
+    # ── Cloud cache post-run upload ───────────────────────────────────────────
+    # Zip and upload the updated FastF1 cache so newly-fetched session data
+    # persists for subsequent serverless runs. This is non-fatal: a failed
+    # upload means the next run will have a slightly cold cache, not a failure.
+    if args.use_cloud_cache:
+        logger.info("Cloud cache: uploading post-run cache to Supabase S3...")
+        upload_cache(settings.fastf1_cache_dir)
 
 
 if __name__ == "__main__":

@@ -13,12 +13,16 @@ def test_add_track_evolution_factor_basic() -> None:
     )
     result = add_track_evolution_factor(df, window=2)
     assert "Track_Evolution_Factor" in result.columns
+    assert "Rolling_Track_Grip" in result.columns
     # Factor should be negative (improvement) for the last lap
     assert result.iloc[-1]["Track_Evolution_Factor"] < 0
+    assert result.iloc[-1]["Rolling_Track_Grip"] < 0
 
 
 def test_add_track_evolution_factor_missing_cols() -> None:
     df = pd.DataFrame({"A": [1, 2]})
     result = add_track_evolution_factor(df)
     assert "Track_Evolution_Factor" in result.columns
+    assert "Rolling_Track_Grip" in result.columns
     assert (result["Track_Evolution_Factor"] == 0.0).all()
+    assert (result["Rolling_Track_Grip"] == 0.0).all()

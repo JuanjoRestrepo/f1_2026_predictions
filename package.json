@@ -1,9 +1,17 @@
 {
+  "name": "f1-2026-predictions",
+  "version": "4.4.5",
   "dependencies": {
     "@trigger.dev/python": "4.4.6",
     "@trigger.dev/sdk": "4.4.6"
   },
   "devDependencies": {
     "@trigger.dev/build": "4.4.6"
+  },
+  "packageManager": "pnpm@10.5.2",
+  "resolutions": {
+    "cookie": "^0.7.2",
+    "systeminformation": "^5.31.6",
+    "ws": "^8.20.1"
   }
 }

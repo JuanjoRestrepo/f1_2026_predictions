@@ -16,7 +16,7 @@ configure_root_pipeline_logger("INFO")
 logger = get_logger(__name__)
 
 
-def rebuild_all():
+def rebuild_all() -> None:
     raw_dir = Path("data/raw/laps")
     if not raw_dir.exists():
         logger.error("Raw laps dir not found.")

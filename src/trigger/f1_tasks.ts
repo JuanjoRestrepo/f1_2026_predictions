@@ -45,7 +45,7 @@ export const f1ManualSync = task({
       : 'Auto-detecting Round';
     console.log(`Starting F1 Sync for ${year} (${roundStr})`);
 
-    const args = ['--year', year.toString(), '--auto'];
+    const args = ['--year', year.toString(), '--auto', '--mode', 'manual'];
     if (payload.round) {
       args.push('--round', payload.round.toString());
     }
@@ -85,11 +85,17 @@ export const f1FridayForecast = schedules.task({
     const scriptPath = resolvePythonScript(PIPELINE_SCRIPT);
     const result = await python.runScript(
       scriptPath,
-      ['--auto'],
+      ['--auto', '--mode', 'forecast'],
       pythonRunOptions(),
     );
 
-    return { success: result.exitCode === 0 };
+    if (result.exitCode !== 0) {
+      throw new Error(
+        `Forecast pipeline failed with exit code ${result.exitCode}: ${result.stderr}`,
+      );
+    }
+
+    return { success: true };
   },
 });
 
@@ -107,11 +113,17 @@ export const f1MondayAudit = schedules.task({
     const scriptPath = resolvePythonScript(PIPELINE_SCRIPT);
     const result = await python.runScript(
       scriptPath,
-      ['--auto'],
+      ['--auto', '--mode', 'audit'],
       pythonRunOptions(),
     );
 
-    return { success: result.exitCode === 0 };
+    if (result.exitCode !== 0) {
+      throw new Error(
+        `Audit pipeline failed with exit code ${result.exitCode}: ${result.stderr}`,
+      );
+    }
+
+    return { success: true };
   },
 });
 

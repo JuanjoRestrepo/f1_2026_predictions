@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from typing import Any
 
 from f1_predictions.utils.logging_setup import get_logger
 
@@ -77,7 +77,9 @@ def save_tree_shap_artifacts(
 
 
 def get_top_shap_features(
-    model: Any, x_test: pd.DataFrame, top_n: int = 5
+    model: Any,
+    x_test: pd.DataFrame,
+    top_n: int = 5,
 ) -> dict[str, float]:
     """Calculate the top-N features by mean absolute SHAP value.
 

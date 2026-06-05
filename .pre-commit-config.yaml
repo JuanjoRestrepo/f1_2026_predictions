@@ -1,0 +1,34 @@
+# .pre-commit-config.yaml
+# Install: uv add --dev pre-commit && pre-commit install
+# Run manually on all files: pre-commit run --all-files
+
+repos:
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff
+        entry: uv run ruff check --fix
+        language: system
+        types_or: [python, pyi]
+      - id: ruff-format
+        name: ruff-format
+        entry: uv run ruff format
+        language: system
+        types_or: [python, pyi]
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: uv run mypy src/ --strict
+        language: system
+        pass_filenames: false
+
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: uv run pytest tests/ -v --tb=short -q
+        language: system
+        pass_filenames: false
+        always_run: true

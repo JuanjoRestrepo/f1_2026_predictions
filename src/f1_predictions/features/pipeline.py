@@ -45,6 +45,7 @@ from f1_predictions.ingestion.parquet_writer import (
     read_parquet,
     write_parquet,
 )
+from f1_predictions.utils.circuit_config import get_circuit_config
 from f1_predictions.utils.config import get_settings
 from f1_predictions.utils.logging_setup import get_logger
 
@@ -207,6 +208,27 @@ def run_feature_pipeline(
             "Step 6/8 — GridPosition not found in laps DataFrame "
             "(join results before feature pipeline if needed). Skipping."
         )
+
+    # ── Step 6b: Circuit overtake difficulty ──────────────────────────────
+    # Adds a scalar numeric feature (0.0-1.0) encoding how strongly qualifying
+    # grid position determines finishing order on this specific circuit.
+    # Monaco (0.95) amplifies grid_position_gap in the XGBoost split rules;
+    # Bahrain (0.25) down-weights it. This is the correct architectural fix
+    # for circuits not in the OHE training vocabulary (handle_unknown="ignore"
+    # maps them to all-zeros, losing circuit identity entirely).
+    event_name = key.event_name if hasattr(key, "event_name") else ""
+    circuit_cfg = get_circuit_config(event_name)
+    df["circuit_overtake_difficulty"] = circuit_cfg.overtake_difficulty
+    df["circuit_safety_car_prob"] = circuit_cfg.safety_car_probability
+    df["circuit_is_street"] = float(circuit_cfg.is_street_circuit)
+    logger.info(
+        "Circuit features added: overtake_difficulty=%.2f, safety_car_prob=%.2f, "
+        "is_street=%d for '%s'",
+        circuit_cfg.overtake_difficulty,
+        circuit_cfg.safety_car_probability,
+        int(circuit_cfg.is_street_circuit),
+        event_name,
+    )
 
     # ── Step 7: OHE encoding ──────────────────────────────────────────────
     logger.info("Step 7/8 — Categorical OHE encoding")

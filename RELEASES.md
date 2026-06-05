@@ -1,4 +1,23 @@
-# Project Releases & Versioning 🏁📜
+# F1 2026 Predictions - Release Notes
+
+## [v4.4.4] - 2026-06-03
+### Data Science & Pipeline Resilience
+- **Monaco Circuit Metadata Engine**: Integrated an advanced F1 circuit metadata configuration (`config.yaml`) defining circuit characteristics including `overtake_difficulty`, `tyre_wear_type`, and `safety_car_probability`.
+- **Intelligent ML Features**: Added `circuit_overtake_difficulty` to the Gold-layer feature matrix, amplifying the importance of qualifying performance at street circuits like Monaco.
+- **Dynamic Context Injection**: Configured Gemini to analyze predictive outputs conditionally based on circuit types (e.g. emphasizing pit loss time for street circuits).
+- **Automated Fallbacks**: Hardened pipeline lap generation to automatically detect circuit total laps instead of defaulting to 50.
+
+---
+
+## v4.4.4 - DevOps & Data Science Alignment
+**Date**: May 2026
+
+### 🛡️ Code Quality & Security Hardening
+- **Strict Pre-Commit Enforcement**: Integrated `pre-commit` hooks orchestrating `ruff`, `mypy`, and `pytest` locally to ensure 100% type safety and zero linting errors prior to commit.
+- **NPM Supply-Chain Fixes**: Implemented strict package overrides in `package.json` to resolve 12 deep transitive vulnerabilities stemming from the Trigger.dev SDK.
+- **CI Synchronization**: Ensured GitHub Actions workflow perfectly matches local validation standards by executing `mypy` locally via the `uv` environment, exposing all typing stubs (`fastapi`, `pydantic`).
+
+---
 
 ## v4.4.3 - Autonomous UI & End-to-End Formatting
 **Date**: May 2026
