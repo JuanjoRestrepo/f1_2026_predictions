@@ -17,6 +17,7 @@ import {
   getTyreIntelligence,
   getPredictedTyreIntelligence,
   getAvailableRaces,
+  getFullCalendar,
   type PredictionRow,
   type LapPositionData,
   type ActualResult,
@@ -32,6 +33,7 @@ const RaceTimeline = dynamic(
 interface RacePageProps {
   race: RaceInfo;
   availableRaces: RaceInfo[];
+  fullCalendar: RaceInfo[];
   markdownReport: string | null;
   predictedMarkdownReport: string | null;
   predictions: PredictionRow[];
@@ -57,6 +59,7 @@ export async function getStaticProps({ params }: { params: { round: string } }) 
   const year = 2026;
   const roundNum = parseInt(params.round);
   const availableRaces = getAvailableRaces(year);
+  const fullCalendar = getFullCalendar(year);
   const race = availableRaces.find((r) => r.round === roundNum);
 
   if (!race) return { notFound: true };
@@ -78,7 +81,7 @@ export async function getStaticProps({ params }: { params: { round: string } }) 
   const predictedTyreData = getPredictedTyreIntelligence(year, roundNum);
 
   return {
-    props: { race, availableRaces, markdownReport, predictedMarkdownReport, predictions, actualResults, predictedFastest, actualFastest, lapPositions, predictedLapPositions, tyreData, predictedTyreData },
+    props: { race, availableRaces, fullCalendar, markdownReport, predictedMarkdownReport, predictions, actualResults, predictedFastest, actualFastest, lapPositions, predictedLapPositions, tyreData, predictedTyreData },
     revalidate: 3600,
   };
 }
@@ -86,6 +89,7 @@ export async function getStaticProps({ params }: { params: { round: string } }) 
 export default function RacePage({ 
   race,
   availableRaces,
+  fullCalendar,
   markdownReport,
   predictedMarkdownReport,
   predictions, 
@@ -156,7 +160,7 @@ export default function RacePage({
                   F1 2026 Predictive Platform
                 </h1>
              </div>
-             <RaceSelector currentRound={race.round} availableRaces={availableRaces} />
+             <RaceSelector currentRound={race.round} availableRaces={availableRaces} fullCalendar={fullCalendar} />
           </div>
 
           {/* ─── Red Banner & Global Toggle ─── */}

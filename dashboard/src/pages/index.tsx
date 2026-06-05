@@ -72,10 +72,13 @@ function CountdownTimer({ targetDate }: { targetDate: string }) {
 }
 
 export default function Home({ availableRaces, fullCalendar }: HomeProps) {
-  // Monaco GP is Round 6, June 7, 2026. Wait, we'll find the next race dynamically, 
-  // but for the demo we'll target Monaco since we just built its model.
-  const nextRace = fullCalendar.find(r => r.round === 6);
-  const targetDate = nextRace?.date ? `${nextRace.date} 08:00:00 UTC` : "June 07, 2026 08:00:00 UTC";
+  // Find the next upcoming race dynamically: first race in the calendar whose
+  // date is in the future. If none remain (end of season), fall back to null.
+  const today = new Date();
+  const nextRace = fullCalendar.find((r) => new Date(r.date) >= today) ?? null;
+  const targetDate = nextRace?.date
+    ? `${nextRace.date} 08:00:00 UTC`
+    : (fullCalendar[fullCalendar.length - 1]?.date ?? "December 06, 2026 08:00:00 UTC");
 
   return (
     <div className="min-h-screen bg-f1darker text-gray-200 selection:bg-f1red selection:text-white pb-20">
@@ -189,7 +192,8 @@ export default function Home({ availableRaces, fullCalendar }: HomeProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {fullCalendar.map((race) => {
             const isAvailable = availableRaces.some(r => r.round === race.round);
-            const isNext = race.round === 6; // Hardcoded for demo state
+            // Mark the next race dynamically — the first future round, not a hardcoded number.
+            const isNext = nextRace?.round === race.round;
 
             return (
               <div 

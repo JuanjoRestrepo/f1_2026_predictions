@@ -1,0 +1,161 @@
+{
+  "season": 2026,
+  "generated_at": "2026-06-05T23:13:28.586034+00:00",
+  "source": "fastf1",
+  "races": [
+    {
+      "round": 1,
+      "name": "Australian Grand Prix",
+      "dir": "Australian_Grand_Prix",
+      "date": "2026-03-08",
+      "event_format": "conventional"
+    },
+    {
+      "round": 2,
+      "name": "Chinese Grand Prix",
+      "dir": "Chinese_Grand_Prix",
+      "date": "2026-03-15",
+      "event_format": "sprint_qualifying"
+    },
+    {
+      "round": 3,
+      "name": "Japanese Grand Prix",
+      "dir": "Japanese_Grand_Prix",
+      "date": "2026-03-29",
+      "event_format": "conventional"
+    },
+    {
+      "round": 4,
+      "name": "Miami Grand Prix",
+      "dir": "Miami_Grand_Prix",
+      "date": "2026-05-03",
+      "event_format": "sprint_qualifying"
+    },
+    {
+      "round": 5,
+      "name": "Canadian Grand Prix",
+      "dir": "Canadian_Grand_Prix",
+      "date": "2026-05-24",
+      "event_format": "sprint_qualifying"
+    },
+    {
+      "round": 6,
+      "name": "Monaco Grand Prix",
+      "dir": "Monaco_Grand_Prix",
+      "date": "2026-06-07",
+      "event_format": "conventional"
+    },
+    {
+      "round": 7,
+      "name": "Barcelona Grand Prix",
+      "dir": "Barcelona_Grand_Prix",
+      "date": "2026-06-14",
+      "event_format": "conventional"
+    },
+    {
+      "round": 8,
+      "name": "Austrian Grand Prix",
+      "dir": "Austrian_Grand_Prix",
+      "date": "2026-06-28",
+      "event_format": "conventional"
+    },
+    {
+      "round": 9,
+      "name": "British Grand Prix",
+      "dir": "British_Grand_Prix",
+      "date": "2026-07-05",
+      "event_format": "sprint_qualifying"
+    },
+    {
+      "round": 10,
+      "name": "Belgian Grand Prix",
+      "dir": "Belgian_Grand_Prix",
+      "date": "2026-07-19",
+      "event_format": "conventional"
+    },
+    {
+      "round": 11,
+      "name": "Hungarian Grand Prix",
+      "dir": "Hungarian_Grand_Prix",
+      "date": "2026-07-26",
+      "event_format": "conventional"
+    },
+    {
+      "round": 12,
+      "name": "Dutch Grand Prix",
+      "dir": "Dutch_Grand_Prix",
+      "date": "2026-08-23",
+      "event_format": "sprint_qualifying"
+    },
+    {
+      "round": 13,
+      "name": "Italian Grand Prix",
+      "dir": "Italian_Grand_Prix",
+      "date": "2026-09-06",
+      "event_format": "conventional"
+    },
+    {
+      "round": 14,
+      "name": "Spanish Grand Prix",
+      "dir": "Spanish_Grand_Prix",
+      "date": "2026-09-13",
+      "event_format": "conventional"
+    },
+    {
+      "round": 15,
+      "name": "Azerbaijan Grand Prix",
+      "dir": "Azerbaijan_Grand_Prix",
+      "date": "2026-09-26",
+      "event_format": "conventional"
+    },
+    {
+      "round": 16,
+      "name": "Singapore Grand Prix",
+      "dir": "Singapore_Grand_Prix",
+      "date": "2026-10-11",
+      "event_format": "sprint_qualifying"
+    },
+    {
+      "round": 17,
+      "name": "United States Grand Prix",
+      "dir": "United_States_Grand_Prix",
+      "date": "2026-10-25",
+      "event_format": "conventional"
+    },
+    {
+      "round": 18,
+      "name": "Mexico City Grand Prix",
+      "dir": "Mexico_City_Grand_Prix",
+      "date": "2026-11-01",
+      "event_format": "conventional"
+    },
+    {
+      "round": 19,
+      "name": "São Paulo Grand Prix",
+      "dir": "Sao_Paulo_Grand_Prix",
+      "date": "2026-11-08",
+      "event_format": "conventional"
+    },
+    {
+      "round": 20,
+      "name": "Las Vegas Grand Prix",
+      "dir": "Las_Vegas_Grand_Prix",
+      "date": "2026-11-21",
+      "event_format": "conventional"
+    },
+    {
+      "round": 21,
+      "name": "Qatar Grand Prix",
+      "dir": "Qatar_Grand_Prix",
+      "date": "2026-11-29",
+      "event_format": "conventional"
+    },
+    {
+      "round": 22,
+      "name": "Abu Dhabi Grand Prix",
+      "dir": "Abu_Dhabi_Grand_Prix",
+      "date": "2026-12-06",
+      "event_format": "conventional"
+    }
+  ]
+}
