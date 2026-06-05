@@ -132,6 +132,7 @@ dependencies = [
     # requests: used by weather_api.py Open-Meteo integration (already a
     # transitive dep via fastf1, but declared explicitly for clarity).
     "requests>=2.32.0",
+    "google-antigravity>=0.1.2",
 ]
 
 # ---------------------------------------------------------------------------

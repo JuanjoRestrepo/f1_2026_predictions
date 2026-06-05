@@ -211,9 +211,7 @@ def _apply_weather_scenario_features(
     for the simulated race scenario from external forecast intelligence.
     """
     df = df_sim.copy()
-    values = simulation_weather_features(
-        weather_intelligence, is_wet_race=is_wet_race
-    )
+    values = simulation_weather_features(weather_intelligence, is_wet_race=is_wet_race)
     for column, value in values.items():
         df[column] = value
     return df

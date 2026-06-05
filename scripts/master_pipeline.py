@@ -118,14 +118,10 @@ def _weather_prompt_context(weather: WeatherIntelligence) -> str:
         else f"{weather.rain_probability:.0%}"
     )
     air_temp = (
-        "unknown"
-        if race_day.air_temp_c is None
-        else f"{race_day.air_temp_c:.1f}C"
+        "unknown" if race_day.air_temp_c is None else f"{race_day.air_temp_c:.1f}C"
     )
     humidity = (
-        "unknown"
-        if race_day.humidity_pct is None
-        else f"{race_day.humidity_pct:.0f}%"
+        "unknown" if race_day.humidity_pct is None else f"{race_day.humidity_pct:.0f}%"
     )
     wind = (
         "unknown"
@@ -394,6 +390,11 @@ def main() -> None:
             "Requires SUPABASE_S3_* environment variables. "
             "Eliminates cold-start re-download latency on serverless workers."
         ),
+    )
+    parser.add_argument(
+        "--swarm",
+        action="store_true",
+        help="Use Phase 13 Antigravity Agentic Swarms instead of single Gemini calls.",
     )
     args = parser.parse_args()
 
@@ -831,7 +832,11 @@ def main() -> None:
             "total_laps": total_laps,
             "winning_strategy": f"{strategy_label} (1-stop)"
             if not is_predicted
-            else (f"AI Weather-Adjusted ({weather_intelligence.risk_level})" if weather_intelligence.risk_level in (RISK_WET, RISK_MIXED) else f"AI Optimal ({strategy_label})"),
+            else (
+                f"AI Weather-Adjusted ({weather_intelligence.risk_level})"
+                if weather_intelligence.risk_level in (RISK_WET, RISK_MIXED)
+                else f"AI Optimal ({strategy_label})"
+            ),
             "avg_pit_stop": avg_pit
             if not is_predicted
             else f"{circuit_cfg.pit_loss_time_s + 0.5:.1f}s (Est.)",
@@ -859,9 +864,20 @@ def main() -> None:
 
     # 4. AI Narratives
     if ai_model:
-        logger.info(
-            "Generating AI reports with Gemini models: %s", ", ".join(ai_model_names)
-        )
+        if args.swarm:
+            logger.info("Generating Phase 13 Agentic Swarms Master Intelligence Report")
+            import asyncio
+            import os
+
+            from f1_predictions.agents.coordinator_agent import coordinator_agent_run
+
+            if settings.gemini_api_key:
+                os.environ["GEMINI_API_KEY"] = settings.gemini_api_key
+        else:
+            logger.info(
+                "Generating legacy AI reports with Gemini models: %s",
+                ", ".join(ai_model_names),
+            )
 
         # Load SHAP metadata for technical reasoning
         shap_file = (
@@ -917,12 +933,26 @@ def main() -> None:
                 "Structure the report using professional numbered headers (1. Stint Dynamics & Tire Management, 2. Aerodynamic Efficiency & Car Performance, 3. Driver Performance Deltas) "
                 "with detailed technical bullet points. Focus on stint dynamics, aerodynamic efficiency, and driver performance deltas."
             )
-            report = call_ai_with_retry(
-                actual_prompt,
-                ai_model,
-                ai_model_names,
-                retries=settings.gemini_retries,
-            )
+            report: str | None = None
+            if args.swarm:
+                actual_telemetry = (
+                    session.results.head(10)[["Abbreviation", "Position"]].to_string()
+                    + shap_context
+                )
+                report = asyncio.run(
+                    coordinator_agent_run(
+                        telemetry_data=actual_telemetry,
+                        circuit_context=circuit_context_for_prompt,
+                        weather_context=_weather_prompt_context(weather_intelligence),
+                    )
+                )
+            else:
+                report = call_ai_with_retry(
+                    actual_prompt,
+                    ai_model,
+                    ai_model_names,
+                    retries=settings.gemini_retries,
+                )
             save_artifact(
                 report or fallback,
                 f"report_round_{args.round}.md",
@@ -967,12 +997,23 @@ def main() -> None:
             "Structure the report using professional numbered headers (1. Stint Dynamics & Tire Management, 2. Aerodynamic Efficiency & Car Performance, 3. Driver Performance Deltas) "
             "with detailed technical bullet points. Focus on why the ML model predicted these specific stint dynamics and aerodynamic efficiencies compared to typical expectations."
         )
-        pred_report = call_ai_with_retry(
-            predicted_prompt,
-            ai_model,
-            ai_model_names,
-            retries=settings.gemini_retries,
-        )
+        pred_report: str | None = None
+        if args.swarm:
+            pred_telemetry = pred_results_str + shap_context
+            pred_report = asyncio.run(
+                coordinator_agent_run(
+                    telemetry_data=pred_telemetry,
+                    circuit_context=circuit_context_for_prompt,
+                    weather_context=_weather_prompt_context(weather_intelligence),
+                )
+            )
+        else:
+            pred_report = call_ai_with_retry(
+                predicted_prompt,
+                ai_model,
+                ai_model_names,
+                retries=settings.gemini_retries,
+            )
 
         save_artifact(
             pred_report or fallback,

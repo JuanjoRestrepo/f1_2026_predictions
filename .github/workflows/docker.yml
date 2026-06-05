@@ -127,3 +127,55 @@ jobs:
       - name: Inspect image
         run: |
           docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LC }}:${{ steps.meta.outputs.version }}
+
+  # ---------------------------------------------------------------------------
+  # Deploy Trigger.dev cloud worker
+  # Deploys all tasks in src/trigger/ to the Trigger.dev managed cloud so they
+  # run 24/7 without requiring a local machine or self-hosted runner.
+  #
+  # Rationale: Trigger.dev v3 uses a build-and-deploy flow where the task code
+  # is bundled, uploaded to Trigger.dev's infrastructure, and executed there.
+  # The TRIGGER_ACCESS_TOKEN is a personal access token from app.trigger.dev.
+  # All pipeline secrets are passed so the cloud worker can call Gemini,
+  # Supabase S3, and send notifications autonomously.
+  # ---------------------------------------------------------------------------
+  deploy-trigger:
+    name: Deploy Trigger.dev Worker
+    runs-on: ubuntu-latest
+    needs: merge
+    if: github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '10'
+
+      - name: Install Node dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Deploy Trigger.dev worker
+        env:
+          TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
+          # Pipeline secrets passed to the cloud worker environment
+          F1_GEMINI_API_KEY: ${{ secrets.F1_GEMINI_API_KEY }}
+          F1_GEMINI_MODEL: gemini-3.1-pro-preview
+          F1_GEMINI_FALLBACK_MODEL: gemini-3.5-flash
+          F1_GMAIL_USER: ${{ secrets.F1_GMAIL_USER }}
+          F1_GMAIL_APP_PASSWORD: ${{ secrets.F1_GMAIL_APP_PASSWORD }}
+          F1_RECIPIENT_EMAIL: ${{ secrets.F1_RECIPIENT_EMAIL }}
+          F1_DISCORD_WEBHOOK_URL: ${{ secrets.F1_DISCORD_WEBHOOK_URL }}
+          SUPABASE_S3_ENDPOINT_URL: ${{ secrets.SUPABASE_S3_ENDPOINT_URL }}
+          SUPABASE_S3_ACCESS_KEY: ${{ secrets.SUPABASE_S3_ACCESS_KEY }}
+          SUPABASE_S3_SECRET_KEY: ${{ secrets.SUPABASE_S3_SECRET_KEY }}
+          SUPABASE_S3_BUCKET_NAME: ${{ secrets.SUPABASE_S3_BUCKET_NAME }}
+        run: |
+          npx trigger.dev@latest deploy --env prod --skip-typecheck

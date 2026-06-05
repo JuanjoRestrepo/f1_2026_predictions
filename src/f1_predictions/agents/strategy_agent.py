@@ -1,0 +1,42 @@
+"""Strategy Intelligence Agent module."""
+
+import pydantic
+from google.antigravity import Agent, LocalAgentConfig  # type: ignore[import-untyped]
+
+
+class StrategyReport(pydantic.BaseModel):
+    """Structured report for strategic pit window analysis."""
+
+    undercut_window: str
+    stint_length_optimization: str
+    sc_probability_impact: str
+    narrative: str
+
+
+async def run_strategy_agent(
+    telemetry_data: str, circuit_context: str
+) -> StrategyReport:
+    """Specialized Antigravity agent focused on strategic pit window analysis."""
+    config = LocalAgentConfig(
+        response_schema=StrategyReport,
+        system_instructions=(
+            "You are the Strategy Intelligence Agent. Analyze undercut/overcut "
+            "windows, stint lengths, and safety car probability impacts based "
+            "on circuit context and telemetry. Return a structured analysis "
+            "and narrative."
+        ),
+    )
+    async with Agent(config) as agent:
+        prompt = (
+            f"Circuit Context:\n{circuit_context}\n\nTelemetry Data:\n{telemetry_data}"
+        )
+        resp = await agent.chat(prompt)
+        data = await resp.structured_output()
+        if data:
+            return StrategyReport(**data)
+        return StrategyReport(
+            undercut_window="N/A",
+            stint_length_optimization="N/A",
+            sc_probability_impact="N/A",
+            narrative="Strategy analysis failed to generate a structured response.",
+        )
