@@ -8,11 +8,10 @@
   "devDependencies": {
     "@trigger.dev/build": "4.4.6"
   },
-  "pnpm": {
-    "overrides": {
-      "cookie": "^0.7.2",
-      "systeminformation": "^5.31.6",
-      "ws": "^8.20.1"
-    }
+  "packageManager": "pnpm@10.5.2",
+  "overrides": {
+    "cookie": "^0.7.2",
+    "systeminformation": "^5.31.6",
+    "ws": "^8.20.1"
   }
 }
