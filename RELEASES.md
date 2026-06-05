@@ -1,5 +1,22 @@
 # F1 2026 Predictions - Release Notes
 
+## [v5.0.0] - 2026-06-05
+### Cloud Scalability & Durable Worker (Phase 12 Complete)
+- **Cloud Caching Ingestion**: Implemented a Supabase S3 cloud caching layer (`f1-cache`) using Boto3 to persist race artifacts and FastF1 cached files, enabling zero-dependency serverless worker execution.
+- **Dockerized Worker Deployment**: Configured Github Actions (`.github/workflows/docker.yml`) to automatically build and deploy the Trigger.dev worker container on master push.
+- **Visual Crossing Integration**: Integrated real-time hourly and 7-day proactive weather forecasts to enrich Friday predictions.
+
+### Human-in-the-Loop & Live Timing (Phase 13 Complete)
+- **Trigger.dev Waitpoint Approvals**: Reconfigured Monday brief distributions to wait for manual human approval (`src/trigger/approval_types.ts` & `src/trigger/f1_tasks.ts`).
+- **Antigravity Agentic Swarms**: Created specialized collaborative agents (Aero, Strategy, Weather) orchestrated by a Coordinator agent to generate multi-perspective markdown insights.
+- **Live Timing Telemetry Adapters**: Built real-time SignalR socket streaming client `live_timing.py` and alerts monitor `scripts/live_monitor.py` for tracking live pace deltas.
+
+### Quality Gates & Strict Type Hardening
+- **Strict Testing Strategy**: Added unit tests for Antigravity swarms and live socket listeners, hitting an **81.44%** code coverage threshold.
+- **Pytest Asyncio Configuration**: Integrated `pytest-asyncio` into the Python package environment and `pyproject.toml` tool overrides.
+
+---
+
 ## [v4.4.4] - 2026-06-03
 ### Data Science & Pipeline Resilience
 - **Monaco Circuit Metadata Engine**: Integrated an advanced F1 circuit metadata configuration (`config.yaml`) defining circuit characteristics including `overtake_difficulty`, `tyre_wear_type`, and `safety_car_probability`.
