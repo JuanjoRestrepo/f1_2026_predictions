@@ -1,5 +1,15 @@
 # F1 2026 Predictions - Release Notes
 
+## [v6.2.1] - 2026-08-23
+### Dutch GP (Round 12) Pre-Race Simulation & Intelligence Release
+
+#### 🇳🇱 Dutch GP Predictive Coverage
+- **Simulated Pace Hierarchy**: Generated LightGBM quantile regression predictions for Round 12 (`Dutch_Grand_Prix/results/predictions.csv`).
+- **Predicted AI Report**: Generated `predicted_report_round_12.md` featuring Executive Summary, Top 10 Pace Table, and 1-stop Medium → Hard strategy window.
+- **Race Timeline & Tyre Intelligence**: Created `predicted_lap_positions_round_12.json` and `predicted_tyre_intelligence_round_12.json`.
+
+---
+
 ## [v6.2.0] - 2026-08-23
 ### Complete Dashboard Telemetry & AI Intelligence Upgrade
 
