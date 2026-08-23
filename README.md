@@ -31,6 +31,17 @@ Expert-level race reporting powered by configurable **Gemini 3.1 Pro** primary g
 
 ---
 
+## [v6.1.0] - 2026-08-23
+
+### 🏎️ Race Weekend Auto-Gate & FastF1 Calendar Integration
+
+- **Feature**: FastF1 Ergast 2026+ official calendar integration (`is_race_window_active()`), restricting execution strictly to active Race Weekends (Fri–Sun) and Post-Race Mondays.
+- **Feature**: DABs workflow schedule update (`f1_2026_race_predictions_job`) with Quartz cron `0 0 6 ? * FRI-MON`.
+- **Fix**: Pinned `@trigger.dev/cli@4.4.6` in `.github/workflows/docker.yml` to resolve CI package version mismatch.
+- **Fix**: Databricks Secrets integration for live Gmail SMTP verdict briefings.
+
+---
+
 ## [v6.0.0] - 2026-08-23
 
 ### ⚡ Databricks Lakehouse & Unity Catalog MLOps

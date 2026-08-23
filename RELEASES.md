@@ -1,5 +1,25 @@
 # F1 2026 Predictions - Release Notes
 
+## [v6.1.0] - 2026-08-23
+### Race Weekend Auto-Gate & FastF1 Calendar Integration
+
+#### 🏎️ Race Weekend Auto-Gate
+- **`is_race_window_active()`**: Dynamically queries the FastF1 Ergast API schedule for 2026 and future seasons. Restricts Databricks Lakehouse workflow runs strictly to active **Race Weekends (Friday through Sunday)** and **Post-Race Mondays**.
+- **Non-Race Skipping**: Automatically skips execution on non-race days (e.g. Wednesdays of gap weeks) without wasting compute resources or sending spurious notification emails.
+- **`--force` CLI Flag**: Added `--force` flag to `databricks_entrypoint.py` and DABs task parameters so manual pipeline triggers and integration test runs can bypass the gate on demand.
+
+#### ⚙️ DABs Workflow Schedule Alignment (`f1_2026_race_predictions_job`)
+- Renamed workflow from `f1_2026_daily_predictions_job` to **`f1_2026_race_predictions_job`** (`[${bundle.target}] F1 2026 Race Weekend Predictions Workflow`).
+- Updated Quartz cron schedule to **`0 0 6 ? * FRI-MON`** (runs Friday through Monday at 06:00 UTC).
+
+#### 🔒 Trigger.dev CI Version Pinning
+- **`.github/workflows/docker.yml`**: Pinned `pnpm dlx trigger.dev@4.4.6 deploy --env prod` to match `package.json` `@trigger.dev/*` package dependencies (`4.4.6`), resolving the CI version mismatch error (`ERR_PNPM_BAD_PM_VERSION`).
+
+#### 📧 Gmail & Notification Transport Hardening
+- Resolved dataclass contract alignment between `RaceVerdict`, `RaceBriefingPayload`, and `GmailSMTPChannel`. Live HTML briefings now render and deliver directly to `restrepojuanjo@gmail.com`.
+
+---
+
 ## [v6.0.0] - 2026-08-23
 ### Databricks Lakehouse & Unity Catalog MLOps Integration (Phase 15 Complete)
 
