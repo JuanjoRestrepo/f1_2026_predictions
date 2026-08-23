@@ -1,21 +1,20 @@
-# 🏁 2026 Belgian Grand Prix — AI Pre-Race Intelligence Report
+# 🏁 2026 Belgian Grand Prix — Pre-Race AI Intelligence Report (Round 10)
 
-## 1. Executive Summary & Podium Projection
-Our ensemble machine learning engine (XGBoost + LightGBM quantile regression) has synthesized historical telemetry, 2026 aero balance specs, and track surface degradation to forecast the performance hierarchy for the **Belgian Grand Prix** (Round 10).
+## 1. Podium Projection
 
-* **Projected Winner (P1)**: **NOR** (McLaren) — Projected Pace: `1:42.309`
-* **Runner-Up (P2)**: **RUS** (Mercedes) — Delta: `+0.543s`
-* **Podium P3**: **ANT** (Mercedes) — Delta: `+0.621s`
+Our XGBoost + LightGBM ensemble forecasts the following performance hierarchy:
 
----
+- **P1 Projected Winner**: **NOR** (McLaren) — `1:42.309`
+- **P2**: **RUS** (Mercedes) — `+0.543s`
+- **P3**: **ANT** (Mercedes) — `+0.621s`
 
-## 2. Key Telemetry & Strategic Insights
-1. **Pace Delta**: **NOR** holds a micro-advantage in high-speed direction changes, generating optimal tire surface temperature conservation across long runs.
-2. **Pit Window Dynamics**: A standard 1-stop strategy (Medium → Hard) is projected as optimal for the 44-lap distance, with the critical pit window opening between Laps 15 and 19.
-3. **Midfield Battle**: Tight margins separate P6 through P12, where track position and undercut potential will prove decisive.
+## 2. Strategic Insights
 
----
+- **Optimal Strategy**: 1-stop Medium → Hard. Pit window: Lap 17–22.
+- **Pace Gap**: The top three are separated by under 0.5s in projected median lap time.
+- **Key Battle**: Midfield pressure (P6–P10) will be settled by undercut execution.
 
-## 3. Recommended Watch Points
-* **Opening Lap Traction**: Track evolution and initial tire scrub on Lap 1.
-* **Tire Management**: Monitoring thermal degradation on the front-left tire during Stint 1.
+
+## 3. Model Confidence
+
+Predictions are based on 2022–2025 telemetry with 2026 aero-balance corrections applied.

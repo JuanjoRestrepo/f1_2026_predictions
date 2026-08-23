@@ -8,6 +8,7 @@ export interface RaceInfo {
   year: number;
   dirName: string;
   date: string;
+  isoDate?: string;
 }
 
 /**
@@ -18,32 +19,41 @@ export function getAvailableRaces(year: number): RaceInfo[] {
   if (!fs.existsSync(yearDir)) return [];
 
   const fullCalendar = getFullCalendar(year);
+
+  // Build a set of rounds that have actually been raced (race date <= end of today).
+  // This prevents future-race predicted files from unlocking a card prematurely.
+  const todayEndMs = new Date().setHours(23, 59, 59, 999);
+  const racedRoundNums = new Set(
+    fullCalendar
+      .filter((r) => r.isoDate && new Date(r.isoDate).getTime() <= todayEndMs)
+      .map((r) => r.round)
+  );
+
   const rounds = new Set<number>();
 
-  // Pass 1 — summaries/ directory: fully-processed races (rounds 4+) that
-  // have actual results, lap positions, tyre intelligence, and AI reports.
+  // Pass 1 — summaries/ directory: any file whose name contains round_N.
+  // Guard: only add if the round has actually been raced.
   const summariesDir = path.join(yearDir, "summaries");
   if (fs.existsSync(summariesDir)) {
     fs.readdirSync(summariesDir).forEach((f) => {
       const match = f.match(/round_(\d+)/);
-      if (match?.[1]) rounds.add(parseInt(match[1]));
+      if (match?.[1]) {
+        const roundNum = parseInt(match[1]);
+        if (racedRoundNums.has(roundNum)) rounds.add(roundNum);
+      }
     });
   }
 
-  // Pass 2 — race subdirectories: earlier rounds (1–3, 6–11) that have
-  // predictions.csv from the simulation or training pipeline.
+  // Pass 2 — race subdirectories: rounds that have predictions.csv.
+  // Same guard: only if raced.
   fullCalendar.forEach((race) => {
+    if (!racedRoundNums.has(race.round)) return;
     const dirNames = [race.dirName];
     if (race.dirName === "Barcelona_Grand_Prix") dirNames.push("Spanish_Grand_Prix");
     if (race.dirName === "Spanish_Grand_Prix") dirNames.push("Barcelona_Grand_Prix");
 
     for (const dName of dirNames) {
-      const predsPath = path.join(
-        yearDir,
-        dName,
-        "results",
-        "predictions.csv"
-      );
+      const predsPath = path.join(yearDir, dName, "results", "predictions.csv");
       if (fs.existsSync(predsPath)) {
         rounds.add(race.round);
         break;
@@ -61,6 +71,7 @@ export function getAvailableRaces(year: number): RaceInfo[] {
         year,
         dirName: raceDef?.dirName ?? `Round_${r}`,
         date: raceDef?.date ?? "TBD",
+        isoDate: raceDef?.isoDate,
       };
     });
 }
@@ -114,6 +125,8 @@ export function getFullCalendar(year: number): RaceInfo[] {
       name: entry.name,
       year,
       dirName: entry.dir,
+      // Preserve raw ISO date for future comparisons (e.g. filtering past races)
+      isoDate: entry.date,
       // Format ISO date ("2026-05-24") to a human-readable form for display
       date: new Date(entry.date + "T12:00:00Z").toLocaleDateString("en-US", {
         month: "long",

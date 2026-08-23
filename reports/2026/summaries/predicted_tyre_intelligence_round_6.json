@@ -4,7 +4,7 @@
   "total_laps": 78,
   "winning_strategy": "AI Optimal 1-Stop (M-H)",
   "avg_pit_stop": "2.42s (Est.)",
-  "proven_strategy_insight": "Thermal degradation projections for the Monaco Grand Prix highlight a primary Medium-to-Hard one-stop strategy. NOR and BOR are projected to manage opening stint degradation through sector 2, establishing a pit window around lap 31.",
+  "proven_strategy_insight": "Thermal degradation projections for the Monaco Grand Prix highlight a primary Medium-to-Hard 1-stop strategy. NOR and BOR are projected to control the opening stint before pitting around Lap 31.",
   "drivers": [
     {
       "driver": "NOR",
