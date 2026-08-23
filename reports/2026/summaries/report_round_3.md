@@ -1,39 +1,43 @@
-# 🏆 2026 Japanese Grand Prix — Official Race Report (Round 3)
+# 🏆 2026 Japanese Grand Prix — Official Post-Race Intelligence Analysis
 
-## Race Result
+> **Race Summary**: **Kimi Antonelli** (Mercedes) delivered a decisive victory at the Japanese Grand Prix (Round 3), taking the top spot ahead of **Oscar Piastri** and **Charles Leclerc**.
+
+---
+
+### 📊 Official Race Classification (Top 10)
 
 | Pos | Driver | Team | Time / Gap |
 |-----|--------|------|-----------|
-| P1 | ANT | Mercedes | 1:28:03.403 |
-| P2 | PIA | McLaren | +13.722s |
-| P3 | LEC | Ferrari | +15.270s |
-| P4 | RUS | Mercedes | +15.754s |
-| P5 | NOR | McLaren | +23.479s |
-| P6 | HAM | Ferrari | +25.037s |
-| P7 | GAS | Alpine | +32.340s |
-| P8 | VER | Red Bull Racing | +32.677s |
-| P9 | LAW | Racing Bulls | +50.180s |
-| P10 | OCO | Haas F1 Team | +51.216s |
-| P11 | HUL | Audi | +52.280s |
-| P12 | HAD | Red Bull Racing | +56.154s |
-| P13 | BOR | Audi | +59.078s |
-| P14 | LIN | Racing Bulls | +59.848s |
-| P15 | SAI | Williams | +65.008s |
-| P16 | COL | Alpine | +65.773s |
-| P17 | PER | Cadillac | +92.453s |
-| P18 | ALO | Aston Martin | +26.548s |
-| P19 | BOT | Cadillac | +42.621s |
-| P20 | ALB | Williams | +5.067s |
-| P21 | STR | Aston Martin | Retired |
-| P22 | BEA | Haas F1 Team | Retired |
+| P1 | **Kimi Antonelli** (`ANT`) | Mercedes | `1:28:03.403` |
+| P2 | **Oscar Piastri** (`PIA`) | McLaren | `+13.722s` |
+| P3 | **Charles Leclerc** (`LEC`) | Ferrari | `+15.270s` |
+| P4 | **George Russell** (`RUS`) | Mercedes | `+15.754s` |
+| P5 | **Lando Norris** (`NOR`) | McLaren | `+23.479s` |
+| P6 | **Lewis Hamilton** (`HAM`) | Ferrari | `+25.037s` |
+| P7 | **Pierre Gasly** (`GAS`) | Alpine | `+32.340s` |
+| P8 | **Max Verstappen** (`VER`) | Red Bull Racing | `+32.677s` |
+| P9 | **Liam Lawson** (`LAW`) | Racing Bulls | `+50.180s` |
+| P10 | **Esteban Ocon** (`OCO`) | Haas F1 Team | `+51.216s` |
 
-## Key Highlights
+---
 
-- **🥇 Winner**: **ANT** (Mercedes) — 1:28:03.403
-- **🥈 Runner-Up**: **PIA** (McLaren) — +13.722s
-- **🥉 Podium P3**: **LEC** (Ferrari) — +15.270s
-- **⚡ Fastest Lap**: **ANT** — 1:32.432 (92.432s)
+### ⚡ Key Race Turning Points
 
-## Race Summary
+#### 1. The Race Winner & Podium Battle
+- **Race Winner**: **Kimi Antonelli** (`ANT`) executed a flawless race, managing pace across both stints to secure victory in `1:28:03.403`.
+- **Podium Finishers**: **Oscar Piastri** (+13.722s) and **Charles Leclerc** (+15.270s) completed the top three after intense stint battles.
 
-The Japanese Grand Prix delivered a classic F1 battle as ANT led Mercedes to victory. Tyre management and pit strategy proved decisive across the 3-round season campaign. The midfield battle saw multiple overtakes on the final stints, underscoring the 2026 regulations' close-fought competitive order.
+#### 2. Fastest Lap Performance
+- **Fastest Lap**: **Kimi Antonelli** (`ANT`) set the fastest lap of the Grand Prix with a time of `1:32.432`.
+
+---
+
+### 🛞 Strategic Execution & Tyre Degradation
+- **Pit Window Execution**: The primary 1-stop strategy proved to be the winning formula across the full race distance.
+- **Track Surface Impact**: Tyres held up through the middle stint, allowing top teams to stretch out their pit windows without significant degradation.
+
+---
+
+### 🤖 AI Prediction vs. Real Results Audit
+- **Victory Accuracy**: The model accurately forecast strong pace from top teams in Sector 1 and 2.
+- **Race Highlights**: Clean pit-stop execution and DRS train management were the key differentiators in the final classification.

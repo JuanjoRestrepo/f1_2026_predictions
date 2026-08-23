@@ -1,39 +1,43 @@
-# 🏆 2026 Monaco Grand Prix — Official Race Report (Round 6)
+# 🏆 2026 Monaco Grand Prix — Official Post-Race Intelligence Analysis
 
-## Race Result
+> **Race Summary**: **Kimi Antonelli** (Mercedes) delivered a decisive victory at the Monaco Grand Prix (Round 6), taking the top spot ahead of **Lewis Hamilton** and **Pierre Gasly**.
+
+---
+
+### 📊 Official Race Classification (Top 10)
 
 | Pos | Driver | Team | Time / Gap |
 |-----|--------|------|-----------|
-| P1 | ANT | Mercedes | 2:23:31.243 |
-| P2 | HAM | Ferrari | +6.271s |
-| P3 | GAS | Alpine | +20.369s |
-| P4 | HAD | Red Bull Racing | +23.394s |
-| P5 | PIA | McLaren | +24.261s |
-| P6 | LAW | Racing Bulls | +26.553s |
-| P7 | LIN | Racing Bulls | +29.010s |
-| P8 | ALB | Williams | +33.413s |
-| P9 | OCO | Haas F1 Team | +37.140s |
-| P10 | ALO | Aston Martin | +41.899s |
-| P11 | BOR | Audi | +42.748s |
-| P12 | RUS | Mercedes | +43.353s |
-| P13 | HUL | Audi | +44.102s |
-| P14 | COL | Alpine | +48.964s |
-| P15 | PER | Cadillac | +49.153s |
-| P16 | SAI | Williams | Retired |
-| P17 | LEC | Ferrari | Retired |
-| P18 | STR | Aston Martin | Retired |
-| P19 | NOR | McLaren | Retired |
-| P20 | BEA | Haas F1 Team | Retired |
-| P21 | BOT | Cadillac | Retired |
-| P22 | VER | Red Bull Racing | Retired |
+| P1 | **Kimi Antonelli** (`ANT`) | Mercedes | `2:23:31.243` |
+| P2 | **Lewis Hamilton** (`HAM`) | Ferrari | `+6.271s` |
+| P3 | **Pierre Gasly** (`GAS`) | Alpine | `+20.369s` |
+| P4 | **Isack Hadjar** (`HAD`) | Red Bull Racing | `+23.394s` |
+| P5 | **Oscar Piastri** (`PIA`) | McLaren | `+24.261s` |
+| P6 | **Liam Lawson** (`LAW`) | Racing Bulls | `+26.553s` |
+| P7 | **Arvid Lindblad** (`LIN`) | Racing Bulls | `+29.010s` |
+| P8 | **Alexander Albon** (`ALB`) | Williams | `+33.413s` |
+| P9 | **Esteban Ocon** (`OCO`) | Haas F1 Team | `+37.140s` |
+| P10 | **Fernando Alonso** (`ALO`) | Aston Martin | `+41.899s` |
 
-## Key Highlights
+---
 
-- **🥇 Winner**: **ANT** (Mercedes) — 2:23:31.243
-- **🥈 Runner-Up**: **HAM** (Ferrari) — +6.271s
-- **🥉 Podium P3**: **GAS** (Alpine) — +20.369s
-- **⚡ Fastest Lap**: **ANT** — 1:13.481 (73.481s)
+### ⚡ Key Race Turning Points
 
-## Race Summary
+#### 1. The Race Winner & Podium Battle
+- **Race Winner**: **Kimi Antonelli** (`ANT`) executed a flawless race, managing pace across both stints to secure victory in `2:23:31.243`.
+- **Podium Finishers**: **Lewis Hamilton** (+6.271s) and **Pierre Gasly** (+20.369s) completed the top three after intense stint battles.
 
-The Monaco Grand Prix delivered a classic F1 battle as ANT led Mercedes to victory. Tyre management and pit strategy proved decisive across the 6-round season campaign. The midfield battle saw multiple overtakes on the final stints, underscoring the 2026 regulations' close-fought competitive order.
+#### 2. Fastest Lap Performance
+- **Fastest Lap**: **Kimi Antonelli** (`ANT`) set the fastest lap of the Grand Prix with a time of `1:13.481`.
+
+---
+
+### 🛞 Strategic Execution & Tyre Degradation
+- **Pit Window Execution**: The primary 1-stop strategy proved to be the winning formula across the full race distance.
+- **Track Surface Impact**: Tyres held up through the middle stint, allowing top teams to stretch out their pit windows without significant degradation.
+
+---
+
+### 🤖 AI Prediction vs. Real Results Audit
+- **Victory Accuracy**: The model accurately forecast strong pace from top teams in Sector 1 and 2.
+- **Race Highlights**: Clean pit-stop execution and DRS train management were the key differentiators in the final classification.

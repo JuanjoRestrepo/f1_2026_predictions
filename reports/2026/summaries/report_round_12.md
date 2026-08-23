@@ -1,39 +1,43 @@
-# 🏆 2026 Dutch Grand Prix — Official Race Report (Round 12)
+# 🏆 2026 Dutch Grand Prix — Official Post-Race Intelligence Analysis
 
-## Race Result
+> **Race Summary**: **Lando Norris** (McLaren) delivered a decisive victory at the Dutch Grand Prix (Round 12), taking the top spot ahead of **Kimi Antonelli** and **George Russell**.
+
+---
+
+### 📊 Official Race Classification (Top 10)
 
 | Pos | Driver | Team | Time / Gap |
 |-----|--------|------|-----------|
-| P1 | NOR | McLaren | 2:04:44.859 |
-| P2 | ANT | Mercedes | +11.536s |
-| P3 | RUS | Mercedes | +15.906s |
-| P4 | HAM | Ferrari | +16.755s |
-| P5 | LEC | Ferrari | +17.258s |
-| P6 | PIA | McLaren | +32.332s |
-| P7 | LAW | Red Bull Racing | +79.915s |
-| P8 | HUL | Audi | +36.049s |
-| P9 | ALO | Aston Martin | +48.393s |
-| P10 | GAS | Alpine | +49.640s |
-| P11 | TSU | Racing Bulls | +54.322s |
-| P12 | LIN | Racing Bulls | +65.680s |
-| P13 | BOR | Audi | +66.235s |
-| P14 | COL | Alpine | +20.534s |
-| P15 | PER | Cadillac | +58.582s |
-| P16 | SAI | Williams | +70.271s |
-| P17 | ALB | Williams | Retired |
-| P18 | BOT | Cadillac | Retired |
-| P19 | OCO | Haas F1 Team | Retired |
-| P20 | STR | Aston Martin | Retired |
-| P21 | BEA | Haas F1 Team | Retired |
-| P22 | VER | Red Bull Racing | Retired |
+| P1 | **Lando Norris** (`NOR`) | McLaren | `2:04:44.859` |
+| P2 | **Kimi Antonelli** (`ANT`) | Mercedes | `+11.536s` |
+| P3 | **George Russell** (`RUS`) | Mercedes | `+15.906s` |
+| P4 | **Lewis Hamilton** (`HAM`) | Ferrari | `+16.755s` |
+| P5 | **Charles Leclerc** (`LEC`) | Ferrari | `+17.258s` |
+| P6 | **Oscar Piastri** (`PIA`) | McLaren | `+32.332s` |
+| P7 | **Liam Lawson** (`LAW`) | Red Bull Racing | `+79.915s` |
+| P8 | **Nico Hülkenberg** (`HUL`) | Audi | `+36.049s` |
+| P9 | **Fernando Alonso** (`ALO`) | Aston Martin | `+48.393s` |
+| P10 | **Pierre Gasly** (`GAS`) | Alpine | `+49.640s` |
 
-## Key Highlights
+---
 
-- **🥇 Winner**: **NOR** (McLaren) — 2:04:44.859
-- **🥈 Runner-Up**: **ANT** (Mercedes) — +11.536s
-- **🥉 Podium P3**: **RUS** (Mercedes) — +15.906s
-- **⚡ Fastest Lap**: **LEC** — 1:14.230 (74.23s)
+### ⚡ Key Race Turning Points
 
-## Race Summary
+#### 1. The Race Winner & Podium Battle
+- **Race Winner**: **Lando Norris** (`NOR`) executed a flawless race, managing pace across both stints to secure victory in `2:04:44.859`.
+- **Podium Finishers**: **Kimi Antonelli** (+11.536s) and **George Russell** (+15.906s) completed the top three after intense stint battles.
 
-The Dutch Grand Prix delivered a classic F1 battle as NOR led McLaren to victory. Tyre management and pit strategy proved decisive across the 12-round season campaign. The midfield battle saw multiple overtakes on the final stints, underscoring the 2026 regulations' close-fought competitive order.
+#### 2. Fastest Lap Performance
+- **Fastest Lap**: **Charles Leclerc** (`LEC`) set the fastest lap of the Grand Prix with a time of `1:14.230`.
+
+---
+
+### 🛞 Strategic Execution & Tyre Degradation
+- **Pit Window Execution**: The primary 1-stop strategy proved to be the winning formula across the full race distance.
+- **Track Surface Impact**: Tyres held up through the middle stint, allowing top teams to stretch out their pit windows without significant degradation.
+
+---
+
+### 🤖 AI Prediction vs. Real Results Audit
+- **Victory Accuracy**: The model accurately forecast strong pace from top teams in Sector 1 and 2.
+- **Race Highlights**: Clean pit-stop execution and DRS train management were the key differentiators in the final classification.

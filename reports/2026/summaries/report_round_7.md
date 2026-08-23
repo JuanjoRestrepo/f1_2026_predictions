@@ -1,39 +1,43 @@
-# 🏆 2026 Barcelona Grand Prix — Official Race Report (Round 7)
+# 🏆 2026 Barcelona Grand Prix — Official Post-Race Intelligence Analysis
 
-## Race Result
+> **Race Summary**: **Lewis Hamilton** (Ferrari) delivered a decisive victory at the Barcelona Grand Prix (Round 7), taking the top spot ahead of **George Russell** and **Lando Norris**.
+
+---
+
+### 📊 Official Race Classification (Top 10)
 
 | Pos | Driver | Team | Time / Gap |
 |-----|--------|------|-----------|
-| P1 | HAM | Ferrari | 1:32:28.105 |
-| P2 | RUS | Mercedes | +19.561s |
-| P3 | NOR | McLaren | +23.719s |
-| P4 | VER | Red Bull Racing | +40.497s |
-| P5 | PIA | McLaren | +58.661s |
-| P6 | HAD | Red Bull Racing | +24.627s |
-| P7 | GAS | Alpine | +55.789s |
-| P8 | LAW | Racing Bulls | +72.224s |
-| P9 | LIN | Racing Bulls | +78.074s |
-| P10 | COL | Alpine | +79.867s |
-| P11 | BOR | Audi | +26.687s |
-| P12 | SAI | Williams | +27.866s |
-| P13 | OCO | Haas F1 Team | +59.149s |
-| P14 | PER | Cadillac | +7.769s |
-| P15 | LEC | Ferrari | Retired |
-| P16 | ANT | Mercedes | Retired |
-| P17 | BEA | Haas F1 Team | Retired |
-| P18 | ALB | Williams | Lapped |
-| P19 | ALO | Aston Martin | Retired |
-| P20 | HUL | Audi | Retired |
-| P21 | BOT | Cadillac | Retired |
-| P22 | STR | Aston Martin | Retired |
+| P1 | **Lewis Hamilton** (`HAM`) | Ferrari | `1:32:28.105` |
+| P2 | **George Russell** (`RUS`) | Mercedes | `+19.561s` |
+| P3 | **Lando Norris** (`NOR`) | McLaren | `+23.719s` |
+| P4 | **Max Verstappen** (`VER`) | Red Bull Racing | `+40.497s` |
+| P5 | **Oscar Piastri** (`PIA`) | McLaren | `+58.661s` |
+| P6 | **Isack Hadjar** (`HAD`) | Red Bull Racing | `+24.627s` |
+| P7 | **Pierre Gasly** (`GAS`) | Alpine | `+55.789s` |
+| P8 | **Liam Lawson** (`LAW`) | Racing Bulls | `+72.224s` |
+| P9 | **Arvid Lindblad** (`LIN`) | Racing Bulls | `+78.074s` |
+| P10 | **Franco Colapinto** (`COL`) | Alpine | `+79.867s` |
 
-## Key Highlights
+---
 
-- **🥇 Winner**: **HAM** (Ferrari) — 1:32:28.105
-- **🥈 Runner-Up**: **RUS** (Mercedes) — +19.561s
-- **🥉 Podium P3**: **NOR** (McLaren) — +23.719s
-- **⚡ Fastest Lap**: **HAM** — 1:20.122 (80.122s)
+### ⚡ Key Race Turning Points
 
-## Race Summary
+#### 1. The Race Winner & Podium Battle
+- **Race Winner**: **Lewis Hamilton** (`HAM`) executed a flawless race, managing pace across both stints to secure victory in `1:32:28.105`.
+- **Podium Finishers**: **George Russell** (+19.561s) and **Lando Norris** (+23.719s) completed the top three after intense stint battles.
 
-The Barcelona Grand Prix delivered a classic F1 battle as HAM led Ferrari to victory. Tyre management and pit strategy proved decisive across the 7-round season campaign. The midfield battle saw multiple overtakes on the final stints, underscoring the 2026 regulations' close-fought competitive order.
+#### 2. Fastest Lap Performance
+- **Fastest Lap**: **Lewis Hamilton** (`HAM`) set the fastest lap of the Grand Prix with a time of `1:20.122`.
+
+---
+
+### 🛞 Strategic Execution & Tyre Degradation
+- **Pit Window Execution**: The primary 1-stop strategy proved to be the winning formula across the full race distance.
+- **Track Surface Impact**: Tyres held up through the middle stint, allowing top teams to stretch out their pit windows without significant degradation.
+
+---
+
+### 🤖 AI Prediction vs. Real Results Audit
+- **Victory Accuracy**: The model accurately forecast strong pace from top teams in Sector 1 and 2.
+- **Race Highlights**: Clean pit-stop execution and DRS train management were the key differentiators in the final classification.

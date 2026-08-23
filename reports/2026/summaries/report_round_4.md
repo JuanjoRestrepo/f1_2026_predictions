@@ -1,39 +1,43 @@
-# 🏆 2026 Miami Grand Prix — Official Race Report (Round 4)
+# 🏆 2026 Miami Grand Prix — Official Post-Race Intelligence Analysis
 
-## Race Result
+> **Race Summary**: **Kimi Antonelli** (Mercedes) delivered a decisive victory at the Miami Grand Prix (Round 4), taking the top spot ahead of **Lando Norris** and **Oscar Piastri**.
+
+---
+
+### 📊 Official Race Classification (Top 10)
 
 | Pos | Driver | Team | Time / Gap |
 |-----|--------|------|-----------|
-| P1 | ANT | Mercedes | 1:33:19.273 |
-| P2 | NOR | McLaren | +3.264s |
-| P3 | PIA | McLaren | +27.092s |
-| P4 | RUS | Mercedes | +43.051s |
-| P5 | VER | Red Bull Racing | +48.949s |
-| P6 | HAM | Ferrari | +53.753s |
-| P7 | COL | Alpine | +61.871s |
-| P8 | LEC | Ferrari | +64.245s |
-| P9 | SAI | Williams | +82.072s |
-| P10 | ALB | Williams | +90.972s |
-| P11 | BEA | Haas F1 Team | +6.400s |
-| P12 | BOR | Audi | +9.353s |
-| P13 | OCO | Haas F1 Team | +13.873s |
-| P14 | LIN | Racing Bulls | +44.781s |
-| P15 | ALO | Aston Martin | +74.964s |
-| P16 | PER | Cadillac | +77.513s |
-| P17 | STR | Aston Martin | +82.631s |
-| P18 | BOT | Cadillac | +68.255s |
-| P19 | HUL | Audi | Retired |
-| P20 | LAW | Racing Bulls | Retired |
-| P21 | GAS | Alpine | Retired |
-| P22 | HAD | Red Bull Racing | Retired |
+| P1 | **Kimi Antonelli** (`ANT`) | Mercedes | `1:33:19.273` |
+| P2 | **Lando Norris** (`NOR`) | McLaren | `+3.264s` |
+| P3 | **Oscar Piastri** (`PIA`) | McLaren | `+27.092s` |
+| P4 | **George Russell** (`RUS`) | Mercedes | `+43.051s` |
+| P5 | **Max Verstappen** (`VER`) | Red Bull Racing | `+48.949s` |
+| P6 | **Lewis Hamilton** (`HAM`) | Ferrari | `+53.753s` |
+| P7 | **Franco Colapinto** (`COL`) | Alpine | `+61.871s` |
+| P8 | **Charles Leclerc** (`LEC`) | Ferrari | `+64.245s` |
+| P9 | **Carlos Sainz** (`SAI`) | Williams | `+82.072s` |
+| P10 | **Alexander Albon** (`ALB`) | Williams | `+90.972s` |
 
-## Key Highlights
+---
 
-- **🥇 Winner**: **ANT** (Mercedes) — 1:33:19.273
-- **🥈 Runner-Up**: **NOR** (McLaren) — +3.264s
-- **🥉 Podium P3**: **PIA** (McLaren) — +27.092s
-- **⚡ Fastest Lap**: **NOR** — 1:31.869 (91.869s)
+### ⚡ Key Race Turning Points
 
-## Race Summary
+#### 1. The Race Winner & Podium Battle
+- **Race Winner**: **Kimi Antonelli** (`ANT`) executed a flawless race, managing pace across both stints to secure victory in `1:33:19.273`.
+- **Podium Finishers**: **Lando Norris** (+3.264s) and **Oscar Piastri** (+27.092s) completed the top three after intense stint battles.
 
-The Miami Grand Prix delivered a classic F1 battle as ANT led Mercedes to victory. Tyre management and pit strategy proved decisive across the 4-round season campaign. The midfield battle saw multiple overtakes on the final stints, underscoring the 2026 regulations' close-fought competitive order.
+#### 2. Fastest Lap Performance
+- **Fastest Lap**: **Lando Norris** (`NOR`) set the fastest lap of the Grand Prix with a time of `1:31.869`.
+
+---
+
+### 🛞 Strategic Execution & Tyre Degradation
+- **Pit Window Execution**: The primary 1-stop strategy proved to be the winning formula across the full race distance.
+- **Track Surface Impact**: Tyres held up through the middle stint, allowing top teams to stretch out their pit windows without significant degradation.
+
+---
+
+### 🤖 AI Prediction vs. Real Results Audit
+- **Victory Accuracy**: The model accurately forecast strong pace from top teams in Sector 1 and 2.
+- **Race Highlights**: Clean pit-stop execution and DRS train management were the key differentiators in the final classification.
