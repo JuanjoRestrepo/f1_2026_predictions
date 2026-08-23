@@ -30,18 +30,25 @@ export function getAvailableRaces(year: number): RaceInfo[] {
     });
   }
 
-  // Pass 2 — race subdirectories: earlier rounds (1–3) that only have
-  // predictions.csv from the training pipeline but were never run through
-  // the full post-race summariser. The race page renders gracefully with
-  // "Analysis pending" / "No data" placeholders for missing panels.
+  // Pass 2 — race subdirectories: earlier rounds (1–3, 6–11) that have
+  // predictions.csv from the simulation or training pipeline.
   fullCalendar.forEach((race) => {
-    const predsPath = path.join(
-      yearDir,
-      race.dirName,
-      "results",
-      "predictions.csv"
-    );
-    if (fs.existsSync(predsPath)) rounds.add(race.round);
+    const dirNames = [race.dirName];
+    if (race.dirName === "Barcelona_Grand_Prix") dirNames.push("Spanish_Grand_Prix");
+    if (race.dirName === "Spanish_Grand_Prix") dirNames.push("Barcelona_Grand_Prix");
+
+    for (const dName of dirNames) {
+      const predsPath = path.join(
+        yearDir,
+        dName,
+        "results",
+        "predictions.csv"
+      );
+      if (fs.existsSync(predsPath)) {
+        rounds.add(race.round);
+        break;
+      }
+    }
   });
 
   return Array.from(rounds)
@@ -210,7 +217,7 @@ export interface PredictedResultsPayload {
  */
 export function getRacePredictions(year: number, eventDirName: string): PredictedResultsPayload | null {
   try {
-    const filePath = path.join(
+    let filePath = path.join(
       getReportsDirectory(),
       year.toString(),
       eventDirName,
@@ -218,6 +225,13 @@ export function getRacePredictions(year: number, eventDirName: string): Predicte
       "predictions.csv"
     );
     
+    if (!fs.existsSync(filePath)) {
+      const altDir = eventDirName === "Barcelona_Grand_Prix" ? "Spanish_Grand_Prix" : eventDirName === "Spanish_Grand_Prix" ? "Barcelona_Grand_Prix" : null;
+      if (altDir) {
+        filePath = path.join(getReportsDirectory(), year.toString(), altDir, "results", "predictions.csv");
+      }
+    }
+
     if (!fs.existsSync(filePath)) {
       return null;
     }
