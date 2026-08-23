@@ -149,7 +149,7 @@ export function RaceTimeline({ data }: RaceTimelineProps) {
                   type="monotone"
                   dataKey={d.driver}
                   stroke={d.color || "#888"}
-                  strokeDasharray={d.lineStyle === "dashed" ? "5 5" : "0"}
+                  strokeDasharray={d.lineStyle === "dashed" ? "6 6" : undefined}
                   strokeWidth={isHovered ? 3 : isTop10 ? 2 : 0.8}
                   dot={false}
                   activeDot={{ r: 4, strokeWidth: 0 }}
@@ -181,7 +181,7 @@ export function RaceTimeline({ data }: RaceTimelineProps) {
                   y2="3"
                   stroke={d.color || "#888"}
                   strokeWidth="3"
-                  strokeDasharray={d.lineStyle === "dashed" ? "4 2" : "0"}
+                  strokeDasharray={d.lineStyle === "dashed" ? "4 3" : undefined}
                   className="transition-all duration-300 group-hover:stroke-white"
                 />
               </svg>
