@@ -2,9 +2,10 @@
   "gp": "Canadian Grand Prix",
   "year": 2026,
   "total_laps": 68,
-  "winning_strategy": "Medium to Hard",
-  "avg_pit_stop": "2.45s",
-  "proven_strategy_insight": "Optimizing track position on a low-degradation track evolution, the leading quartet of ANT, HAM, VER, and LEC successfully executed a highly efficient Soft-to-Medium one-stop strategy, maximizing stint lengths while managing thermal degradation. Conversely, HAD's aggressive three-stop S-M-S-S configuration failed to generate the requisite tire offset delta to overcome Montreal's high pit lane loss time, consolidating the superiority of the simplified one-stop baseline.",
+  "winning_strategy": "M\u2192H (1-stop)",
+  "avg_pit_stop": "20.0s",
+  "weather_intelligence": null,
+  "proven_strategy_insight": "Strategic Intelligence Report: Telemetry analysis of stint-loading and compound degradation for the Canadian Grand Prix is currently being synchronized with AI predictive models. Full strategic narrative will be available shortly.",
   "drivers": [
     {
       "driver": "ANT",

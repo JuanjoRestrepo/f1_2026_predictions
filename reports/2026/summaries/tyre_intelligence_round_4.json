@@ -2,9 +2,10 @@
   "gp": "Miami Grand Prix",
   "year": 2026,
   "total_laps": 57,
-  "winning_strategy": "Medium to Hard",
-  "avg_pit_stop": "2.45s",
-  "proven_strategy_insight": "The 2026 Miami Grand Prix yielded absolute strategic convergence among the top five finishers, who all executed an identical Medium-to-Hard one-stop strategy to combat high thermal degradation and exploit the optimum safety car window. With zero tactical offset between ANT, NOR, PIA, RUS, and VER, the final classification was ultimately decided by out-lap tire warm-up efficiency and superior management of the hard compound's degradation phase in dirty air.",
+  "winning_strategy": "M\u2192H (1-stop)",
+  "avg_pit_stop": "20.0s",
+  "weather_intelligence": null,
+  "proven_strategy_insight": "Strategic Intelligence Report: Telemetry analysis of stint-loading and compound degradation for the Miami Grand Prix is currently being synchronized with AI predictive models. Full strategic narrative will be available shortly.",
   "drivers": [
     {
       "driver": "ANT",

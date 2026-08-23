@@ -8,9 +8,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
-  ReferenceDot,
 } from "recharts";
 
 interface DriverData {
@@ -30,12 +28,6 @@ interface LapPositionData {
 
 interface RaceTimelineProps {
   data: LapPositionData;
-}
-
-interface TooltipPayload {
-  driver: string;
-  position: number;
-  team: string;
 }
 
 // Build per-lap rows: [{ lap: 1, RUS: 1, ANT: 3, ... }, ...]
@@ -66,7 +58,7 @@ const CustomTooltip = ({
   const sorted = [...payload].sort((a, b) => a.value - b.value);
 
   return (
-    <div className="rounded-lg border border-white/10 bg-[#1a1a2e] p-3 shadow-2xl text-xs">
+    <div className="rounded-lg border border-white/10 bg-[#1a1a2e] p-3 shadow-2xl text-xs z-50">
       <p className="font-bold text-white mb-2 border-b border-white/10 pb-1">
         Lap {label}
       </p>
@@ -92,11 +84,11 @@ export function RaceTimeline({ data }: RaceTimelineProps) {
   const chartData = buildChartData(data.drivers, data.total_laps);
 
   return (
-    <div className="w-full">
-      <div className="mb-4 flex justify-between items-end">
+    <div className="w-full space-y-4">
+      <div className="flex justify-between items-end">
         <div className="space-y-1">
           <p className="text-xs text-gray-400 leading-relaxed max-w-md">
-            Interactive visualization of the full 22-driver grid. 
+            Interactive visualization of the full grid. 
             <span className="text-indigo-400 font-medium"> Solid/Dashed lines differentiate teammates.</span>
           </p>
         </div>
@@ -105,8 +97,8 @@ export function RaceTimeline({ data }: RaceTimelineProps) {
         </div>
       </div>
 
-      <div className="rounded-xl bg-black/20 p-4 border border-white/5">
-        <ResponsiveContainer width="100%" height={480}>
+      <div className="rounded-xl bg-black/20 p-4 border border-white/5 overflow-hidden">
+        <ResponsiveContainer width="100%" height={360}>
           <LineChart
             data={chartData}
             margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
@@ -135,45 +127,7 @@ export function RaceTimeline({ data }: RaceTimelineProps) {
             />
             <Tooltip 
               content={<CustomTooltip />} 
-              cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
-            />
-            
-            <Legend
-              verticalAlign="bottom"
-              height={80}
-              wrapperStyle={{ fontSize: "10px", paddingTop: "30px" }}
-              content={({ payload }) => (
-                <div className="flex flex-wrap justify-center gap-x-4 gap-y-2">
-                  {payload?.map((entry: any) => {
-                    const driver = data.drivers.find(d => d.driver === entry.value);
-                    const isDashed = driver?.lineStyle === "dashed";
-                    const color = entry.color;
-                    
-                    return (
-                      <div 
-                        key={entry.value}
-                        className="flex items-center gap-1.5 cursor-pointer group"
-                        onMouseEnter={() => setActiveDriver(entry.value)}
-                        onMouseLeave={() => setActiveDriver(null)}
-                      >
-                        {/* Professional F1 Line Indicator */}
-                        <svg width="24" height="6" className="flex-shrink-0">
-                          <line 
-                            x1="0" y1="3" x2="24" y2="3" 
-                            stroke={color} 
-                            strokeWidth="3" 
-                            strokeDasharray={isDashed ? "4 2" : "0"}
-                            className="transition-all duration-300 group-hover:stroke-white"
-                          />
-                        </svg>
-                        <span className="text-gray-400 group-hover:text-white transition-colors uppercase font-mono">
-                          {entry.value}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              cursor={{ stroke: "rgba(255,255,255,0.1)", strokeWidth: 1 }}
             />
 
             {data.drivers.map((d) => {
@@ -209,6 +163,36 @@ export function RaceTimeline({ data }: RaceTimelineProps) {
             })}
           </LineChart>
         </ResponsiveContainer>
+
+        {/* Dedicated Non-Overlapping Legend Container */}
+        <div className="mt-4 pt-3 border-t border-white/5 flex flex-wrap justify-center gap-x-4 gap-y-2 max-h-28 overflow-y-auto custom-scrollbar">
+          {data.drivers.map((d) => (
+            <div
+              key={d.driver}
+              className="flex items-center gap-1.5 cursor-pointer group"
+              onMouseEnter={() => setActiveDriver(d.driver)}
+              onMouseLeave={() => setActiveDriver(null)}
+            >
+              <svg width="24" height="6" className="flex-shrink-0">
+                <line
+                  x1="0"
+                  y1="3"
+                  x2="24"
+                  y2="3"
+                  stroke={d.color || "#888"}
+                  strokeWidth="3"
+                  strokeDasharray={d.lineStyle === "dashed" ? "4 2" : "0"}
+                  className="transition-all duration-300 group-hover:stroke-white"
+                />
+              </svg>
+              <span className={`text-[10px] uppercase font-mono transition-colors ${
+                activeDriver === d.driver ? "text-white font-bold scale-105" : "text-gray-400 group-hover:text-white"
+              }`}>
+                {d.driver}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

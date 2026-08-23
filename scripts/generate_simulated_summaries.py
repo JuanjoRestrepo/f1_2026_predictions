@@ -238,30 +238,46 @@ Our ensemble machine learning engine (XGBoost + LightGBM quantile regression) ha
 """
 
 
+
+def load_calendar():
+    cal_file = REPORTS_DIR / "calendar.json"
+    if cal_file.exists():
+        with open(cal_file) as f:
+            data = json.load(f)
+            races = data.get("races", data) if isinstance(data, dict) else data
+            return {r["round"]: r for r in races}
+    return {}
+
 def main():
     SUMMARIES_DIR.mkdir(parents=True, exist_ok=True)
+    calendar_map = load_calendar()
     
-    for round_num, dir_name in ROUND_DIRS.items():
+    rounds_to_process = sorted(calendar_map.keys()) if calendar_map else sorted(ROUND_DIRS.keys())
+    
+    for round_num in rounds_to_process:
+        race_info = calendar_map.get(round_num, {})
+        dir_name = race_info.get("dir", ROUND_DIRS.get(round_num, ""))
+        event_name = race_info.get("name", ROUND_NAMES.get(round_num, f"Round {round_num}"))
+        
         race_dir = REPORTS_DIR / dir_name / "results"
         preds_file = race_dir / "predictions.csv"
         
-        # If Spanish_Grand_Prix exists but Barcelona doesn't or vice versa
         if not preds_file.exists() and dir_name == "Barcelona_Grand_Prix":
             preds_file = REPORTS_DIR / "Spanish_Grand_Prix" / "results" / "predictions.csv"
+        if not preds_file.exists() and dir_name == "Spanish_Grand_Prix":
+            preds_file = REPORTS_DIR / "Barcelona_Grand_Prix" / "results" / "predictions.csv"
             
         if not preds_file.exists():
-            print(f"Skipping Round {round_num} ({dir_name}): predictions.csv not found")
+            print(f"Skipping Round {round_num} ({event_name}): predictions.csv not found")
             continue
 
-        print(f"Processing Round {round_num} ({ROUND_NAMES[round_num]})...")
+        print(f"Processing Round {round_num} ({event_name})...")
         df = pd.read_csv(preds_file)
         
         if "predicted_position" not in df.columns:
-            # Add predicted position by sorting predicted_laptime_xgb_s
             df = df.sort_values("predicted_laptime_xgb_s").reset_index(drop=True)
             df["predicted_position"] = df.index + 1
 
-        event_name = ROUND_NAMES[round_num]
         total_laps = LAP_COUNTS.get(round_num, 60)
 
         # 1. Predicted Lap Positions

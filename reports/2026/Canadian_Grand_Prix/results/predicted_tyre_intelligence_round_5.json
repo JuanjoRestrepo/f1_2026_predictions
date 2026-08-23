@@ -2,9 +2,26 @@
   "gp": "Canadian Grand Prix",
   "year": 2026,
   "total_laps": 68,
-  "winning_strategy": "AI Optimal (M-H)",
-  "avg_pit_stop": "2.50s (Est.)",
-  "proven_strategy_insight": "Simulation data for Montreal projects a highly convergent one-stop strategy, with the top five competitors utilizing an identical Medium-to-Hard transition to optimize absolute race time against the high eighteen-second pit lane loss. Under this baseline, track position remains paramount, requiring drivers to manage rear-axle thermal degradation through the traction phases to delay their stops until the lap twenty-four to thirty window, thereby maximizing undercut protection and maintaining flexibility for high-probability Safety Car neutralization.",
+  "winning_strategy": "AI Optimal (M\u2192H)",
+  "avg_pit_stop": "20.5s (Est.)",
+  "weather_intelligence": {
+    "provider": "unavailable",
+    "event_name": "Canadian Grand Prix",
+    "generated_at_utc": "2026-08-23T17:06:20.222778+00:00",
+    "latitude": 45.5,
+    "longitude": -73.5228,
+    "target_date": "2026-05-24",
+    "race_day": null,
+    "forecast_days": [],
+    "rain_probability": null,
+    "risk_level": "unknown",
+    "confidence": "unavailable",
+    "summary": "No external weather forecast is available for Canadian Grand Prix; Friday forecast keeps conservative dry-weather assumptions.",
+    "warnings": [
+      "No external weather API key configured."
+    ]
+  },
+  "proven_strategy_insight": "Strategic Intelligence Report: Telemetry analysis of stint-loading and compound degradation for the Canadian Grand Prix is currently being synchronized with AI predictive models. Full strategic narrative will be available shortly.",
   "drivers": [
     {
       "driver": "NOR",
@@ -14,13 +31,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 34,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 41,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -33,13 +50,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 34,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 41,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -52,13 +69,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 34,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 41,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -71,13 +88,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 34,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 41,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -90,13 +107,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 34,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 41,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -109,13 +126,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 34,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 41,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -128,13 +145,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 34,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 41,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -147,13 +164,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 34,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 41,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -166,13 +183,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 34,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 41,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -185,13 +202,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 34,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 41,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -204,13 +221,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 34,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 41,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -223,13 +240,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 34,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 41,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -242,13 +259,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 34,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 41,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -261,13 +278,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 34,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 41,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -280,13 +297,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 34,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 41,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -299,13 +316,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 34,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 41,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -318,13 +335,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 34,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 41,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -337,13 +354,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 34,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 41,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -356,13 +373,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 34,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 41,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -375,13 +392,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 34,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 41,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -394,13 +411,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 34,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 41,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
@@ -413,13 +430,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 34,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 41,
+          "laps": 34,
           "color": "#f8fafc"
         }
       ]
