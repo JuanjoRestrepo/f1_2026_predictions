@@ -80,6 +80,14 @@ export default function Home({ availableRaces, fullCalendar }: HomeProps) {
     ? `${nextRace.date} 08:00:00 UTC`
     : (fullCalendar[fullCalendar.length - 1]?.date ?? "December 06, 2026 08:00:00 UTC");
 
+  // Latest race for which we actually have processed data — this is what the
+  // "View AI Intelligence Report" button links to. Using nextRace here caused a
+  // 404 because upcoming rounds are never in getStaticPaths until data lands.
+  const latestAvailableRace =
+    availableRaces.length > 0
+      ? availableRaces.reduce((prev, cur) => (cur.round > prev.round ? cur : prev))
+      : null;
+
   return (
     <div className="min-h-screen bg-f1darker text-gray-200 selection:bg-f1red selection:text-white pb-20">
       <Head>
@@ -126,7 +134,7 @@ export default function Home({ availableRaces, fullCalendar }: HomeProps) {
             </p>
           </div>
 
-          {/* Next Race Card (Monaco) */}
+          {/* Race Card — countdown to next GP + link to latest analysed race */}
           <div className="flex-1 w-full max-w-md">
             <div className="bg-black/40 backdrop-blur-xl border border-gray-800 rounded-2xl p-6 shadow-2xl relative overflow-hidden group">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-f1red to-orange-500"></div>
@@ -134,7 +142,12 @@ export default function Home({ availableRaces, fullCalendar }: HomeProps) {
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <h3 className="text-gray-400 font-mono text-xs uppercase tracking-widest mb-1">Next Grand Prix</h3>
-                  <h2 className="text-2xl font-bold text-white">{nextRace?.name || "Monaco Grand Prix"}</h2>
+                  <h2 className="text-2xl font-bold text-white">{nextRace?.name || "Season Finale"}</h2>
+                  {latestAvailableRace && (
+                    <p className="text-gray-500 text-xs mt-1 font-mono">
+                      Latest analysis: <span className="text-f1red">{latestAvailableRace.name}</span>
+                    </p>
+                  )}
                 </div>
                 <div className="w-10 h-10 rounded-full bg-f1dark flex items-center justify-center border border-gray-800">
                   <MapPin size={18} className="text-f1red" />
@@ -145,13 +158,20 @@ export default function Home({ availableRaces, fullCalendar }: HomeProps) {
                 <CountdownTimer targetDate={targetDate} />
               </div>
 
-              <Link 
-                href={`/race/${nextRace?.round || 6}`}
-                className="w-full py-3 bg-f1red hover:bg-red-700 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 group-hover:shadow-[0_0_20px_rgba(225,6,0,0.4)]"
-              >
-                View AI Intelligence Report
-                <ChevronRight size={18} />
-              </Link>
+              {latestAvailableRace ? (
+                <Link 
+                  href={`/race/${latestAvailableRace.round}`}
+                  className="w-full py-3 bg-f1red hover:bg-red-700 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 group-hover:shadow-[0_0_20px_rgba(225,6,0,0.4)]"
+                >
+                  View AI Intelligence Report
+                  <ChevronRight size={18} />
+                </Link>
+              ) : (
+                <div className="w-full py-3 bg-gray-800 text-gray-500 font-bold rounded-lg flex items-center justify-center gap-2 cursor-not-allowed">
+                  <Clock size={18} />
+                  Analysis Pending
+                </div>
+              )}
             </div>
           </div>
         </div>
