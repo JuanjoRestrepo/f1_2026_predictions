@@ -124,30 +124,51 @@ def load_actual_results(round_num: int) -> dict | None:
 def generate_predicted_lap_positions(df: pd.DataFrame, event_name: str, round_num: int, total_laps: int) -> dict:
     drivers_list = []
     num_drivers = len(df)
+    seen_teams: set[str] = set()
 
     for idx, row in df.iterrows():
         driver_code = str(row["Driver"])
         team_name = str(row.get("Team", "Unknown"))
         final_pos = int(row["predicted_position"])
+
+        # Teammates: 1st driver solid line, 2nd driver dashed line (------)
+        line_style = "dashed" if team_name in seen_teams else "solid"
+        seen_teams.add(team_name)
+
+        # Realistic initial grid displacement
         start_pos = max(1, min(num_drivers, final_pos + (1 if idx % 3 == 0 else -1 if idx % 2 == 0 else 0)))
-        pit_lap = int(total_laps * (0.35 + (idx % 4) * 0.05))
+        pit_start_lap = int(total_laps * (0.32 + (idx % 5) * 0.04))
+        pit_duration_laps = 3
 
         positions: dict[str, int] = {}
         for lap in range(1, total_laps + 1):
-            if lap < pit_lap:
-                ratio = lap / pit_lap
+            if lap <= 3:
+                # Turn 1 and opening lap shuffling
+                ratio = lap / 3.0
                 curr = int(round(start_pos + ratio * (final_pos - start_pos)))
-            elif lap < pit_lap + 3:
-                curr = min(num_drivers, final_pos + 4)
+            elif lap < pit_start_lap:
+                # Stint 1 steady pace with minor micro-oscillations
+                micro_offset = 1 if (lap % 7 == 0 and final_pos < num_drivers) else 0
+                curr = max(1, min(num_drivers, final_pos + micro_offset))
+            elif lap < pit_start_lap + pit_duration_laps:
+                # Pit stop window drop (in-lap, pit stop, out-lap)
+                curr = min(num_drivers, final_pos + 4 + (idx % 3))
+            elif lap < pit_start_lap + 10:
+                # Out-lap recovery phase as rivals pit
+                recovery_ratio = (lap - (pit_start_lap + pit_duration_laps)) / 7.0
+                drop_pos = min(num_drivers, final_pos + 4 + (idx % 3))
+                curr = int(round(drop_pos - recovery_ratio * (drop_pos - final_pos)))
             else:
+                # Stint 2 final sprint to predicted position
                 curr = final_pos
+
             positions[str(lap)] = max(1, min(num_drivers, curr))
 
         drivers_list.append({
             "driver": driver_code,
             "team": team_name,
             "color": TEAM_COLORS.get(team_name, "#888888"),
-            "lineStyle": "solid",
+            "lineStyle": line_style,
             "positions": positions,
         })
 
