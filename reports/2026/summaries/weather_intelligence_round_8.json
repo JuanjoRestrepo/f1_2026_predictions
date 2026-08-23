@@ -1,0 +1,17 @@
+{
+  "provider": "unavailable",
+  "event_name": "Austrian Grand Prix",
+  "generated_at_utc": "2026-08-23T17:06:52.337105+00:00",
+  "latitude": 47.2197,
+  "longitude": 14.7647,
+  "target_date": "2026-06-28",
+  "race_day": null,
+  "forecast_days": [],
+  "rain_probability": null,
+  "risk_level": "unknown",
+  "confidence": "unavailable",
+  "summary": "No external weather forecast is available for Austrian Grand Prix; Friday forecast keeps conservative dry-weather assumptions.",
+  "warnings": [
+    "No external weather API key configured."
+  ]
+}

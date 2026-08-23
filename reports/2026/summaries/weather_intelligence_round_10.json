@@ -1,0 +1,17 @@
+{
+  "provider": "unavailable",
+  "event_name": "Belgian Grand Prix",
+  "generated_at_utc": "2026-08-23T17:07:13.918321+00:00",
+  "latitude": 50.4372,
+  "longitude": 5.9714,
+  "target_date": "2026-07-19",
+  "race_day": null,
+  "forecast_days": [],
+  "rain_probability": null,
+  "risk_level": "unknown",
+  "confidence": "unavailable",
+  "summary": "No external weather forecast is available for Belgian Grand Prix; Friday forecast keeps conservative dry-weather assumptions.",
+  "warnings": [
+    "No external weather API key configured."
+  ]
+}

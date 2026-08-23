@@ -1,0 +1,17 @@
+{
+  "provider": "unavailable",
+  "event_name": "Dutch Grand Prix",
+  "generated_at_utc": "2026-08-23T17:07:36.547215+00:00",
+  "latitude": 52.3888,
+  "longitude": 4.5409,
+  "target_date": "2026-08-23",
+  "race_day": null,
+  "forecast_days": [],
+  "rain_probability": null,
+  "risk_level": "unknown",
+  "confidence": "unavailable",
+  "summary": "No external weather forecast is available for Dutch Grand Prix; Friday forecast keeps conservative dry-weather assumptions.",
+  "warnings": [
+    "No external weather API key configured."
+  ]
+}

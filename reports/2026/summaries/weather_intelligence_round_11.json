@@ -1,0 +1,17 @@
+{
+  "provider": "unavailable",
+  "event_name": "Hungarian Grand Prix",
+  "generated_at_utc": "2026-08-23T17:07:25.793156+00:00",
+  "latitude": 47.5789,
+  "longitude": 19.2486,
+  "target_date": "2026-07-26",
+  "race_day": null,
+  "forecast_days": [],
+  "rain_probability": null,
+  "risk_level": "unknown",
+  "confidence": "unavailable",
+  "summary": "No external weather forecast is available for Hungarian Grand Prix; Friday forecast keeps conservative dry-weather assumptions.",
+  "warnings": [
+    "No external weather API key configured."
+  ]
+}

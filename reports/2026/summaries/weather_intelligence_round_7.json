@@ -1,0 +1,17 @@
+{
+  "provider": "unavailable",
+  "event_name": "Barcelona Grand Prix",
+  "generated_at_utc": "2026-08-23T17:06:41.427704+00:00",
+  "latitude": null,
+  "longitude": null,
+  "target_date": "2026-06-14",
+  "race_day": null,
+  "forecast_days": [],
+  "rain_probability": null,
+  "risk_level": "unknown",
+  "confidence": "unavailable",
+  "summary": "No external weather forecast is available for Barcelona Grand Prix; Friday forecast keeps conservative dry-weather assumptions.",
+  "warnings": [
+    "No circuit coordinates configured for Barcelona Grand Prix."
+  ]
+}

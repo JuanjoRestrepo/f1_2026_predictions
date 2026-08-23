@@ -1,0 +1,17 @@
+{
+  "provider": "unavailable",
+  "event_name": "Chinese Grand Prix",
+  "generated_at_utc": "2026-08-23T17:05:50.184266+00:00",
+  "latitude": 31.3389,
+  "longitude": 121.22,
+  "target_date": "2026-03-15",
+  "race_day": null,
+  "forecast_days": [],
+  "rain_probability": null,
+  "risk_level": "unknown",
+  "confidence": "unavailable",
+  "summary": "No external weather forecast is available for Chinese Grand Prix; Friday forecast keeps conservative dry-weather assumptions.",
+  "warnings": [
+    "No external weather API key configured."
+  ]
+}

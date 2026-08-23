@@ -1,0 +1,163 @@
+{
+  "fastest_lap": {
+    "driver": "ANT",
+    "time": "1:31.777",
+    "time_s": 91.777
+  },
+  "results": [
+    {
+      "position": 1,
+      "driver": "LEC",
+      "team": "Ferrari",
+      "status": "Finished",
+      "time": "1:27:11.335"
+    },
+    {
+      "position": 2,
+      "driver": "RUS",
+      "team": "Mercedes",
+      "status": "Finished",
+      "time": "+0.427s"
+    },
+    {
+      "position": 3,
+      "driver": "HAM",
+      "team": "Ferrari",
+      "status": "Finished",
+      "time": "+0.772s"
+    },
+    {
+      "position": 4,
+      "driver": "NOR",
+      "team": "McLaren",
+      "status": "Finished",
+      "time": "+1.149s"
+    },
+    {
+      "position": 5,
+      "driver": "HAD",
+      "team": "Red Bull Racing",
+      "status": "Finished",
+      "time": "+1.598s"
+    },
+    {
+      "position": 6,
+      "driver": "LAW",
+      "team": "Racing Bulls",
+      "status": "Finished",
+      "time": "+2.023s"
+    },
+    {
+      "position": 7,
+      "driver": "LIN",
+      "team": "Racing Bulls",
+      "status": "Finished",
+      "time": "+2.214s"
+    },
+    {
+      "position": 8,
+      "driver": "BOR",
+      "team": "Audi",
+      "status": "Finished",
+      "time": "+2.413s"
+    },
+    {
+      "position": 9,
+      "driver": "COL",
+      "team": "Alpine",
+      "status": "Finished",
+      "time": "+3.229s"
+    },
+    {
+      "position": 10,
+      "driver": "GAS",
+      "team": "Alpine",
+      "status": "Finished",
+      "time": "+3.445s"
+    },
+    {
+      "position": 11,
+      "driver": "PIA",
+      "team": "McLaren",
+      "status": "Finished",
+      "time": "+4.014s"
+    },
+    {
+      "position": 12,
+      "driver": "BEA",
+      "team": "Haas F1 Team",
+      "status": "Finished",
+      "time": "+5.245s"
+    },
+    {
+      "position": 13,
+      "driver": "OCO",
+      "team": "Haas F1 Team",
+      "status": "Finished",
+      "time": "+5.512s"
+    },
+    {
+      "position": 14,
+      "driver": "PER",
+      "team": "Cadillac",
+      "status": "Finished",
+      "time": "+7.403s"
+    },
+    {
+      "position": 15,
+      "driver": "ANT",
+      "team": "Mercedes",
+      "status": "Finished",
+      "time": "+8.005s"
+    },
+    {
+      "position": 16,
+      "driver": "BOT",
+      "team": "Cadillac",
+      "status": "Finished",
+      "time": "+8.162s"
+    },
+    {
+      "position": 17,
+      "driver": "SAI",
+      "team": "Williams",
+      "status": "Lapped",
+      "time": "+4.391s"
+    },
+    {
+      "position": 18,
+      "driver": "ALO",
+      "team": "Aston Martin",
+      "status": "Lapped",
+      "time": "+4.980s"
+    },
+    {
+      "position": 19,
+      "driver": "STR",
+      "team": "Aston Martin",
+      "status": "Lapped",
+      "time": "+6.750s"
+    },
+    {
+      "position": 20,
+      "driver": "VER",
+      "team": "Red Bull Racing",
+      "status": "Retired",
+      "time": "Retired"
+    },
+    {
+      "position": 21,
+      "driver": "ALB",
+      "team": "Williams",
+      "status": "Retired",
+      "time": "Retired"
+    },
+    {
+      "position": 22,
+      "driver": "HUL",
+      "team": "Audi",
+      "status": "Retired",
+      "time": "Retired"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "provider": "unavailable",
+  "event_name": "Miami Grand Prix",
+  "generated_at_utc": "2026-08-23T17:06:11.020458+00:00",
+  "latitude": 25.9581,
+  "longitude": -80.2389,
+  "target_date": "2026-05-03",
+  "race_day": null,
+  "forecast_days": [],
+  "rain_probability": null,
+  "risk_level": "unknown",
+  "confidence": "unavailable",
+  "summary": "No external weather forecast is available for Miami Grand Prix; Friday forecast keeps conservative dry-weather assumptions.",
+  "warnings": [
+    "No external weather API key configured."
+  ]
+}
