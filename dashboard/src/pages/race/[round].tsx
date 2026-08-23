@@ -101,11 +101,14 @@ export default function RacePage({
   tyreData,
   predictedTyreData
 }: RacePageProps) {
-  const [headerView, setHeaderView] = useState<"predicted" | "actual">("actual");
+  const hasActualData = actualResults && actualResults.length > 0;
+  const defaultView = hasActualData ? "actual" : "predicted";
+
+  const [headerView, setHeaderView] = useState<"predicted" | "actual">(defaultView);
   const [tableView, setTableView] = useState<"predicted" | "actual">("predicted");
-  const [chartView, setChartView] = useState<"predicted" | "actual">("actual");
-  const [tyreView, setTyreView] = useState<"predicted" | "actual">("actual");
-  const [reportView, setReportView] = useState<"predicted" | "actual">("actual");
+  const [chartView, setChartView] = useState<"predicted" | "actual">(defaultView);
+  const [tyreView, setTyreView] = useState<"predicted" | "actual">(defaultView);
+  const [reportView, setReportView] = useState<"predicted" | "actual">(defaultView);
 
   const currentTableData = tableView === "predicted" ? (predictions ?? []) : (actualResults ?? []);
   const currentTyreData = tyreView === "predicted" ? (predictedTyreData ?? null) : (tyreData ?? null);

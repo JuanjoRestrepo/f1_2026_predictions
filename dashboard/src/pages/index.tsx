@@ -72,13 +72,19 @@ function CountdownTimer({ targetDate }: { targetDate: string }) {
 }
 
 export default function Home({ availableRaces, fullCalendar }: HomeProps) {
-  // Find the next upcoming race dynamically: first race in the calendar whose
-  // date is in the future. If none remain (end of season), fall back to null.
-  const today = new Date();
-  const nextRace = fullCalendar.find((r) => new Date(r.date) >= today) ?? null;
+  // Find current or next upcoming race dynamically: compare race day end to start of today.
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const nextRace = fullCalendar.find((r) => {
+    const raceDate = new Date(r.date);
+    raceDate.setHours(23, 59, 59, 999);
+    return raceDate >= startOfToday;
+  }) ?? null;
+
   const targetDate = nextRace?.date
-    ? `${nextRace.date} 08:00:00 UTC`
-    : (fullCalendar[fullCalendar.length - 1]?.date ?? "December 06, 2026 08:00:00 UTC");
+    ? `${nextRace.date} 15:00:00 UTC`
+    : (fullCalendar[fullCalendar.length - 1]?.date ?? "December 06, 2026 15:00:00 UTC");
 
   // Latest race for which we actually have processed data — this is what the
   // "View AI Intelligence Report" button links to. Using nextRace here caused a
