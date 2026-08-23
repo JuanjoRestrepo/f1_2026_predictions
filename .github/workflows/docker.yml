@@ -176,4 +176,4 @@ jobs:
           SUPABASE_S3_SECRET_KEY: ${{ secrets.SUPABASE_S3_SECRET_KEY }}
           SUPABASE_S3_BUCKET_NAME: ${{ secrets.SUPABASE_S3_BUCKET_NAME }}
         run: |
-          npx trigger.dev@latest deploy --env prod --skip-typecheck
+          pnpm dlx trigger.dev@latest deploy --env prod
