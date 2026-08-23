@@ -127,6 +127,10 @@ models/artifacts/
 *.cbm                  # CatBoost model format
 *.bin                  # LightGBM model format
 *.ubj                  # XGBoost universal binary JSON
+mlflow.db
+*.db
+
+
 
 
 # =============================================================================

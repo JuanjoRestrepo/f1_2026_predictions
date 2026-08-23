@@ -118,10 +118,22 @@ The system has evolved from a reactive manual pipeline to a **proactive, event-d
 **Proactive Intelligence Analysis:**
 The "Monday Verdict" system ensures that every GP is automatically audited for accuracy. If the MAE exceeds **0.350s**, the system classifies the run as `needs_improvement`, flagging the need for feature engineering review before the next round. This creates a closed-loop MLOps system where performance data directly informs future research.
 
+## 9. Databricks Lakehouse & Unity Catalog MLOps Integration
+
+The platform now incorporates an enterprise Databricks Lakehouse architecture deployed via **Databricks Asset Bundles (DABs)** on Serverless compute.
+
+| Component | Engineering Standard | Business / ML Impact |
+|---|---|---|
+| **Delta Live Tables (DLT)** | Bronze → Silver → Gold Medallion Streaming Pipeline | Automated ingestion, schema validation (`expect_or_drop`), and feature aggregation with sub-second retrieval. |
+| **Unity Catalog Model Registry** | MLflow 3 alias management (`@champion`, `@challenger`) | Replaces deprecated stage transitions with zero-downtime model promotion. |
+| **Lakeflow Orchestration** | 3-Task Workflow (`f1_2026_daily_predictions_job`) | End-to-end execution of feature updates, XGBoost model retraining, and stakeholder briefing dispatch. |
+| **Serverless Compute** | `client: "2"` REPL channel with custom dependency specs | Zero infrastructure maintenance with isolated, version-pinned Python runtimes. |
+
 **Final Conclusion:**
-The platform is now a fully autonomous, industrial-grade MLOps ecosystem. By combining **Bayesian hyperparameter optimization** with a **containerized, event-driven architecture**, we have created a state-of-the-art foundation for 2026 race intelligence.
+The platform is a fully autonomous, production-grade MLOps ecosystem. By unifying **Optuna Bayesian optimization**, **Trigger.dev durable orchestration**, and **Databricks Lakehouse DLT/Unity Catalog pipelines**, we have established a state-of-the-art foundation for 2026 race dynamics prediction.
 
 ---
 **Author**: Juan Jose Restrepo Rosero  
-**Date**: May 2026
+**Date**: August 2026
+
 

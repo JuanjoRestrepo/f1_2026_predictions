@@ -1,5 +1,29 @@
 # F1 2026 Predictions - Release Notes
 
+## [v6.0.0] - 2026-08-23
+### Databricks Lakehouse & Unity Catalog MLOps Integration (Phase 15 Complete)
+
+#### ⚡ Databricks Asset Bundles (DABs) & Lakeflow Jobs
+- **`databricks.yml`**: Configured root bundle specification for multi-environment deployment (`dev`, `staging`, `prod`) targeting Unity Catalog schemas (`f1_2026_dev.race_pace`, `f1_2026_prod.race_pace`).
+- **`resources/jobs.yml`**: Engineered 3-task Lakeflow workflow (`f1_2026_daily_predictions_job`):
+  1. `run_medallion_pipeline`: Runs DLT Bronze → Silver → Gold feature extraction.
+  2. `train_and_register_champion`: Executes model training & promotes `@champion` alias in Unity Catalog.
+  3. `dispatch_notifications`: Dispatches automated Gmail + Discord race briefing cards.
+- **Serverless Compute Optimization**: Configured jobs for Databricks Serverless compute (`client: "2"` REPL channel) with explicit Pydantic v2 (`pydantic>=2.7.0`, `pydantic-settings>=2.3.0`) and NumPy (`numpy>=1.26.0,<2.0`) environment resolution.
+
+#### 🌊 Delta Live Tables (DLT) Medallion Architecture
+- **`src/f1_predictions/databricks/pipelines/f1_medallion_pipeline.py`**:
+  - **Bronze Layer (`telemetry_bronze`)**: Raw telemetry ingestion using in-memory DataFrame transformation.
+  - **Silver Layer (`laps_silver`)**: Automated lap cleaning and validation with DLT expectations (`expect_or_drop` for invalid lap times, `expect_or_fail` for missing driver IDs).
+  - **Gold Layer (`driver_features_gold`)**: Feature aggregation per driver (mean pace, stddev, tire degradation slope) optimized for sub-second feature lookups.
+- **`resources/pipelines.yml`**: Serverless DLT pipeline definition with `spark.databricks.delta.allowArbitraryProperties.enabled=true` for custom Delta table metadata.
+
+#### 🎯 MLflow 3 & Unity Catalog Model Registry
+- **`src/f1_predictions/databricks/mlflow_utils.py`**: Real MLflow experiment tracking (`/Shared/f1_2026/race_pace`) and model promotion using Unity Catalog aliases (`@champion` and `@challenger`), superseding legacy stage transitions.
+- **`databricks_entrypoint.py`**: Dedicated Databricks job entrypoint handling `--run-mode {train,notify}` and `--season`, ensuring clean separation from local CLI utilities (`main.py`).
+
+---
+
 ## [v5.1.0] - 2026-06-05
 ### Dynamic Calendar Integration & Vercel 404 Fix (Phase 14 Partial)
 

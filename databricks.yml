@@ -1,0 +1,64 @@
+# =============================================================================
+# Databricks Asset Bundle (DABs) — f1_2026_predictions
+#
+# This file is the root bundle configuration. Resource definitions are split
+# into resources/*.yml and included here per the DABs best-practice guide.
+#
+# Deploy:
+#   databricks bundle validate --target dev
+#   databricks bundle deploy  --target dev
+#   databricks bundle run     --target dev f1_2026_daily_predictions_job
+#
+# Reference: .agents/skills/databricks/references/cicd-dabs.md
+# =============================================================================
+
+bundle:
+  name: f1_2026_predictions
+
+# Split resource definitions (pipelines, jobs) into resources/ subdirectory
+include:
+  - resources/*.yml
+
+# ---------------------------------------------------------------------------
+# Variables — overridden per target below
+# ---------------------------------------------------------------------------
+variables:
+  catalog:
+    description: Unity Catalog catalog name for this target environment.
+    default: f1_2026_dev
+  schema:
+    description: Unity Catalog schema (layer) within the catalog.
+    default: race_pace
+  schedule_pause_status:
+    description: PAUSED for non-prod targets; UNPAUSED for prod.
+    default: PAUSED
+
+# ---------------------------------------------------------------------------
+# Deployment Targets
+# dev      → individual developer workspace (mode: development adds [dev <user>] prefix)
+# staging  → shared integration environment (mirrors prod config, paused schedule)
+# prod     → production; run_as service principal; UNPAUSED schedule
+# ---------------------------------------------------------------------------
+targets:
+  dev:
+    mode: development
+    default: true
+    variables:
+      catalog: main
+      schema: race_pace
+      schedule_pause_status: PAUSED
+
+  staging:
+    mode: development
+    variables:
+      catalog: f1_2026_staging
+      schema: race_pace
+      schedule_pause_status: PAUSED
+
+  prod:
+    mode: production
+    variables:
+      catalog: f1_2026_prod
+      schema: race_pace
+      schedule_pause_status: UNPAUSED
+

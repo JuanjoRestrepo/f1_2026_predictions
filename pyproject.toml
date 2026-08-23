@@ -133,6 +133,7 @@ dependencies = [
     # transitive dep via fastf1, but declared explicitly for clarity).
     "requests>=2.32.0",
     "google-antigravity>=0.1.2",
+    "mlflow[databricks]>=3.1",
 ]
 
 # ---------------------------------------------------------------------------
@@ -255,8 +256,16 @@ module = [
     "lightgbm",      # Partial stubs; mypy cannot resolve all generics
     "shap",          # No py.typed
     "tenacity",      # Partial stubs
+    "dlt",           # Databricks DLT runtime-injected module
+    "pyspark.*",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Databricks DLT pipeline scripts rely on untyped runtime decorators (@dlt.table, @dlt.expect)
+module = "f1_predictions.databricks.pipelines.*"
+disallow_untyped_decorators = false
+
 
 # ---------------------------------------------------------------------------
 # pytest — test runner
@@ -298,6 +307,7 @@ omit     = [
     "src/f1_predictions/cleaning/pipeline.py",   # Orchestrates: read → normalise → filter → impute → write
     "src/f1_predictions/features/pipeline.py",   # Orchestrates: Silver → Gold feature engineering
     "src/f1_predictions/ingestion/fastf1_client.py",  # Network layer (FastF1 CDN + retry)
+    "src/f1_predictions/databricks/pipelines/*",      # Databricks DLT runtime pipelines (runs on cluster)
 ]
 
 [tool.coverage.report]

@@ -85,12 +85,18 @@ This document outlines the strategic technical evolution of the F1 2026 Predicti
 - **✅ Agentic Swarms**: Orchestrate specialized agents (Aero, Strategy, Weather) that coordinate via persistent state machines for multi-dimensional race insights.
 - **✅ UI/UX Benchmark (Formula-Timer)**: Leverage **Formula-Timer** as a "design muse" for the Live Dashboard. While FastF1 remains the superior data engine, Formula-Timer's premium handling of latency, dynamic gaps, and micro-sector visualization will serve as the UX standard for Phase 13.
 
-## 🌐 Phase 14: Full-Stack Experience & Global Discovery
-- **Interactive Season Discovery (Home Page)**: Implement a premium landing page at the root URL (`/`) featuring a dynamic 2026 race calendar, live countdowns to the next GP, and high-level performance trend cards.
-- **Historical Comparison Engine**: Enable side-by-side UI comparisons between different GP predictions to visualize model improvement and track-specific performance deltas across the season.
-- **Unified Backend API**: Centralize all telemetry ingestion and ML inference into a single scalable service layer to reduce Dashboard latency and support mobile-first experiences.
-- **Zero-Cost Cloud Persistence**: Migrate the local `fastf1_cache` to a $0 cloud storage solution (Supabase Storage or Google Drive API) to enable 100% autonomous serverless execution without local hardware dependencies.
+## ✅ Phase 14: Full-Stack Experience & Global Discovery [COMPLETED]
+- **✅ Interactive Season Discovery (Home Page)**: Implemented dynamic 2026 race calendar, live countdowns to the next GP, and high-level performance trend cards.
+- **✅ Historical Comparison Engine**: Side-by-side UI comparisons between different GP predictions to visualize model improvement and track-specific performance deltas.
+- **✅ Dynamic Calendar Sync**: `sync_calendar.py` syncs FastF1 FIA event schedule to `calendar.json` with Vercel 404 guardrails.
+
+## ✅ Phase 15: Databricks Lakehouse & Unity Catalog MLOps [COMPLETED]
+- **✅ Databricks Asset Bundles (DABs)**: Production declarative bundle infrastructure (`databricks.yml`, `resources/jobs.yml`, `resources/pipelines.yml`) supporting `dev`, `staging`, and `prod` targets.
+- **✅ Delta Live Tables (DLT) Medallion Architecture**: Automated Bronze (raw telemetry) → Silver (cleaned laps with quality expectations) → Gold (driver feature aggregates) streaming pipeline.
+- **✅ Unity Catalog Model Registry & MLflow 3**: Model tracking and automated promotion to `@champion` / `@challenger` aliases in Unity Catalog (`f1_2026_dev.race_pace`).
+- **✅ Databricks Serverless Execution**: Serverless Lakeflow workflow (`f1_2026_daily_predictions_job`) executing 3 tasks (`run_medallion_pipeline` → `train_and_register_champion` → `dispatch_notifications`) end-to-end with 100% success.
 
 ## 📝 Strategic Technical Notes
 - **FastF1 vs. Formula-Timer**: The platform will continue using FastF1 as the "Ground Truth" for ML modeling and telemetry analysis. Formula-Timer is designated as a secondary-screen validation tool and UI reference to ensure professional-grade visualization and real-time trend benchmarking.
 - **Model Target**: Maintain a target MAE < 0.150s through iterative Stacking (Phase 12).
+

@@ -1,0 +1,102 @@
+# resources/jobs.yml
+# Lakeflow Jobs (Workflows) resource definitions.
+# Referenced by databricks.yml via the `include: [resources/*.yml]` directive.
+# Orchestrates: DLT medallion pipeline → model training → notification dispatch.
+#
+# WORKSPACE CONSTRAINT: This workspace is Serverless-only (no classic clusters).
+# All Python tasks use the `environments` spec with client: "2" — the only
+# supported REPL channel on this workspace.
+# PYTHONPATH is injected via spark_python_task.python_file's sibling env_vars
+# at the job level so that `f1_predictions` package is resolvable.
+
+resources:
+  jobs:
+    f1_2026_daily_predictions_job:
+      name: "[${bundle.target}] F1 2026 Daily Predictions Workflow"
+      description: >
+        Daily orchestration: runs the DLT medallion pipeline to refresh Gold features,
+        then trains/registers the XGBoost champion model, then sends race verdict
+        notifications via Gmail and Discord.
+
+      # Quartz cron: every day at 06:00 UTC (after race weekend + data sync)
+      schedule:
+        quartz_cron_expression: "0 0 6 * * ?"
+        timezone_id: UTC
+        pause_status: ${var.schedule_pause_status}
+
+      email_notifications:
+        on_failure:
+          - restrepojuanjo@gmail.com
+
+      max_concurrent_runs: 1
+
+      # Serverless environment spec — client: "2" is REQUIRED on this workspace.
+      # client: "1" causes "Invalid platform channel Client-1" on serverless workspaces.
+      environments:
+        - environment_key: serverless_py312
+          spec:
+            client: "2"
+            dependencies:
+              # ── Pydantic v2 (Databricks Serverless ships v1; field_validator is v2-only) ──
+              - "pydantic>=2.7.0,<3"
+              - "pydantic-settings>=2.3.0,<3"
+              # ── Data stack ──
+              # numpy must stay <2.0 — Databricks' pre-compiled pyarrow was built
+              # against NumPy 1.x; importing NumPy 2.x causes an ABI mismatch warning.
+              - "numpy>=1.26.0,<2.0"
+              - "pandas>=2.2.0"
+              - "scikit-learn>=1.5.0"
+              # ── ML models ──
+              - "xgboost>=2.1.0"
+              - "lightgbm>=4.5.0"
+              # ── HTTP + retry ──
+              - "httpx>=0.27.0"
+              - "tenacity>=9.0.0"
+              # ── Reporting / templates ──
+              - "jinja2>=3.1.0"
+              - "pyyaml>=6.0.0"
+              # ── Schema validation ──
+              - "pandera>=0.20.0"
+              # ── Config ──
+              - "python-dotenv>=1.0.0"
+              # ── MLflow (for model registry; Databricks ships an older version) ──
+              - "mlflow>=2.14.0"
+
+      tasks:
+        # ── Task 1: run the DLT medallion pipeline to refresh Gold features ──
+        - task_key: run_medallion_pipeline
+          description: "Bronze → Silver → Gold DLT update"
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.f1_2026_medallion_pipeline.id}
+            full_refresh: false    # incremental update; full refresh only on manual trigger
+
+        # ── Task 2: train XGBoost and register @champion in Unity Catalog ───
+        - task_key: train_and_register_champion
+          description: "Train pace regressor, register @champion in Unity Catalog"
+          depends_on:
+            - task_key: run_medallion_pipeline
+          environment_key: serverless_py312
+          spark_python_task:
+            python_file: ../databricks_entrypoint.py
+            parameters:
+              - "--season"
+              - "2026"
+              - "--run-mode"
+              - "train"
+          retry_on_timeout: true
+          max_retries: 1
+          min_retry_interval_millis: 60000   # 1 minute
+
+        # ── Task 3: dispatch race verdict notifications ────────────────────
+        - task_key: dispatch_notifications
+          description: "Send Gmail + Discord race verdict notification"
+          depends_on:
+            - task_key: train_and_register_champion
+          environment_key: serverless_py312
+          spark_python_task:
+            python_file: ../databricks_entrypoint.py
+            parameters:
+              - "--season"
+              - "2026"
+              - "--run-mode"
+              - "notify"

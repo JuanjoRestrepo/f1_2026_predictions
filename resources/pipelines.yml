@@ -1,0 +1,40 @@
+# resources/pipelines.yml
+# Lakeflow Spark Declarative Pipeline (Delta Live Tables) resource definition.
+# Referenced by databricks.yml via the `include: [resources/*.yml]` directive.
+# Deployed via: databricks bundle deploy --target <dev|staging|prod>
+
+resources:
+  pipelines:
+    f1_2026_medallion_pipeline:
+      name: "[${bundle.target}] F1 2026 Medallion Pipeline"
+      # Unity Catalog target (catalog.schema = f1_2026_<env>.race_pace)
+      catalog: ${var.catalog}
+      target: ${var.schema}
+
+      # development=true disables production guardrails and enables live editing
+      # Set to false automatically for prod target via bundle.target check
+      development: true
+
+      configuration:
+        # Enable write optimization for Delta tables in the pipeline
+        spark.databricks.delta.optimizeWrite.enabled: "true"
+        # Rescue schema-mismatched data to _rescued_data column (Auto Loader)
+        spark.databricks.cloudFiles.schemaEvolutionMode: "rescue"
+        # Allow arbitrary Delta table properties (e.g. delta.liquidClusteringColumns).
+        # Required on workspaces that restrict unknown Delta configs by default.
+        spark.databricks.delta.allowArbitraryProperties.enabled: "true"
+
+      # Serverless compute for Delta Live Tables
+      serverless: true
+
+      libraries:
+        # The actual DLT @dlt.table decorated pipeline file
+        - notebook:
+            path: ../src/f1_predictions/databricks/pipelines/f1_medallion_pipeline.py
+
+      notifications:
+        - email_recipients:
+            - restrepojuanjo@gmail.com
+          alerts:
+            - on-update-failure
+            - on-update-fatal-failure

@@ -9,10 +9,21 @@ Usage:
 """
 
 import argparse
+import pathlib
 import subprocess
 import sys
 
-from f1_predictions.utils.logging_setup import (
+# Ensure src/ directory is on sys.path for Databricks driver execution
+try:
+    PROJECT_ROOT = pathlib.Path(__file__).resolve().parent
+except NameError:
+    PROJECT_ROOT = pathlib.Path.cwd()
+
+SRC_DIR = PROJECT_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+from f1_predictions.utils.logging_setup import (  # noqa: E402
     configure_root_pipeline_logger,
     get_logger,
 )

@@ -31,6 +31,15 @@ Expert-level race reporting powered by configurable **Gemini 3.1 Pro** primary g
 
 ---
 
+## [v6.0.0] - 2026-08-23
+
+### ⚡ Databricks Lakehouse & Unity Catalog MLOps
+
+- **Feature**: Databricks Asset Bundles (DABs) infrastructure for zero-touch cloud deployment (`databricks.yml`, `resources/jobs.yml`, `resources/pipelines.yml`).
+- **Feature**: Delta Live Tables (DLT) Medallion Pipeline (`Bronze` → `Silver` → `Gold`) for automated telemetry ingestion, expectation validation, and driver feature aggregation.
+- **Feature**: MLflow 3 & Unity Catalog Model Registry integration with automated promotion to `@champion` / `@challenger` aliases.
+- **Feature**: Serverless Lakeflow Workflow (`f1_2026_daily_predictions_job`) orchestrating DLT updates, XGBoost champion retraining, and multi-channel briefings.
+
 ## [v4.4.4] - 2026-05-28
 
 ### 🛡️ DevOps & Data Science Alignment
@@ -73,7 +82,9 @@ Expert-level race reporting powered by configurable **Gemini 3.1 Pro** primary g
 ## 🌟 Key Features
 
 - **Industrialized Inference API**: High-performance FastAPI microservice for real-time lap time predictions.
-- **🔄 Autonomous Workflow (Event-Driven)**: The system operates on a professional, autonomous cycle via GitHub Actions:
+- **⚡ Databricks Lakehouse & DLT**: Production-grade Medallion architecture (Bronze/Silver/Gold) deployed via Databricks Asset Bundles (DABs) on Serverless compute.
+- **🎯 Unity Catalog & MLflow 3**: Automated experiment tracking and `@champion` / `@challenger` model promotion in Unity Catalog.
+- **🔄 Autonomous Workflow (Event-Driven)**: The system operates on a professional, autonomous cycle via GitHub Actions & Databricks Lakeflow Jobs:
   1. **Friday @ 18:00 UTC**: **Pre-Race Mode**. Runs ML simulations to generate the "Prediction Preview" briefing.
   2. **Monday @ 09:00 UTC**: **Post-Race Mode**. Syncs actual results, calculates MAE/Accuracy, and sends the "Race Verdict" audit.
   3. **Wednesday @ 09:00 UTC**: **Safety Sync**. Re-verifies data in case of official delays.
@@ -90,11 +101,11 @@ Expert-level race reporting powered by configurable **Gemini 3.1 Pro** primary g
 
 ### 🤖 Autonomous Orchestration (v4.3.0+)
 
-The engine now features durable, long-running workflows powered by **Trigger.dev v3**. This enables:
+The engine features durable, long-running workflows powered by **Trigger.dev v3** and **Databricks Lakeflow Jobs**. This enables:
 
 - **Friday Forecasts**: Automatic pre-race predictions based on practice data.
 - **Monday Audits**: Automatic post-race telemetry analysis and AI narrative synthesis.
-- **Manual Sync**: On-demand race processing via the Trigger.dev Cloud Dashboard.
+- **Manual Sync**: On-demand race processing via the Trigger.dev Cloud Dashboard or Databricks CLI (`databricks bundle run`).
 
 #### Setup Orchestration
 
@@ -107,6 +118,21 @@ The engine now features durable, long-running workflows powered by **Trigger.dev
 4. Deploy to cloud for 24/7 autonomy:
    ```bash
    npx trigger.dev@latest deploy
+   ```
+
+### 🧱 Databricks Lakehouse Deployment (DABs)
+
+1. Validate bundle:
+   ```bash
+   databricks bundle validate --target dev
+   ```
+2. Deploy to Databricks workspace:
+   ```bash
+   databricks bundle deploy --target dev
+   ```
+3. Run the daily predictions workflow:
+   ```bash
+   databricks bundle run --target dev f1_2026_daily_predictions_job
    ```
 
 ### 🛠️ Core Engine Setup
@@ -128,8 +154,14 @@ The engine now features durable, long-running workflows powered by **Trigger.dev
 
 ```text
 ├── .github/workflows/       # CI/CD Automation (Docker & CI)
-├── src/f1_predictions/      # Core Python Package (ML & API)
+├── databricks.yml           # Databricks Asset Bundle (DABs) Root Config
+├── databricks_entrypoint.py  # Databricks Lakeflow Job Entrypoint
+├── resources/               # DABs Resource Definitions (Jobs & Pipelines)
+│   ├── jobs.yml             # 3-Task Lakeflow Orchestration Workflow
+│   └── pipelines.yml        # Delta Live Tables (DLT) Medallion Pipeline Spec
+├── src/f1_predictions/      # Core Python Package (ML, API, Databricks)
 │   ├── api/                 # FastAPI Inference Service
+│   ├── databricks/          # DLT Medallion Pipeline & MLflow 3 UC Integration
 │   ├── features/            # Feature Engineering (Reliability, Evolution, Era)
 │   ├── modeling/            # Optuna Tuning & Training Logic
 │   └── models/              # Model Persistence & Base Classes
@@ -139,6 +171,7 @@ The engine now features durable, long-running workflows powered by **Trigger.dev
 ├── scripts/                 # Master Pipeline (Orchestrator)
 └── tests/                   # Pytest suite (>80% coverage)
 ```
+
 
 ---
 
