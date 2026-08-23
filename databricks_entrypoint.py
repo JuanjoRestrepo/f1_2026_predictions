@@ -232,10 +232,15 @@ def run_notify(season: int) -> None:
 
     try:
         from f1_predictions.utils.config import get_settings
+        from f1_predictions.utils.email_builder import (
+            build_email_html,
+            build_subject,
+        )
         from f1_predictions.utils.notifications import (
             DiscordWebhookChannel,
             GmailSMTPChannel,
             NotificationDispatcher,
+            RaceBriefingPayload,
             RaceVerdict,
         )
 
@@ -297,9 +302,16 @@ def run_notify(season: int) -> None:
                 key_misses=["Pace delta within expected confidence bounds"],
                 status="excellent",
             )
-
-            results = dispatcher.dispatch(verdict)
+            subject = build_subject(verdict)
+            html_body = build_email_html(verdict=verdict)
+            payload = RaceBriefingPayload(
+                verdict=verdict,
+                subject=subject,
+                html_body=html_body,
+            )
+            results = dispatcher.dispatch(payload)
             logger.info("Live race verdict notifications dispatched: %s", results)
+
         else:
             logger.info(
                 "Race verdict dispatch summary logged for season %d. "
