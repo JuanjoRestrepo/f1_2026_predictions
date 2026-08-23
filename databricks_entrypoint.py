@@ -276,7 +276,7 @@ def run_notify(season: int) -> None:
         if gmail_user and gmail_pass:
             channels.append(
                 GmailSMTPChannel(
-                    sender_email=gmail_user,
+                    gmail_user=gmail_user,
                     app_password=gmail_pass,
                     recipient_email=gmail_user,
                 )
