@@ -3,13 +3,14 @@
 ## Table of Contents
 
 0. [Environment Setup (uv)](#environment)
-1. [ML Algorithm Taxonomy — Selection Reference](#algorithm-taxonomy)
-2. [Gradient Boosting Selection Guide — XGBoost vs LightGBM vs CatBoost](#gbm-guide)
-3. [Classification Metrics](#classification)
-4. [Regression Metrics](#regression)
-5. [Clustering Metrics](#clustering)
-6. [Model Explainability](#explainability)
-7. [Evaluation Checklist](#checklist)
+1. [Feature Scaling and Normalization](#feature-scaling)
+2. [ML Algorithm Taxonomy — Selection Reference](#algorithm-taxonomy)
+3. [Gradient Boosting Selection Guide — XGBoost vs LightGBM vs CatBoost](#gbm-guide)
+4. [Classification Metrics](#classification)
+5. [Regression Metrics](#regression)
+6. [Clustering Metrics](#clustering)
+7. [Model Explainability](#explainability)
+8. [Evaluation Checklist](#checklist)
 
 ---
 
@@ -35,7 +36,223 @@ uv sync
 
 ---
 
-## 1. ML Algorithm Taxonomy — Selection Reference {#algorithm-taxonomy}
+## 1. Feature Scaling and Normalization {#feature-scaling}
+
+> **References**: Géron, A. (2022). _Hands-On Machine Learning with Scikit-Learn,
+> Keras, and TensorFlow_ (3rd ed.). O'Reilly, Ch. 2. · Hastie, T., Tibshirani, R.,
+> & Friedman, J. (2009). _The Elements of Statistical Learning_ (2nd ed.). Springer.
+> · scikit-learn Documentation. _Preprocessing data_.
+> https://scikit-learn.org/stable/modules/preprocessing.html
+
+### Conceptual Foundation
+
+Feature scaling transforms numeric variables onto a comparable scale so that no
+single feature dominates a model purely due to the magnitude of its units. Comparing
+`annual_income` ($0–200,000) against `age` (18–70) without scaling means income
+differences of a few hundred dollars can numerically overwhelm a full decade of age
+difference in any distance-based or gradient-based computation — a spurious
+dominance that has nothing to do with actual predictive importance.
+
+Model quality depends as much on preprocessing quality as on algorithm selection.
+Scaling is not optional polish — for scale-sensitive algorithms, it is a correctness
+requirement, not a performance tweak.
+
+**What scaling fixes**:
+
+- Numerical instability (overflow/underflow) in matrix and vector computations
+- Slow or unstable convergence in gradient-based optimizers
+- One feature's scale dominating distance metrics or regularization penalties
+- Reduced generalization from models sensitive to arbitrary unit choices
+- Impaired comparability of feature coefficients or importances
+
+### Feature Scaling Technique Comparison
+
+| Technique                             | Formula                            | Output Range                  | Outlier Sensitivity                                            | Best Use Case                                                                            |
+| ------------------------------------- | ---------------------------------- | ----------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| **Min-Max Scaling**                   | X' = (X − X_min) / (X_max − X_min) | Fixed [0, 1] (or custom)      | High — a single extreme value compresses the rest of the range | Bounded features; neural network inputs; when the exact range matters                    |
+| **Z-Score Standardization**           | Z = (X − μ) / σ                    | Mean 0, std 1, unbounded      | Moderate                                                       | General-purpose default; distance-based and gradient-based algorithms                    |
+| **Robust Scaling**                    | X' = (X − median) / IQR            | Unbounded, centered on median | Low — explicitly designed to resist outliers                   | Skewed distributions or datasets with heavy outlier contamination                        |
+| **Max Absolute Scaling**              | X' = X / \|X\|\_max                | [−1, 1]                       | High                                                           | Sparse matrices — preserves zero entries exactly                                         |
+| **Unit Vector Normalization (L1/L2)** | x' = x / \|x\|                     | Norm = 1 per row              | Depends on norm                                                | NLP, recommendation systems, cosine similarity — scales per-observation, not per-feature |
+
+**Key distinction**: the first four techniques scale each _feature_ (column)
+independently. Unit Vector Normalization scales each _observation_ (row) — it
+answers a fundamentally different question (direction of a feature vector, not
+comparability across features) and is not interchangeable with the other four.
+
+### Which Algorithms Require Scaling
+
+Scaling matters specifically for algorithms that compute distances, gradients, or
+inner products — the geometry of the feature space directly enters the computation.
+
+**Scale-sensitive — scaling required**:
+
+| Category                  | Algorithms                             | Why scale matters                                                                                                                                                     |
+| ------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Distance-based            | K-Means, K-Nearest Neighbors           | Euclidean/Manhattan distance is dominated by the largest-magnitude feature                                                                                            |
+| Margin-based              | Support Vector Machines                | The margin and kernel computations are scale-dependent                                                                                                                |
+| Neural networks           | MLP, deep learning architectures       | Unscaled inputs slow or destabilize backpropagation convergence                                                                                                       |
+| Linear models             | Linear Regression, Logistic Regression | Especially critical with L1/L2 regularization — penalty is applied uniformly across coefficients, which is only meaningful if features are on comparable scales       |
+| Dimensionality reduction  | PCA                                    | Directions of maximum variance are scale-dependent; an unscaled high-magnitude feature will dominate the principal components regardless of its actual signal content |
+| Gradient-based optimizers | Any model trained via gradient descent | Scale differences distort the loss surface geometry, slowing convergence                                                                                              |
+
+**Scale-invariant — scaling not required**:
+
+| Algorithms                                                 | Why scale doesn't matter                                                                                                                                                                                                                                  |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Decision Trees, Random Forest, XGBoost, LightGBM, CatBoost | Tree-based models split on per-feature thresholds (X_i > c). A monotonic transformation of a feature does not change which observations fall on which side of any threshold — the split points shift but the resulting partition of the data is identical |
+
+**Practical implication**: when benchmarking GBMs against linear models or neural
+networks on the same dataset (see Section 3, GBM Selection Guide), do not scale
+features for the GBM run — it is unnecessary work with zero effect on tree-based
+model performance. Scaling is still required for any linear, distance-based, or
+neural baseline used in the same comparison.
+
+### Preprocessing Pipeline Placement and Data Leakage Prevention
+
+```
+Collection → Cleaning → Missing Values → Feature Engineering → Train/Test Split
+                                                                       │
+                                                                       ▼
+                                                         Scaler .fit() on TRAIN ONLY
+                                                                       │
+                                                                       ▼
+                                              .transform() on Train, Test, and Production data
+                                                                       │
+                                                                       ▼
+                                                    Training → Evaluation → Deployment
+```
+
+**Critical rule against data leakage**: fit the scaler exclusively on the training
+set. Apply `.transform()` (never `.fit()` again) to the validation set, test set,
+and any new production data. Fitting on the full dataset before splitting leaks
+information about the test set's distribution (its mean, std, min, max, or median)
+into the training process — inflating validation performance in a way that will not
+replicate in production.
+
+This rule applies identically to every scaler in the comparison table above, and to
+any other `fit`-based preprocessing step: imputers, encoders, and dimensionality
+reducers all carry the same leakage risk if fit on data outside the training set.
+
+### Implementation
+
+```python
+from __future__ import annotations
+
+import logging
+
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import (
+    MaxAbsScaler,
+    MinMaxScaler,
+    Normalizer,
+    RobustScaler,
+    StandardScaler,
+)
+
+logger = logging.getLogger(__name__)
+
+# --- Constants ---
+RANDOM_STATE: int = 42
+TEST_SIZE: float = 0.2
+
+SCALER_REGISTRY: dict[str, type] = {
+    "minmax": MinMaxScaler,
+    "standard": StandardScaler,
+    "robust": RobustScaler,
+    "maxabs": MaxAbsScaler,
+}
+
+
+def scale_features_correctly(
+    X: pd.DataFrame,
+    y: pd.Series,
+    method: str = "standard",
+    test_size: float = TEST_SIZE,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, object]:
+    """
+    Split data and scale features with correct fit/transform separation.
+
+    Demonstrates the mandatory leakage-safe pattern: the scaler is fit
+    exclusively on X_train, then applied via transform() to both splits.
+
+    Args:
+        X: Feature matrix (unscaled).
+        y: Target vector.
+        method: One of 'minmax', 'standard', 'robust', 'maxabs'.
+        test_size: Proportion of data held out for testing.
+
+    Returns:
+        Tuple of (X_train_scaled, X_test_scaled, y_train, y_test, fitted_scaler).
+    """
+    if method not in SCALER_REGISTRY:
+        raise ValueError(f"Unknown method '{method}'. Choose from {list(SCALER_REGISTRY)}")
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=test_size, random_state=RANDOM_STATE
+    )
+
+    scaler = SCALER_REGISTRY[method]()
+    X_train_scaled = scaler.fit_transform(X_train)   # fit + transform on TRAIN only
+    X_test_scaled = scaler.transform(X_test)          # transform ONLY on TEST — no fit
+
+    logger.info(
+        "Scaled with %s: train shape=%s, test shape=%s",
+        method, X_train_scaled.shape, X_test_scaled.shape
+    )
+    return X_train_scaled, X_test_scaled, y_train.values, y_test.values, scaler
+
+
+def unit_vector_normalize(X: np.ndarray, norm: str = "l2") -> np.ndarray:
+    """
+    Normalize each observation (row) to unit norm — distinct from feature scaling.
+
+    Use for text/TF-IDF vectors, embeddings, or any context where cosine
+    similarity is the downstream metric. Unlike the other scalers, this
+    operates per-row and does not require a train/test fit distinction —
+    each observation is normalized independently of all others.
+
+    Args:
+        norm: 'l1' (Manhattan norm) or 'l2' (Euclidean norm, most common).
+
+    Returns:
+        Row-normalized array, each row with the specified norm equal to 1.
+    """
+    normalizer = Normalizer(norm=norm)
+    return normalizer.fit_transform(X)   # stateless — fit_transform is safe on any split
+
+
+def recommend_scaler(
+    has_outliers: bool,
+    is_sparse: bool,
+    bounded_output_required: bool,
+) -> str:
+    """
+    Recommend a scaling method from dataset characteristics.
+
+    Args:
+        has_outliers: Whether the feature distribution has heavy outlier contamination.
+        is_sparse: Whether the feature matrix is sparse (many exact zeros).
+        bounded_output_required: Whether downstream use requires a fixed output range
+            (e.g., certain neural network activation functions).
+
+    Returns:
+        Recommended scaler name from SCALER_REGISTRY.
+    """
+    if is_sparse:
+        return "maxabs"   # preserves sparsity — zeros remain exactly zero
+    if has_outliers:
+        return "robust"   # median/IQR based — resistant to extreme values
+    if bounded_output_required:
+        return "minmax"   # guarantees output in a fixed range
+    return "standard"     # general-purpose default for the common case
+```
+
+---
+
+## 2. ML Algorithm Taxonomy — Selection Reference {#algorithm-taxonomy}
 
 > **Authoritative basis**: This taxonomy follows the classification established in
 > Bishop (2006) _Pattern Recognition and Machine Learning_, Hastie et al. (2009)
@@ -425,11 +642,42 @@ cumulative reward. No labeled dataset — the signal comes from environmental fe
 | Model-Free / Value-Based         | Q-Learning, Deep Q-Network (DQN)      | Learns a value function; off-policy; discrete action spaces     | Game playing (Atari); discrete decision problems                    |
 | Model-Based                      | World Model + Planner                 | Learns environment dynamics; uses model for planning            | Data-efficient learning; environments where simulation is available |
 
+### 1.5 Deep Learning Architecture Selection by Data Geometry
+
+> **Reference**: Bronstein et al. (2021). Geometric Deep Learning: Grids, Groups,
+> Graphs, Geodesics, and Gauges. arXiv:2104.13478.
+
+Standard ML algorithm selection (Sections 1.1–1.4) assumes tabular or vector data.
+When the data has geometric structure, architecture selection must start from the
+data shape. Bronstein et al. (2021) unify CNN, RNN, Transformer, and GNN under a
+single framework: each architecture exploits a specific symmetry group of its data domain.
+
+| Data structure                             | Symmetry                            | Architecture                        | Task examples                                                |
+| ------------------------------------------ | ----------------------------------- | ----------------------------------- | ------------------------------------------------------------ |
+| Regular spatial grid (images, video)       | Translation equivariance            | CNN                                 | Object detection, medical imaging, satellite imagery         |
+| Ordered sequence (short-to-medium)         | Time-shift equivariance             | RNN / LSTM                          | Time series, IoT sensors, short NLP                          |
+| Sequence with long-range dependencies      | Global permutation equivariance     | Transformer                         | Language, code generation, summarization                     |
+| Graph — nodes + edges (arbitrary topology) | Neighborhood permutation invariance | GNN                                 | Molecules, fraud detection, recommendation, knowledge graphs |
+| Tabular — no geometric structure           | None                                | GBM (XGBoost / LightGBM / CatBoost) | Business analytics, structured datasets                      |
+
+**GNN is the correct architecture only when**: the data is explicitly structured as a
+graph (V nodes, E edges) and the connectivity pattern carries predictive signal beyond
+what node features alone provide. See `references/gnn_reference.md` for the complete
+GNN reference including GCN, GAT, GraphSAGE, GIN architectures, PyTorch Geometric
+implementation, and known failure modes (over-smoothing, over-squashing).
+
 ### Algorithm Selection Decision Logic
 
 Apply this as Step 1 of the Workflow Decision Logic defined in SKILL.md:
 
 ```
+0. What is the structure of the data?
+   Graph (nodes + explicit edges with relational meaning) → GNN
+     → See references/gnn_reference.md for architecture selection (GCN/GAT/GraphSAGE/GIN)
+   Spatial grid (pixels, voxels) → CNN
+   Ordered sequence → LSTM (short) / Transformer (long-range)
+   Tabular / vector → Continue to Step 1
+
 1. Is the target variable known for training examples?
    YES → Supervised Learning
    NO  → Unsupervised Learning
@@ -448,12 +696,12 @@ Apply this as Step 1 of the Workflow Decision Logic defined in SKILL.md:
 
 4. For tabular data (Classification or Regression):
    Always benchmark XGBoost, LightGBM, and CatBoost first.
-   See Section 2 (GBM Selection Guide) for detailed criteria.
+   See Section 3 (GBM Selection Guide) for detailed criteria.
 ```
 
 ---
 
-## 2. Gradient Boosting Selection Guide — XGBoost vs LightGBM vs CatBoost {#gbm-guide}
+## 3. Gradient Boosting Selection Guide — XGBoost vs LightGBM vs CatBoost {#gbm-guide}
 
 > **Scientific basis**: Gradient Boosting was formalized by Friedman (2001). Modern
 > implementations (XGBoost, LightGBM, CatBoost) dominate tabular ML.
@@ -624,6 +872,10 @@ def benchmark_gradient_boosters(
 3. **SHAP is equally native** across all three — there is no interpretability cost to using CatBoost or LightGBM over XGBoost.
 4. **Pipeline simplification**: CatBoost's native categorical handling eliminates the `ColumnTransformer` + encoding step, which reduces code complexity and a common source of data leakage in ML pipelines.
 
+---
+
+## 4. Classification Metrics {#classification}
+
 ```python
 from sklearn.metrics import (
     classification_report, confusion_matrix, roc_auc_score,
@@ -714,7 +966,7 @@ def plot_roc_curve(y_true, y_prob) -> None:
 
 ---
 
-## 2. Regression Metrics {#regression}
+## 5. Regression Metrics {#regression}
 
 ```python
 from sklearn.metrics import (
@@ -768,7 +1020,7 @@ def plot_residuals(y_true: np.ndarray, y_pred: np.ndarray) -> None:
 
 ---
 
-## 3. Clustering Metrics {#clustering}
+## 6. Clustering Metrics {#clustering}
 
 ```python
 from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
@@ -805,7 +1057,7 @@ def plot_elbow_curve(inertias: list[float], k_range: range) -> None:
 
 ---
 
-## 4. Model Explainability {#explainability}
+## 7. Model Explainability {#explainability}
 
 ```python
 import shap
@@ -834,7 +1086,7 @@ def shap_summary(model, X_train, X_test=None, model_type: str = "tree") -> None:
 
 ---
 
-## 5. Evaluation Checklist {#checklist}
+## 8. Evaluation Checklist {#checklist}
 
 Before finalizing any model evaluation, verify:
 

@@ -1,5 +1,14 @@
 # ETL Design Patterns & Pipeline Templates
 
+> **Scope**: This file covers practical code templates for ETL pipelines. For
+> in-depth architectural coverage of advanced data engineering topics, see:
+>
+> - `data_engineering_advanced.md` — Medallion Architecture depth, Batch vs. Streaming,
+>   Spark internals, Databricks (Unity Catalog, DLT), CDC (Debezium), Data Contracts,
+>   Data Lineage (OpenLineage), Kafka, Data Mesh, Data Fabric, Data Observability
+> - `analytics_engineering.md` — dbt project structure, Dimensional Modeling (Kimball),
+>   Fact/Dimension tables, SCDs, Star/Snowflake Schema, Data Catalogs, Metrics Governance
+
 ## Table of Contents
 
 0. [PySpark vs. dbt — Architectural Decision Guide](#decision-guide)

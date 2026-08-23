@@ -34,17 +34,19 @@ Apply the full depth of this skill to every relevant interaction.
 
 ## Domains Covered
 
-| Domain                           | Scope                                                                                                                    |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| **EDA & Descriptive Statistics** | Univariate/bivariate/multivariate analysis, distribution analysis, outlier detection, correlation, statistical summaries |
-| **Data Cleaning**                | Missing value strategies, type coercion, deduplication, schema validation, anomaly handling                              |
-| **Feature Engineering**          | Encoding, scaling, transformation, feature selection, dimensionality reduction                                           |
-| **ML Model Development**         | Supervised/unsupervised/semi-supervised, model selection, hyperparameter tuning, cross-validation                        |
-| **Model Evaluation**             | Classification/regression/clustering metrics, bias-variance analysis, learning curves, explainability (SHAP, LIME)       |
-| **Statistical Reporting**        | Hypothesis testing, confidence intervals, p-values, effect sizes, power analysis                                         |
-| **ETL & Data Engineering**       | Ingestion, transformation, validation, orchestration, pipeline design patterns                                           |
-| **Software Development**         | Production-grade code, APIs, modular architecture, testing, CI/CD awareness                                              |
-| **Dashboard Design & BI**        | Power BI, Tableau, chart selection by task, layout hierarchy, data storytelling, KPI design, color strategy              |
+| Domain                           | Scope                                                                                                                                                                                                        |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **EDA & Descriptive Statistics** | Univariate/bivariate/multivariate analysis, distribution analysis, outlier detection, correlation, statistical summaries                                                                                     |
+| **Data Cleaning**                | Missing value strategies, type coercion, deduplication, schema validation, anomaly handling                                                                                                                  |
+| **Feature Engineering**          | Encoding, scaling, transformation, feature selection, dimensionality reduction                                                                                                                               |
+| **ML Model Development**         | Supervised/unsupervised/semi-supervised, model selection, hyperparameter tuning, cross-validation                                                                                                            |
+| **Model Evaluation**             | Classification/regression/clustering metrics, bias-variance analysis, learning curves, explainability (SHAP, LIME)                                                                                           |
+| **Statistical Reporting**        | Hypothesis testing, confidence intervals, p-values, effect sizes, power analysis                                                                                                                             |
+| **ETL & Data Engineering**       | Medallion Architecture (Bronze/Silver/Gold), Batch vs. Streaming, Spark, Databricks, Delta Lake, Lakehouse, CDC, Data Contracts, Data Lineage, Kafka, Event Hubs, Data Mesh, Data Fabric, Data Observability |
+| **Analytics Engineering**        | dbt (models, tests, snapshots, semantic layer), Dimensional Modeling (Kimball), Fact/Dimension tables, SCDs (Types 0–6), Star/Snowflake Schema, Data Catalogs, Business Metrics Governance                   |
+| **Software Development**         | Production-grade code, APIs, modular architecture, testing, CI/CD awareness                                                                                                                                  |
+| **Dashboard Design & BI**        | Power BI, Tableau, chart selection by task, layout hierarchy, data storytelling, KPI design, color strategy                                                                                                  |
+| **Geometric & Topological ML**   | GNNs (GCN/GAT/GraphSAGE/GIN), TDA (persistent homology, Takens embedding), data shape analysis, spectral graph theory                                                                                        |
 
 ---
 
@@ -61,15 +63,40 @@ and embed SQL or R where appropriate.
 
 ### ML Frameworks — Selection Guide
 
-| Use Case                                                            | Framework            |
-| ------------------------------------------------------------------- | -------------------- |
-| Classical ML, pipelines, preprocessing                              | `scikit-learn`       |
-| Deep learning, production models                                    | `TensorFlow / Keras` |
-| Research, custom architectures                                      | `PyTorch`            |
-| Tabular data — robust, well-regularized baseline                    | `XGBoost`            |
-| Tabular data — large-scale, speed-critical, production              | `LightGBM`           |
-| Tabular data — high-cardinality categoricals, minimal preprocessing | `CatBoost`           |
-| Large-scale distributed ML                                          | `Apache Spark MLlib` |
+| Use Case                                                            | Framework                         |
+| ------------------------------------------------------------------- | --------------------------------- |
+| Classical ML, pipelines, preprocessing                              | `scikit-learn`                    |
+| Deep learning, production models                                    | `TensorFlow / Keras`              |
+| Research, custom architectures                                      | `PyTorch`                         |
+| Tabular data — robust, well-regularized baseline                    | `XGBoost`                         |
+| Tabular data — large-scale, speed-critical, production              | `LightGBM`                        |
+| Tabular data — high-cardinality categoricals, minimal preprocessing | `CatBoost`                        |
+| Graph-structured data (nodes + edges) — node/edge/graph tasks       | `PyTorch Geometric (PyG)` / `DGL` |
+| Topological data analysis (shape, periodicity, connectivity)        | `giotto-tda` / `ripser` / `gudhi` |
+| Large-scale distributed ML                                          | `Apache Spark MLlib`              |
+
+**Neural architecture selection by data geometry**: the correct deep learning architecture
+is determined by the structure of the data, not by current popularity. Bronstein et al.
+(2021) _Geometric Deep Learning_ establishes the unifying framework:
+
+- Spatial grid data (images, video) → CNN
+- Ordered sequences with temporal dependency → RNN / LSTM
+- Language, long-range context, reasoning → Transformer
+- Graph-structured data (nodes + explicit relational edges) → GNN (PyG / DGL)
+- Data with latent topological structure (periodicity, loops, voids) → TDA (giotto-tda)
+- Tabular data without geometric structure → GBM (XGBoost / LightGBM / CatBoost)
+
+**TDA — when the question is about shape**: use Topological Data Analysis when the
+analytical question involves detecting periodic structure, multi-scale clustering,
+branching topology, or global geometric features that statistical summaries cannot
+capture. TDA is especially powerful for short, noisy, or non-stationary time series
+(physiological signals, financial data, ICU monitoring) where FFT and classical
+statistics fail. See `references/tda_reference.md` for the full reference including
+persistent homology, Takens embedding, higher-order TDA, and giotto-tda implementation.
+
+See `references/gnn_reference.md` for the full architecture selection framework,
+GNN architecture guide (GCN / GAT / GraphSAGE / GIN), PyTorch Geometric implementation,
+limitations (over-smoothing, over-squashing), and real-world applications.
 
 **Gradient boosting on tabular data**: XGBoost, LightGBM, and CatBoost are the
 state-of-the-art for structured/tabular problems. Per Grinsztajn et al. (2022),
@@ -79,6 +106,15 @@ networks. See `references/ml_evaluation.md` → Gradient Boosting Selection Guid
 for detailed decision criteria.
 
 Always justify framework selection in code comments.
+
+**Feature scaling**: apply scaling only when the chosen algorithm requires it —
+distance-based (K-Means, KNN), margin-based (SVM), gradient-based (neural networks,
+linear/logistic regression), and PCA all require scaling. Tree-based models (Decision
+Trees, Random Forest, XGBoost, LightGBM, CatBoost) are scale-invariant and require no
+scaling. Always fit the scaler on the training set only, then transform train, test,
+and production data — fitting on the full dataset before splitting is a data leakage
+error. See `references/ml_evaluation.md` Section 1 for the full technique comparison
+(Min-Max, Z-Score, Robust, MaxAbs, Unit Vector) and leakage-safe implementation.
 
 ---
 
@@ -137,14 +173,17 @@ For reports, generate HTML exports from the notebook or produce structured markd
 
 ## Statistical Rigor — Context-Dependent Standard
 
-| Context                          | Approach                                                                                          |
-| -------------------------------- | ------------------------------------------------------------------------------------------------- |
-| **Exploratory / Applied**        | Descriptive stats, visual inspection, quick insights, practical significance                      |
-| **Academic / Formal**            | Hypothesis tests, p-values, confidence intervals, effect sizes, power analysis, assumption checks |
-| **Production / Decision-making** | Both — include formal validation AND business interpretation                                      |
+| Context                          | Approach                                                                                                                                                                  |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Exploratory / Applied**        | Descriptive stats, visual inspection, quick insights, practical significance                                                                                              |
+| **Academic / Formal**            | Hypothesis tests, p-values, confidence intervals, effect sizes, power analysis, assumption checks                                                                         |
+| **Production / Decision-making** | Both — include formal validation AND business interpretation                                                                                                              |
+| **Bayesian**                     | Prior + likelihood → posterior; credible intervals; P(hypothesis\|data); use when prior knowledge exists, samples are small, or probabilistic decision-making is required |
 
 Always **state assumptions explicitly** before applying any statistical test.
 Always **report effect size** alongside p-values — statistical significance ≠ practical significance.
+When applying Bayesian inference, always **specify and justify the prior** and **check MCMC convergence**
+(R̂ < 1.01, bulk-ESS > 400) before reporting posteriors. See `references/statistics_reference.md` Section 9.
 
 ---
 
@@ -182,7 +221,9 @@ Always **report effect size** alongside p-values — statistical significance �
 - Always check stationarity (ADF test) before modeling — non-stationary series produce spurious relationships
 - Always verify decomposition residuals with Ljung-Box test — non-white-noise residuals indicate unexploited signal
 - Always plot ACF/PACF on the stationary series before specifying ARIMA order
-- For financial or high-frequency series, assess conditional heteroskedasticity (ARCH/GARCH) — standard ARIMA assumes constant variance and is inadequate for volatility clustering
+- For financial or high-frequency series, assess conditional heteroskedasticity (ARCH/GARCH)
+- For short, noisy, or non-stationary time series where periodicity or topological structure is the question:
+  use TDA (Takens embedding + persistent H₁) — see `references/tda_reference.md` Section 5
 - See `references/eda_templates.md` Section 2 for full theoretical foundations, implementation, and authoritative references
 
 ### Text / NLP
@@ -234,16 +275,34 @@ recommendations (Bronze/Silver/Gold), and Python read/write code for all seven f
 ### Stack
 
 - **Batch**: `Pandas` / `Polars` → `dbt` → `Airflow` for orchestration
-- **Large-scale**: `Apache Spark` (PySpark) for distributed processing
-- **Cloud**: AWS (S3, Glue, Redshift), GCP (BigQuery, Dataflow), Azure (Data Factory, Synapse)
+- **Large-scale**: `Apache Spark` (PySpark) for distributed processing on Databricks or self-managed clusters
+- **Streaming**: `Apache Kafka` / `Azure Event Hubs` → `Spark Structured Streaming` or `Apache Flink`
+- **Lakehouse**: `Delta Lake` or `Apache Iceberg` on object storage (S3 / GCS / ADLS)
+- **Cloud**: AWS (S3, Glue, Redshift, Lake Formation), GCP (BigQuery, Dataflow, Dataplex), Azure (Data Factory, Synapse, Event Hubs, Unity Catalog)
+- **CDC**: `Debezium` (log-based CDC from PostgreSQL, MySQL, MongoDB) → Kafka → Delta Lake via MERGE
+- **Data Contracts**: YAML-defined schemas, quality SLOs, and versioning enforced at producer layer
+- **Data Observability**: `Great Expectations` or `dbt tests` for quality; `OpenLineage` for lineage; Monte Carlo / Atlan for full observability
+- **Analytics Engineering**: `dbt` for transformation layer — staging → intermediate → marts pattern; dbt Semantic Layer (MetricFlow) for governed metrics
 
 ### Pipeline Design Principles
 
 1. **Idempotency**: pipelines must produce the same output on re-run
 2. **Modularity**: each transformation is an isolated, testable function
-3. **Observability**: logging at every stage, data quality checks at ingestion and output
-4. **Schema validation**: enforce at source and sink (use `Great Expectations` or `Pandera`)
-5. **Lineage**: document data lineage in comments or metadata
+3. **Observability**: logging at every stage, data quality checks at ingestion and output — all five pillars (freshness, volume, schema, distribution, lineage)
+4. **Schema validation**: enforce at source and sink (`Great Expectations`, `Pandera`, or Delta Lake constraints)
+5. **Lineage**: emit OpenLineage events at every job boundary; track column-level lineage via dbt or Unity Catalog
+6. **Data Contracts**: define producer-consumer contracts in versioned YAML before building pipelines; validate programmatically on every run
+7. **Medallion Architecture**: organize Lakehouse data in Bronze (raw, immutable), Silver (clean, validated, ACID), Gold (business-ready, aggregated) layers
+
+See `references/data_engineering_advanced.md` for the full reference: Medallion depth,
+Batch vs. Streaming decision framework, Spark internals, Databricks, Delta Lake advanced
+features, Lakehouse architecture, CDC patterns, Data Contracts, Data Lineage, Kafka,
+Event Hubs, Data Mesh, Data Fabric, and Data Observability.
+
+See `references/analytics_engineering.md` for the full reference: dbt project structure,
+materializations, incremental models, snapshots, Semantic Layer, Dimensional Modeling
+(Kimball), Fact/Dimension tables, SCDs (Types 0–6), Star vs. Snowflake Schema, Data
+Catalogs, and Business Metrics Governance.
 
 ---
 
@@ -577,11 +636,15 @@ When a user presents a task, apply this reasoning sequence:
 For deeper guidance on specific subdomains, consult:
 
 - `references/eda_templates.md` — Standard EDA code templates per data type
-- `references/ml_evaluation.md` — Model evaluation checklists and metric reference
+- `references/ml_evaluation.md` — Feature scaling/normalization, model evaluation checklists, and metric reference
 - `references/etl_patterns.md` — ETL design patterns and pipeline templates
-- `references/statistics_reference.md` — Statistical test selection guide
+- `references/statistics_reference.md` — Statistical test selection guide, variance/std foundations, and Bayesian inference (Bayes' theorem, priors, conjugate posteriors, MCMC/NUTS, PyMC, A/B testing, frequentist vs. Bayesian decision guide)
 - `references/data_formats.md` — File format selection guide (CSV, JSON, Parquet, ORC, Avro, Delta Lake, Apache Iceberg)
 - `references/dashboard_design.md` — Dashboard design, chart selection, Power BI and Tableau guidelines, data storytelling
 - `references/sql_advanced.md` — Advanced SQL: subqueries, CTEs, window functions, advanced JOINs, aggregations, set operations, analytical patterns, query optimization
+- `references/gnn_reference.md` — GNNs and neural architecture selection: spectral graph theory, GCN/GAT/GraphSAGE/GIN math and derivations, CNN/RNN/Transformer/GNN pipeline comparison, PyTorch Geometric, over-smoothing/over-squashing, real applications
+- `references/tda_reference.md` — Topological Data Analysis: simplicial complexes, persistent homology, stability theorem, Takens embedding for time series periodicity, higher-order TDA (simplicial complexes, sheaves), giotto-tda implementation, applications in biomarkers/finance/brain networks
+- `references/data_engineering_advanced.md` — Medallion Architecture depth, Batch vs. Streaming, Spark internals, Databricks (Unity Catalog, DLT), Delta Lake advanced features, Lakehouse architecture, CDC (Debezium), Data Contracts (ODCS), Data Lineage (OpenLineage), Kafka, Azure Event Hubs, Data Mesh, Data Fabric, Data Observability (Great Expectations, dbt tests)
+- `references/analytics_engineering.md` — Analytics Engineering discipline, dbt (project structure, materializations, incremental models, snapshots, Semantic Layer/MetricFlow), Dimensional Modeling (Kimball 4-step process), Fact tables (transaction/snapshot/accumulating), Dimension tables, SCDs (Types 0–6), Star vs. Snowflake Schema, Data Catalogs, Business Metrics Governance
 
 Load the relevant reference file when the task falls primarily within that subdomain.

@@ -151,7 +151,7 @@ def fetch_schedule(season: int) -> list[dict[str, str | int]]:
             }
         )
 
-    events.sort(key=lambda e: int(e["round"]))  # type: ignore[arg-type]
+    events.sort(key=lambda e: int(e["round"]))
     logger.info("Fetched %d race events for the %d season.", len(events), season)
     return events
 

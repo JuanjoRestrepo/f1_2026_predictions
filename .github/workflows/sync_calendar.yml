@@ -1,0 +1,89 @@
+name: Sync F1 Calendar
+
+# Rationale for this schedule:
+#   - Monday 06:00 UTC: Runs the morning after every race weekend. The FIA
+#     typically confirms or adjusts the schedule in the days following a race,
+#     so a Monday sync catches any post-race calendar changes immediately.
+#   - An additional Sunday 06:00 UTC run acts as a safety net for mid-week
+#     announcements (cancellations, postponements, new venues).
+#   - workflow_dispatch: allows a one-click manual resync from the GitHub UI
+#     without needing a local Python environment.
+#
+# The job is idempotent: if calendar.json has not changed since the last sync,
+# `git diff --quiet` exits 0 and the commit/push steps are skipped — no noise
+# in the commit history.
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # Monday 06:00 UTC — post-race weekend sync
+    - cron: '0 6 * * 0'   # Sunday 06:00 UTC  — mid-week safety net
+  workflow_dispatch:
+    inputs:
+      season:
+        description: 'F1 season year to sync (default: 2026)'
+        required: false
+        default: '2026'
+        type: string
+
+permissions:
+  # Needed to push the updated calendar.json back to the repo.
+  contents: write
+
+env:
+  PYTHON_VERSION: '3.14'
+  DEFAULT_SEASON: '2026'
+
+jobs:
+  sync-calendar:
+    name: Sync Official F1 Calendar
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Fetch with a token so the bot can push back to the protected branch.
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install Python dependencies
+        run: uv sync --frozen
+
+      - name: Run calendar sync
+        id: sync
+        env:
+          SEASON: ${{ inputs.season || env.DEFAULT_SEASON }}
+        run: |
+          echo "Syncing calendar for season $SEASON..."
+          uv run python src/scripts/sync_calendar.py --season "$SEASON"
+
+      - name: Detect calendar changes
+        id: changes
+        run: |
+          git diff --quiet reports/*/calendar.json && \
+            echo "changed=false" >> $GITHUB_OUTPUT || \
+            echo "changed=true"  >> $GITHUB_OUTPUT
+
+      - name: Commit updated calendar
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add reports/*/calendar.json
+          git commit -m "chore(calendar): sync official F1 ${{ inputs.season || env.DEFAULT_SEASON }} schedule
+
+          Auto-synced from FastF1 / Ergast API via sync_calendar.py.
+          [skip ci]"
+          git push
+
+      - name: Report outcome
+        run: |
+          if [ "${{ steps.changes.outputs.changed }}" = "true" ]; then
+            echo "✅ Calendar updated and committed."
+          else
+            echo "ℹ️  No calendar changes detected — nothing to commit."
+          fi

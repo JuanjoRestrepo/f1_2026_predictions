@@ -25,6 +25,11 @@ description: >
 
 ### Quick Stack Decision Guide
 
+**Note:** for questions about system _structure_ — microservices vs monolith, DDD, CQRS,
+Clean/Hexagonal Architecture, event-driven design — see the companion `software-architecture`
+skill. This skill (`web-devops`) covers framework/tooling implementation once that shape is
+decided.
+
 | User wants...                                  | Recommended stack                                 |
 | ---------------------------------------------- | ------------------------------------------------- |
 | Full-stack app, fast MVP, type-safe end-to-end | **T3 Stack** (Next.js + tRPC + Prisma + NextAuth) |
