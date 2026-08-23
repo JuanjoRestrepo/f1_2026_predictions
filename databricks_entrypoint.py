@@ -59,16 +59,11 @@ from f1_predictions.utils.logging_setup import (  # noqa: E402
 logger = get_logger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# Constants
-# ---------------------------------------------------------------------------
-EXPERIMENT_NAME = "/Shared/f1_2026/race_pace"
-MODEL_NAME = "xgb_race_pace_regressor"
-
-# Catalog and schema are injected as Databricks job environment variables
-# via the DABs variable substitution `${var.catalog}` / `${var.schema}`.
-# Fallbacks are used when running outside the Databricks job context.
 import os  # noqa: E402
+
+USER_EMAIL = os.environ.get("DATABRICKS_USER", "restrepojuanjo@gmail.com")
+EXPERIMENT_NAME = f"/Users/{USER_EMAIL}/f1_2026_race_pace"
+MODEL_NAME = "xgb_race_pace_regressor"
 
 CATALOG = os.environ.get("F1_CATALOG", "main")
 SCHEMA = os.environ.get("F1_SCHEMA", "race_pace")
