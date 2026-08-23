@@ -1,5 +1,27 @@
 # F1 2026 Predictions - Release Notes
 
+## [v6.2.0] - 2026-08-23
+### Complete Dashboard Telemetry & AI Intelligence Upgrade
+
+#### 🤖 Upgraded AI Intelligence Reports
+- **Structured AI Reports**: Enhanced both Pre-Race (`predicted_report_round_N.md`) and Post-Race (`report_round_N.md`) AI analysis documents across all season rounds (Australia to Dutch GP).
+- **High-Impact Architecture**: Includes Executive Summaries (blockquote), Top 10 Race Classification & Pace Hierarchy tables, Victory & Podium Contender breakdowns, 1-Stop Pit Window Strategy (Medium → Hard), and Race Day Watch Points.
+- **First-Reading Clarity**: Structured for immediate comprehension by casual fans and technical engineers alike.
+
+#### 📈 Clean Race Timeline Visualization
+- **Zero Driver Duplication**: Aggregated lap-level CSV predictions into single per-driver pace entries before constructing `predicted_lap_positions` JSON files, eliminating duplicate driver labels in the interactive chart legend.
+- **Unique Driver Grid**: Ensures clean 1-to-1 mapping for every driver on the grid across all season rounds.
+
+#### 🗓️ Future Race Date-Gating & Calendar Alignment
+- **Strict Date Gating**: Updated `getAvailableRaces()` in `fileReader.ts` to compare race ISO dates against current time. Future rounds (such as Round 14 Spanish GP on September 13) remain locked until their scheduled weekend arrives.
+- **Race Day Continuity**: Fixed date comparison logic in `index.tsx` so race day (Dutch GP on August 23) remains active as the current race throughout the entire race day.
+- **Alias Resolution**: Handled `Barcelona_Grand_Prix` / `Spanish_Grand_Prix` directory naming seamlessly.
+
+#### 🔓 Build Artifact Tracking (`.gitignore` Fix)
+- **`.gitignore` Exception**: Added targeted exceptions `!reports/**/summaries/*.json` and `!reports/**/summaries/*.md` to ensure all generated race intelligence artifacts are tracked in git and deployed to Vercel.
+
+---
+
 ## [v6.1.0] - 2026-08-23
 ### Race Weekend Auto-Gate & FastF1 Calendar Integration
 
