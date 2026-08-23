@@ -7,7 +7,7 @@
 # Deploy:
 #   databricks bundle validate --target dev
 #   databricks bundle deploy  --target dev
-#   databricks bundle run     --target dev f1_2026_daily_predictions_job
+#   databricks bundle run     --target dev f1_2026_race_predictions_job
 #
 # Reference: .agents/skills/databricks/references/cicd-dabs.md
 # =============================================================================

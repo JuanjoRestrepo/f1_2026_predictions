@@ -317,6 +317,26 @@ def run_notify(season: int) -> None:
     logger.info("=" * 60)
 
 
+def is_race_window_active(season: int) -> bool:
+    """Determine if today is within a Race Weekend (Fri-Sun) or post-race Monday."""
+    try:
+        from f1_predictions.utils.race_detector import (
+            detect_last_race,
+            detect_upcoming_race,
+        )
+
+        last_race = detect_last_race(season=season, days_back=2)
+        upcoming_race = detect_upcoming_race(season=season, days_ahead=3)
+    except Exception as exc:
+        logger.warning(
+            "Could not fetch FastF1 schedule (%s). Executing pipeline by default.",
+            exc,
+        )
+        return True
+
+    return last_race is not None or upcoming_race is not None
+
+
 # ---------------------------------------------------------------------------
 # CLI entry point
 # ---------------------------------------------------------------------------
@@ -346,13 +366,26 @@ def main() -> None:
         default=2026,
         help="F1 season year (default: 2026).",
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Bypass race weekend gate and force execution.",
+    )
 
     args = parser.parse_args()
     logger.info(
-        "Databricks entrypoint invoked: run_mode=%s, season=%d",
+        "Databricks entrypoint invoked: run_mode=%s, season=%d, force=%s",
         args.run_mode,
         args.season,
+        args.force,
     )
+
+    if not args.force and not is_race_window_active(args.season):
+        logger.info(
+            "Non-race day detected (season %d). Skipping execution.",
+            args.season,
+        )
+        return
 
     if args.run_mode == "train":
         run_train(season=args.season)

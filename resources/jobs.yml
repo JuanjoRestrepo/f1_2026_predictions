@@ -11,16 +11,15 @@
 
 resources:
   jobs:
-    f1_2026_daily_predictions_job:
-      name: "[${bundle.target}] F1 2026 Daily Predictions Workflow"
+    f1_2026_race_predictions_job:
+      name: "[${bundle.target}] F1 2026 Race Weekend Predictions Workflow"
       description: >
-        Daily orchestration: runs the DLT medallion pipeline to refresh Gold features,
-        then trains/registers the XGBoost champion model, then sends race verdict
-        notifications via Gmail and Discord.
+        Race weekend orchestration: runs on race weekends (Fri-Mon) to ingest FastF1 telemetry,
+        refresh Gold features, train the XGBoost champion model, and dispatch post-race verdicts.
 
-      # Quartz cron: every day at 06:00 UTC (after race weekend + data sync)
+      # Quartz cron: Friday through Monday at 06:00 UTC (race weekend + post-race Monday)
       schedule:
-        quartz_cron_expression: "0 0 6 * * ?"
+        quartz_cron_expression: "0 0 6 ? * FRI-MON"
         timezone_id: UTC
         pause_status: ${var.schedule_pause_status}
 
@@ -47,7 +46,6 @@ resources:
               - "pandas>=2.2.0"
               - "scikit-learn>=1.5.0"
               - "fastf1>=3.4.0"
-
               # ── ML models ──
               - "xgboost>=2.1.0"
               - "lightgbm>=4.5.0"
@@ -85,6 +83,7 @@ resources:
               - "2026"
               - "--run-mode"
               - "train"
+              - "--force"
           retry_on_timeout: true
           max_retries: 1
           min_retry_interval_millis: 60000   # 1 minute
@@ -102,3 +101,5 @@ resources:
               - "2026"
               - "--run-mode"
               - "notify"
+              - "--force"
+
