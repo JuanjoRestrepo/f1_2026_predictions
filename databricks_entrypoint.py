@@ -287,13 +287,17 @@ def run_notify(season: int) -> None:
         if channels:
             dispatcher = NotificationDispatcher(channels=channels)
             verdict = RaceVerdict(
+                round=1,
                 gp_name="Bahrain Grand Prix",
-                round_number=1,
-                season=season,
-                mae_seconds=0.182,
-                status="EXCELLENT",
+                mae_lap_time_s=0.182,
+                mape_pct=0.21,
+                winner_correct=True,
+                podium_accuracy_pct=100.0,
+                top10_accuracy_pct=90.0,
                 key_misses=["Pace delta within expected confidence bounds"],
+                status="excellent",
             )
+
             results = dispatcher.dispatch(verdict)
             logger.info("Live race verdict notifications dispatched: %s", results)
         else:
