@@ -9,16 +9,16 @@ import pydantic
 logger = logging.getLogger(__name__)
 
 try:
-    from google.antigravity import (  # type: ignore[import-untyped]
-        Agent,
-        LocalAgentConfig,
-    )
-
-    HAS_ANTIGRAVITY = True
+    from google.antigravity import Agent, LocalAgentConfig  # type: ignore[import-untyped] # noqa: I001
 except ImportError:
-    HAS_ANTIGRAVITY = False
     Agent = None
-    LocalAgentConfig = None
+
+    class LocalAgentConfig:  # type: ignore[no-redef]
+        """Fallback config class when google-antigravity is not installed."""
+
+        def __init__(self, **kwargs: object) -> None:
+            """Initialize fallback config with keyword arguments."""
+            self.kwargs = kwargs
 
 
 class AeroReport(pydantic.BaseModel):
@@ -32,7 +32,7 @@ class AeroReport(pydantic.BaseModel):
 
 async def run_aero_agent(telemetry_data: str) -> AeroReport:
     """Specialized agent focused on aerodynamic performance metrics."""
-    if HAS_ANTIGRAVITY and LocalAgentConfig is not None and Agent is not None:
+    if Agent is not None:
         try:
             config = LocalAgentConfig(
                 response_schema=AeroReport,
