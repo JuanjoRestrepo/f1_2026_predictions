@@ -17,31 +17,45 @@ export function getAvailableRaces(year: number): RaceInfo[] {
   const yearDir = path.join(getReportsDirectory(), year.toString());
   if (!fs.existsSync(yearDir)) return [];
 
-  // In our structure, Miami is a folder, and summaries are in another folder.
-  // We'll define a mapping or look for specific markers.
-  // For this project, let's look at the summaries folder and extract round numbers.
-  const summariesDir = path.join(yearDir, "summaries");
-  if (!fs.existsSync(summariesDir)) return [];
-
-  const files = fs.readdirSync(summariesDir);
-  const rounds = new Set<number>();
-  files.forEach(f => {
-    const match = f.match(/round_(\d+)/);
-    if (match && match[1]) rounds.add(parseInt(match[1]));
-  });
-
   const fullCalendar = getFullCalendar(year);
-  
-  return Array.from(rounds).sort((a, b) => a - b).map(r => {
-    const raceDef = fullCalendar.find(race => race.round === r);
-    return {
-      round: r,
-      name: raceDef?.name || `Round ${r}`,
-      year,
-      dirName: raceDef?.dirName || `Round_${r}`,
-      date: raceDef?.date || "TBD"
-    };
+  const rounds = new Set<number>();
+
+  // Pass 1 — summaries/ directory: fully-processed races (rounds 4+) that
+  // have actual results, lap positions, tyre intelligence, and AI reports.
+  const summariesDir = path.join(yearDir, "summaries");
+  if (fs.existsSync(summariesDir)) {
+    fs.readdirSync(summariesDir).forEach((f) => {
+      const match = f.match(/round_(\d+)/);
+      if (match?.[1]) rounds.add(parseInt(match[1]));
+    });
+  }
+
+  // Pass 2 — race subdirectories: earlier rounds (1–3) that only have
+  // predictions.csv from the training pipeline but were never run through
+  // the full post-race summariser. The race page renders gracefully with
+  // "Analysis pending" / "No data" placeholders for missing panels.
+  fullCalendar.forEach((race) => {
+    const predsPath = path.join(
+      yearDir,
+      race.dirName,
+      "results",
+      "predictions.csv"
+    );
+    if (fs.existsSync(predsPath)) rounds.add(race.round);
   });
+
+  return Array.from(rounds)
+    .sort((a, b) => a - b)
+    .map((r) => {
+      const raceDef = fullCalendar.find((race) => race.round === r);
+      return {
+        round: r,
+        name: raceDef?.name ?? `Round ${r}`,
+        year,
+        dirName: raceDef?.dirName ?? `Round_${r}`,
+        date: raceDef?.date ?? "TBD",
+      };
+    });
 }
 
 /** Shape of each entry in the generated calendar.json file. */
