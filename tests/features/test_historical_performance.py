@@ -256,3 +256,63 @@ class TestAddHistoricalPointsCumulative:
         # VER: 25 + 18 = 43; HAM: 15
         assert _driver_pts(result, "VER") == 43.0
         assert _driver_pts(result, "HAM") == 15.0
+
+
+# ---------------------------------------------------------------------------
+# EWMA Form Features
+# ---------------------------------------------------------------------------
+
+
+class TestEwmaFormFeatures:
+    """Tests for ewma and add_ewma_form_features."""
+
+    def test_ewma_empty_returns_default(self) -> None:
+        """Empty list returns default value."""
+        from f1_predictions.features.historical_performance import ewma
+
+        assert ewma([], default=11.0) == 11.0
+
+    def test_ewma_single_value(self) -> None:
+        """Single value returns that value."""
+        from f1_predictions.features.historical_performance import ewma
+
+        assert ewma([5.0], default=11.0) == 5.0
+
+    def test_add_ewma_form_features_empty_history(self, laps_df: pd.DataFrame) -> None:
+        """Empty history populates default baseline form columns."""
+        from f1_predictions.features.historical_performance import (
+            add_ewma_form_features,
+        )
+
+        result = add_ewma_form_features(laps_df, None)
+        assert "driver_finish_ewma" in result.columns
+        assert "team_finish_ewma" in result.columns
+        assert "team_points_ewma" in result.columns
+        assert "driver_dnf_rate" in result.columns
+        assert (result["driver_finish_ewma"] == 11.0).all()
+
+    def test_add_ewma_form_features_normal_path(self, laps_df: pd.DataFrame) -> None:
+        """Normal history calculates exponential form weights correctly."""
+        from f1_predictions.features.historical_performance import (
+            add_ewma_form_features,
+        )
+
+        history = pd.DataFrame(
+            {
+                "RoundNumber": [1, 2, 1, 2],
+                "Abbreviation": ["VER", "VER", "HAM", "HAM"],
+                "TeamName": [
+                    "Red Bull Racing",
+                    "Red Bull Racing",
+                    "Mercedes",
+                    "Mercedes",
+                ],
+                "Position": [1.0, 2.0, 3.0, 1.0],
+                "Points": [25.0, 18.0, 15.0, 25.0],
+                "Status": ["Finished", "Finished", "Finished", "Finished"],
+            }
+        )
+        result = add_ewma_form_features(laps_df, history)
+        assert "driver_finish_ewma" in result.columns
+        ver_row = result[result["Driver"] == "VER"].iloc[0]
+        assert ver_row["driver_finish_ewma"] < 5.0
