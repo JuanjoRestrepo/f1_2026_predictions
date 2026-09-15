@@ -99,9 +99,7 @@ def traffic_margins(
         for other_driver, values in intervals.items():
             if other_driver == driver or values.size == 0:
                 continue
-            active = values[
-                (values[:, 1] <= timestamp) & (values[:, 2] >= timestamp)
-            ]
+            active = values[(values[:, 1] <= timestamp) & (values[:, 2] >= timestamp)]
             if not len(active):
                 continue
             other_lap, other_start, other_end = active[0]
@@ -113,8 +111,7 @@ def traffic_margins(
             min_ahead = min(min_ahead, forward_fraction * REFERENCE_LAP_SECONDS)
             min_nearest = min(
                 min_nearest,
-                min(forward_fraction, 1.0 - forward_fraction)
-                * REFERENCE_LAP_SECONDS,
+                min(forward_fraction, 1.0 - forward_fraction) * REFERENCE_LAP_SECONDS,
             )
 
         ahead_samples.append(min_ahead)

@@ -186,4 +186,3 @@ def add_ewma_form_features(
     )
 
     return result
-
