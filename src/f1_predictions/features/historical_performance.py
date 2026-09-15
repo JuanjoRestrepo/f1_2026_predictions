@@ -118,7 +118,8 @@ def add_ewma_form_features(
         alpha: Smoothing factor for EWMA (default 0.45).
 
     Returns:
-        DataFrame enriched with driver_finish_ewma, team_finish_ewma, team_points_ewma, driver_dnf_rate.
+        DataFrame enriched with driver_finish_ewma, team_finish_ewma,
+        team_points_ewma, driver_dnf_rate.
     """
     result = df.copy()
 
@@ -158,7 +159,8 @@ def add_ewma_form_features(
         driver_dnfs.setdefault(drv, []).append(is_dnf)
 
     drv_ewma_map = {
-        drv: ewma(vals, default=11.0, alpha=alpha) for drv, vals in driver_finishes.items()
+        drv: ewma(vals, default=11.0, alpha=alpha)
+        for drv, vals in driver_finishes.items()
     }
     tm_ewma_map = {
         tm: ewma(vals, default=11.0, alpha=alpha) for tm, vals in team_finishes.items()

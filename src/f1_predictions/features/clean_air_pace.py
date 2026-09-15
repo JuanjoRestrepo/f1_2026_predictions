@@ -8,12 +8,19 @@ shrinkage for optimal prediction performance on new or semi-street circuits.
 from __future__ import annotations
 
 import logging
-from typing import Any, cast
+from typing import Any, Protocol, cast
 
 import numpy as np
 import pandas as pd
 
 logger = logging.getLogger(__name__)
+
+
+class FastF1Session(Protocol):
+    """Protocol representing a FastF1 Session with laps attribute."""
+
+    laps: pd.DataFrame
+
 
 REFERENCE_LAP_SECONDS: float = 101.0
 
@@ -44,13 +51,13 @@ MADRID_PUBLISHED_PRIOR: dict[str, tuple[float, float]] = {
 }
 
 
-def prepare_laps(session: Any) -> pd.DataFrame:
+def prepare_laps(session: FastF1Session) -> pd.DataFrame:
     """Prepare timing interval columns for lap-by-lap traffic evaluation."""
     laps = session.laps.copy()
     laps["lap_seconds"] = laps["LapTime"].dt.total_seconds()
     laps["start_seconds"] = laps["LapStartTime"].dt.total_seconds()
     laps["end_seconds"] = laps["Time"].dt.total_seconds()
-    return cast(pd.DataFrame, laps)
+    return laps
 
 
 def active_intervals(laps: pd.DataFrame) -> dict[str, np.ndarray]:
@@ -164,7 +171,7 @@ def candidate_long_run_laps(laps: pd.DataFrame) -> pd.DataFrame:
 
 
 def reject_driver_errors(clean_laps: pd.DataFrame) -> pd.DataFrame:
-    """Remove large lockup or mistake laps using robust Median Absolute Deviation (MAD)."""
+    """Remove lockup or mistake laps using robust Median Absolute Deviation (MAD)."""
     kept: list[pd.DataFrame] = []
     for _, stint in clean_laps.groupby(["driver", "stint"]):
         if stint.empty:
