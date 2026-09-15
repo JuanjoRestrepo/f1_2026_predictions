@@ -33,9 +33,9 @@ unhandled failure mode can silently corrupt data or duplicate transactions.
    the highest-value content — a bot or integration that doesn't handle retries, idempotency,
    and rate limits correctly will eventually duplicate a transaction or silently drop data.
 3. **Cross-reference, don't duplicate**: `web-devops/references/security.md` already covers
-   JWT/OAuth/rate limiting from the angle of _authenticating users into your own application_.
-   This skill covers the same primitives from the angle of _your system calling — or being
-   called by — another system_. Point to the right one based on which direction the call flows.
+   JWT/OAuth/rate limiting from the angle of *authenticating users into your own application*.
+   This skill covers the same primitives from the angle of *your system calling — or being
+   called by — another system*. Point to the right one based on which direction the call flows.
 4. **Always state the failure mode being defended against** — a retry policy without idempotency
    is not safety, it's a duplicate-transaction generator. Never present resilience patterns in
    isolation from the failure they prevent.
@@ -46,31 +46,34 @@ unhandled failure mode can silently corrupt data or duplicate transactions.
 
 ## Quick Decision Guide
 
-| Situation                                                                                 | Guidance                                                |
-| ----------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| Public API for many unknown consumers, simple resource CRUD                               | REST                                                    |
-| Multiple clients need different, evolving views of the same data (mobile vs web)          | GraphQL                                                 |
-| Enterprise/legacy integration requiring formal contracts (banking, insurance, government) | SOAP may still be mandated — see when-not-to-avoid note |
-| Publishing an API other teams/partners will consume                                       | API-First: write the OpenAPI spec before code           |
-| Breaking change needed on a live API                                                      | Version it — never break existing consumers silently    |
-| Calling a third-party API on behalf of your app (not a user)                              | OAuth2 Client Credentials grant                         |
-| A user authorizes your app to act for them on another service                             | OAuth2 Authorization Code + PKCE (OAuth 2.1 baseline)   |
-| Your API/integration is called by outside consumers at volume                             | Rate limiting — protect yourself                        |
-| You call external APIs that may be rate-limited or flaky                                  | Retry with exponential backoff + jitter, always bounded |
-| A downstream dependency is failing repeatedly                                             | Circuit breaker — stop hammering a dead service         |
-| Any POST/PATCH that creates or charges something, especially after a retry                | Idempotency key — mandatory, not optional               |
-| You need many services to react to one event, decoupled                                   | Webhook or pub/sub, not synchronous polling             |
-| You don't control the other system and it has no webhook support                          | Polling with backoff, as a last resort                  |
+| Situation                                                                                    | Guidance                                                                    |
+| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Public API for many unknown consumers, simple resource CRUD                                  | REST                                                                        |
+| Multiple clients need different, evolving views of the same data (mobile vs web)             | GraphQL                                                                     |
+| Enterprise/legacy integration requiring formal contracts (banking, insurance, government)    | SOAP may still be mandated — see when-not-to-avoid note                     |
+| Publishing an API other teams/partners will consume                                          | API-First: write the OpenAPI spec before code                               |
+| Breaking change needed on a live API                                                         | Version it — never break existing consumers silently                        |
+| Calling a third-party API on behalf of your app (not a user)                                 | OAuth2 Client Credentials grant                                             |
+| A user authorizes your app to act for them on another service                                | OAuth2 Authorization Code + PKCE (OAuth 2.1 baseline)                       |
+| Your API/integration is called by outside consumers at volume                                | Rate limiting — protect yourself                                            |
+| You call external APIs that may be rate-limited or flaky                                     | Retry with exponential backoff + jitter, always bounded                     |
+| A downstream dependency is failing repeatedly                                                | Circuit breaker — stop hammering a dead service                             |
+| Any POST/PATCH that creates or charges something, especially after a retry                   | Idempotency key — mandatory, not optional                                   |
+| You need bidirectional, real-time, low-latency communication (chat, live dashboards, gaming) | WebSockets (RFC 6455)                                                       |
+| Server needs to push updates to client only (notifications, live logs, feeds)                | Server-Sent Events (SSE) — simpler than WebSockets for one-directional push |
+| You need many services to react to one event, decoupled                                      | Webhook or pub/sub, not synchronous polling                                 |
+| You don't control the other system and it has no webhook support                             | Polling with backoff, as a last resort                                      |
 
 ---
 
 ## 1. Protocol Selection — REST, GraphQL, SOAP
 
 REST (Fielding, 2000) remains the default for the overwhelming majority of new APIs — simple
-mental model, cacheable, stateless, wide tooling support. GraphQL (Facebook/GraphQL Foundation, 2015) solves the specific problem of over-fetching/under-fetching when multiple heterogeneous
+mental model, cacheable, stateless, wide tooling support. GraphQL (Facebook/GraphQL Foundation,
+2015) solves the specific problem of over-fetching/under-fetching when multiple heterogeneous
 clients need different shapes of the same data. SOAP (W3C, 2003) persists in specific enterprise
 domains (banking via SWIFT/ISO 20022, healthcare via HL7, government/legacy systems) where
-formal contracts (WSDL) and built-in transactionality (WS-\* standards) are institutional
+formal contracts (WSDL) and built-in transactionality (WS-* standards) are institutional
 requirements — not a technology choice most new projects should make.
 
 → See `references/protocols.md` for the Richardson Maturity Model, GraphQL schema design,
@@ -113,13 +116,13 @@ for service-to-service credentials.
 This is the highest-value section for integration-heavy work. Every pattern here defends
 against a specific, named failure mode:
 
-| Pattern                             | Defends against                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------- |
-| Retry with backoff + jitter         | Transient failures (network blip, momentary overload)                           |
-| Circuit breaker                     | Cascading failure from hammering an already-failing dependency                  |
-| Idempotency key                     | Duplicate side effects (double charge, duplicate record) from a retried request |
-| Rate limiting (as a provider)       | Your own API being overwhelmed by one client starving others                    |
-| Rate limit handling (as a consumer) | Getting banned/throttled by a third-party API you depend on                     |
+| Pattern | Defends against |
+|---|---|
+| Retry with backoff + jitter | Transient failures (network blip, momentary overload) |
+| Circuit breaker | Cascading failure from hammering an already-failing dependency |
+| Idempotency key | Duplicate side effects (double charge, duplicate record) from a retried request |
+| Rate limiting (as a provider) | Your own API being overwhelmed by one client starving others |
+| Rate limit handling (as a consumer) | Getting banned/throttled by a third-party API you depend on |
 
 **The critical combination:** retries without idempotency keys are dangerous — a retried POST
 that already succeeded server-side, but whose response was lost in transit, will create a
@@ -133,7 +136,30 @@ handling as both provider and consumer.
 
 ---
 
-## 5. API Gateway & Integration Patterns
+## 5. WebSockets — Full-Duplex Real-Time Communication
+
+WebSocket (IETF RFC 6455, December 2011) establishes a persistent, full-duplex TCP connection
+between client and server — either side can send messages at any time without a prior request.
+It begins as a standard HTTP request that gets upgraded via `101 Switching Protocols`.
+
+**The authentication challenge:** the browser's WebSocket API cannot set custom HTTP headers —
+only during the HTTP upgrade handshake are headers available. After `101`, the connection is
+raw TCP frames with no HTTP semantics. This requires specific auth patterns (token in query
+param, cookie, or first-message auth) distinct from standard Bearer token headers.
+
+**Horizontal scaling is the key operational challenge:** WebSocket connections are stateful and
+persistent. Multiple server instances behind a load balancer cannot broadcast to each other's
+clients without a shared message bus (Redis Pub/Sub is the standard solution for Node.js).
+
+→ See `references/websockets.md` for the full RFC 6455 handshake mechanics, Node.js (ws and
+Socket.IO) and Python (FastAPI) implementations, all authentication patterns, OWASP security
+(CSWSH, input validation, CVE-2024-37890), connection lifecycle, heartbeat/ping-pong,
+exponential backoff reconnection, horizontal scaling patterns, close codes, and the
+"when NOT to use" criteria.
+
+---
+
+## 6. API Gateway & Integration Patterns
 
 An **API Gateway** centralizes cross-cutting concerns (auth, rate limiting, routing, request
 transformation) in front of one or more backend services — but it is infrastructure, not a
@@ -166,13 +192,23 @@ directly relevant to RPA integrations with systems that only support one or the 
 
 ## Reference Files
 
-- `references/protocols.md` — REST (Richardson Maturity Model), GraphQL, SOAP, protocol
-  selection criteria, common REST anti-patterns
+- `references/protocols.md` — REST (Richardson Maturity Model, HTTP verbs and status codes,
+  RFC 9457 Problem Details, filtering/sorting, cursor vs offset pagination with Stripe/GitHub
+  patterns, RFC 8288 Link header, HTTP caching with ETag/Cache-Control); GraphQL (SDL,
+  resolvers, N+1 + DataLoader, Subscriptions over WebSocket/SSE, Relay Cursor Connections,
+  query depth/complexity limiting, persisted queries); SOAP (WSDL, Python/TS client code,
+  when it's still the correct answer); REST vs GraphQL direct comparison table with
+  real-world examples (Stripe, GitHub, Shopify, Twitter)
 - `references/openapi-versioning.md` — OpenAPI 3.1 authoring, API versioning strategies
   (URI/header/media-type), Stripe's date-based model, deprecation policy
 - `references/api-auth.md` — OAuth2/2.1 grant types for machine-to-machine auth, PKCE,
   JWT validation for API consumers, service-to-service credential storage
 - `references/resilience-patterns.md` — exponential backoff + jitter, circuit breaker state
   machine, idempotency keys, rate limiting as provider and consumer
-- `references/gateway-integration.md` — API Gateway patterns and product comparison, webhooks
-  vs polling vs pub/sub, webhook delivery reliability
+- `references/websockets.md` — RFC 6455 handshake mechanics, ws and Socket.IO (Node.js) and
+  FastAPI (Python) implementations, browser auth patterns, OWASP WebSocket Security Cheat Sheet
+  (CSWSH, input validation, CVE-2024-37890), heartbeat/ping-pong, reconnection with backoff,
+  horizontal scaling with Redis Pub/Sub, close codes, and when NOT to use WebSockets
+- `references/gateway-integration.md` — API Gateway patterns and product comparison; webhooks
+  (production-grade: CloudEvents CNCF spec, HMAC signature verification, idempotency, replay
+  protection, outbox pattern for reliable sending, Svix/Hookdeck); polling vs SSE vs pub/sub

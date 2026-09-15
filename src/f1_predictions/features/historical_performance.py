@@ -11,6 +11,7 @@ Rationale:
     the current race).
 """
 
+import numpy as np
 import pandas as pd
 
 from f1_predictions.utils.logging_setup import get_logger
@@ -92,3 +93,95 @@ def add_historical_points(
         col_team_pts,
     )
     return result
+
+
+def ewma(values: list[float], default: float = 10.0, alpha: float = 0.45) -> float:
+    """Compute recent-weighted mean without looking beyond the current round."""
+    if not values:
+        return default
+    estimate = values[0]
+    for value in values[1:]:
+        estimate = alpha * value + (1.0 - alpha) * estimate
+    return float(estimate)
+
+
+def add_ewma_form_features(
+    df: pd.DataFrame,
+    df_history_results: pd.DataFrame | None = None,
+    alpha: float = 0.45,
+) -> pd.DataFrame:
+    """Compute EWMA form features for drivers and teams across past rounds.
+
+    Args:
+        df: Target DataFrame to enrich with EWMA features.
+        df_history_results: Historical results DataFrame sorted by RoundNumber.
+        alpha: Smoothing factor for EWMA (default 0.45).
+
+    Returns:
+        DataFrame enriched with driver_finish_ewma, team_finish_ewma, team_points_ewma, driver_dnf_rate.
+    """
+    result = df.copy()
+
+    col_driver = "Driver" if "Driver" in result.columns else "Abbreviation"
+    col_team = "Team" if "Team" in result.columns else "TeamName"
+
+    if (
+        df_history_results is None
+        or df_history_results.empty
+        or col_driver not in result.columns
+    ):
+        result["driver_finish_ewma"] = 11.0
+        result["team_finish_ewma"] = 11.0
+        result["team_points_ewma"] = 0.0
+        result["driver_dnf_rate"] = 0.05
+        return result
+
+    # Sort history chronologically
+    history = df_history_results.sort_values("RoundNumber")
+
+    driver_finishes: dict[str, list[float]] = {}
+    team_finishes: dict[str, list[float]] = {}
+    team_pts_hist: dict[str, list[float]] = {}
+    driver_dnfs: dict[str, list[float]] = {}
+
+    for _, row in history.iterrows():
+        drv = str(row.get("Abbreviation", row.get("Driver", "")))
+        tm = str(row.get("TeamName", row.get("Team", "")))
+        pos = float(row.get("Position", 11.0))
+        pts = float(row.get("Points", 0.0))
+        status = str(row.get("Status", "Finished")).lower()
+        is_dnf = int(not ("finished" in status or "lapped" in status or "+" in status))
+
+        driver_finishes.setdefault(drv, []).append(pos)
+        team_finishes.setdefault(tm, []).append(pos)
+        team_pts_hist.setdefault(tm, []).append(pts)
+        driver_dnfs.setdefault(drv, []).append(is_dnf)
+
+    drv_ewma_map = {
+        drv: ewma(vals, default=11.0, alpha=alpha) for drv, vals in driver_finishes.items()
+    }
+    tm_ewma_map = {
+        tm: ewma(vals, default=11.0, alpha=alpha) for tm, vals in team_finishes.items()
+    }
+    tm_pts_map = {
+        tm: ewma(vals, default=0.0, alpha=alpha) for tm, vals in team_pts_hist.items()
+    }
+    dnf_rate_map = {
+        drv: float(np.mean(vals)) if vals else 0.05 for drv, vals in driver_dnfs.items()
+    }
+
+    result["driver_finish_ewma"] = (
+        result[col_driver].map(drv_ewma_map).fillna(11.0).astype("float32")
+    )
+    result["team_finish_ewma"] = (
+        result[col_team].map(tm_ewma_map).fillna(11.0).astype("float32")
+    )
+    result["team_points_ewma"] = (
+        result[col_team].map(tm_pts_map).fillna(0.0).astype("float32")
+    )
+    result["driver_dnf_rate"] = (
+        result[col_driver].map(dnf_rate_map).fillna(0.05).astype("float32")
+    )
+
+    return result
+

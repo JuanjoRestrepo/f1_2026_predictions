@@ -1,12 +1,12 @@
 # Analytics Engineering & Data Modeling Reference
 
-> **References**: Kimball, R., & Ross, M. (2013). _The Data Warehouse Toolkit_
+> **References**: Kimball, R., & Ross, M. (2013). *The Data Warehouse Toolkit*
 > (3rd ed.). Wiley. — The definitive reference on dimensional modeling.
 > dbt Labs Documentation. https://docs.getdbt.com · Inmon, W. H. (2005).
-> _Building the Data Warehouse_ (4th ed.). Wiley. · Mazur, A., & Natarajan, J. (2021).
-> _Analytics Engineering with dbt_. dbt Labs. · Fishtown Analytics (2016).
-> _The dbt Viewpoint_. https://www.getdbt.com/analytics-engineering/viewpoint
-> · Codd, E. F. (1970). A Relational Model of Data. _CACM_, 13(6), 377–387.
+> *Building the Data Warehouse* (4th ed.). Wiley. · Mazur, A., & Natarajan, J. (2021).
+> *Analytics Engineering with dbt*. dbt Labs. · Fishtown Analytics (2016).
+> *The dbt Viewpoint*. https://www.getdbt.com/analytics-engineering/viewpoint
+> · Codd, E. F. (1970). A Relational Model of Data. *CACM*, 13(6), 377–387.
 
 ## Table of Contents
 
@@ -26,7 +26,7 @@
 
 ## 1. Analytics Engineering — Discipline Definition {#discipline}
 
-> **Source**: Fishtown Analytics (2016). _The dbt Viewpoint_.
+> **Source**: Fishtown Analytics (2016). *The dbt Viewpoint*.
 > https://www.getdbt.com/analytics-engineering/viewpoint
 
 ### What Analytics Engineering Is
@@ -88,7 +88,6 @@ and executes in the target warehouse or lakehouse. dbt does not move data — it
 only transforms data that already exists in the warehouse.
 
 dbt provides:
-
 - **SQL-based modeling**: each model is a `.sql` file with a SELECT statement
 - **Materialization control**: models can be views, tables, or incremental tables
 - **Dependency resolution**: `{{ ref('model_name') }}` creates a DAG of model dependencies
@@ -185,11 +184,11 @@ as fact and dimension tables. Prefix `fct_` for facts and `dim_` for dimensions.
 models:
   my_project:
     staging:
-      +materialized: view # staging = always fresh, no storage cost
+      +materialized: view          # staging = always fresh, no storage cost
     intermediate:
-      +materialized: ephemeral # intermediate = compiled inline, not materialized
+      +materialized: ephemeral     # intermediate = compiled inline, not materialized
     marts:
-      +materialized: table # marts = pre-computed for fast BI queries
+      +materialized: table         # marts = pre-computed for fast BI queries
 ```
 
 **Incremental materialization** — the most important pattern for large tables:
@@ -234,10 +233,10 @@ version: 2
 
 models:
   - name: fct_orders
-    description: 'One row per order. Grain: order_id.'
+    description: "One row per order. Grain: order_id."
     columns:
       - name: order_sk
-        description: 'Surrogate key. Unique, non-null.'
+        description: "Surrogate key. Unique, non-null."
         tests:
           - unique
           - not_null
@@ -246,7 +245,7 @@ models:
         tests:
           - unique
           - not_null
-          - relationships: # Referential integrity check
+          - relationships:             # Referential integrity check
               to: ref('stg_orders')
               field: order_id
 
@@ -259,7 +258,7 @@ models:
       - name: order_status
         tests:
           - accepted_values:
-              values: ['completed', 'pending', 'refunded', 'cancelled']
+              values: ["completed", "pending", "refunded", "cancelled"]
 ```
 
 ### dbt Macros
@@ -288,9 +287,9 @@ models:
 
 ## 3. Semantic Layer and Metrics Layer {#semantic-layer}
 
-> **Source**: dbt Labs (2022). _The dbt Semantic Layer_.
+> **Source**: dbt Labs (2022). *The dbt Semantic Layer*.
 > https://docs.getdbt.com/docs/build/about-metricflow
-> Atlan (2023). _What is a Semantic Layer?_
+> Atlan (2023). *What is a Semantic Layer?*
 > Looker Documentation. https://cloud.google.com/looker/docs/lookml-terms-and-concepts
 
 ### What the Semantic Layer Is
@@ -317,7 +316,7 @@ configurations compiled into optimized SQL.
 
 semantic_models:
   - name: orders
-    description: 'Order-level semantic model. Grain: one row per order.'
+    description: "Order-level semantic model. Grain: one row per order."
     model: ref('fct_orders')
 
     # Entities define the keys for joining semantic models
@@ -354,19 +353,19 @@ semantic_models:
 
 metrics:
   - name: revenue
-    label: 'Total Revenue (USD)'
-    description: 'Sum of order_amount_usd for completed orders.'
+    label: "Total Revenue (USD)"
+    description: "Sum of order_amount_usd for completed orders."
     type: simple
     type_params:
       measure: total_revenue
     filter: "{{ Dimension('order__order_status') }} = 'completed'"
 
   - name: revenue_growth_mom
-    label: 'Revenue Growth MoM (%)'
-    description: 'Month-over-month revenue growth percentage.'
+    label: "Revenue Growth MoM (%)"
+    description: "Month-over-month revenue growth percentage."
     type: derived
     type_params:
-      expr: '(revenue - lag_revenue) / lag_revenue * 100'
+      expr: "(revenue - lag_revenue) / lag_revenue * 100"
       metrics:
         - name: revenue
         - name: revenue
@@ -374,7 +373,7 @@ metrics:
           alias: lag_revenue
 
   - name: conversion_rate
-    label: 'Order Conversion Rate'
+    label: "Order Conversion Rate"
     type: ratio
     type_params:
       numerator:
@@ -409,7 +408,7 @@ Cube) without the full semantic layer (entity and join modeling).
 
 ## 4. Dimensional Modeling — Kimball Methodology {#dimensional-modeling}
 
-> **Source**: Kimball, R., & Ross, M. (2013). _The Data Warehouse Toolkit_ (3rd ed.).
+> **Source**: Kimball, R., & Ross, M. (2013). *The Data Warehouse Toolkit* (3rd ed.).
 > Wiley. — The foundational text on dimensional modeling. All dimensional modeling
 > standards in this section derive directly from Kimball & Ross.
 
@@ -417,7 +416,7 @@ Cube) without the full semantic layer (entity and join modeling).
 
 Dimensional modeling is a data design methodology optimized for analytical queries —
 specifically designed for Data Warehouses and the Gold layer of Lakehouse architectures.
-Developed by Ralph Kimball in the 1970s and formalized in _The Data Warehouse Toolkit_,
+Developed by Ralph Kimball in the 1970s and formalized in *The Data Warehouse Toolkit*,
 it organizes data into two types of tables: **fact tables** (measurements) and
 **dimension tables** (context), connected in a star or snowflake schema.
 
@@ -481,11 +480,11 @@ browsed directly — they are always queried in combination with dimension table
 
 ### Types of Facts
 
-| Type              | Definition                                       | Example                                                                                                          |
-| ----------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| **Additive**      | Can be summed across any dimension               | Revenue, quantity, duration                                                                                      |
+| Type | Definition | Example |
+|---|---|---|
+| **Additive** | Can be summed across any dimension | Revenue, quantity, duration |
 | **Semi-additive** | Can be summed across some dimensions but not all | Account balance (additive across accounts, NOT across time — summing daily balances over 30 days is meaningless) |
-| **Non-additive**  | Cannot be summed across any dimension            | Ratios, percentages, temperatures                                                                                |
+| **Non-additive** | Cannot be summed across any dimension | Ratios, percentages, temperatures |
 
 **Key rule**: never store derived ratios (e.g., `conversion_rate`) in a fact table.
 Store the component numerator and denominator as additive facts; compute ratios at
@@ -775,14 +774,14 @@ WHERE  customer_id = 'CUST-001';
 
 ### SCD Summary
 
-| Type   | History preserved                | Storage cost | Use case                                                                |
-| ------ | -------------------------------- | ------------ | ----------------------------------------------------------------------- |
-| Type 0 | None — fixed                     | Lowest       | Immutable attributes (DOB, original source)                             |
-| Type 1 | None — overwrite                 | Low          | Data corrections; attribute history not needed                          |
-| Type 2 | Full — new row per change        | Higher       | Most historical analysis (customer segment, product category)           |
-| Type 3 | One prior value only             | Low          | Rare — limited historical need, simple schema                           |
-| Type 4 | Current + separate history table | Medium       | High-query frequency on current; occasional history queries             |
-| Type 6 | Combined 1+2+3                   | Highest      | Current value (Type 1) + history (Type 2) + prior value column (Type 3) |
+| Type | History preserved | Storage cost | Use case |
+|---|---|---|---|
+| Type 0 | None — fixed | Lowest | Immutable attributes (DOB, original source) |
+| Type 1 | None — overwrite | Low | Data corrections; attribute history not needed |
+| Type 2 | Full — new row per change | Higher | Most historical analysis (customer segment, product category) |
+| Type 3 | One prior value only | Low | Rare — limited historical need, simple schema |
+| Type 4 | Current + separate history table | Medium | High-query frequency on current; occasional history queries |
+| Type 6 | Combined 1+2+3 | Highest | Current value (Type 1) + history (Type 2) + prior value column (Type 3) |
 
 **Default choice**: SCD Type 2 is the correct default for any dimension attribute
 where historical accuracy in analysis is important. Use Type 1 only for data quality
@@ -816,7 +815,6 @@ Redshift) have cheap storage, the query simplicity and performance of denormaliz
 dimensions consistently outweigh the storage cost.
 
 **Advantages**:
-
 - Fewer joins — faster analytical queries
 - Simpler SQL — analysts can query without deep schema knowledge
 - Self-documenting — all context for a dimension in one table
@@ -836,7 +834,6 @@ dim_product ── fct_order_lines ── dim_customer ── dim_geography
 ```
 
 **When snowflake schema is appropriate**:
-
 - Very large dimension tables where redundancy has meaningful storage cost (rare in
   modern warehouses)
 - When the dimension is maintained by a separate system and normalization aligns
@@ -877,7 +874,6 @@ Is the primary consumer a BI tool used by non-technical analysts?
 ### What a Data Catalog Is
 
 A data catalog is a metadata management system that provides:
-
 1. **Discoverability**: search for datasets by name, description, business term, or owner
 2. **Understanding**: documentation, column-level descriptions, sample data, data profile
 3. **Trust**: data quality scores, freshness metrics, lineage to source
@@ -890,23 +886,23 @@ Without a data catalog, data teams spend significant time answering questions li
 
 ### Catalog Components
 
-| Component            | Purpose                                                                                    |
-| -------------------- | ------------------------------------------------------------------------------------------ |
-| Technical metadata   | Schema, data types, row counts, storage location, partition keys                           |
-| Business metadata    | Business owner, data steward, description, business terms, classification (PII, sensitive) |
-| Operational metadata | Freshness (last updated), pipeline job ID, SLA status, quality score                       |
-| Social metadata      | User ratings, usage frequency, comments, "trusted by X teams" signals                      |
-| Lineage              | Column-to-column and table-to-table lineage graph                                          |
+| Component | Purpose |
+|---|---|
+| Technical metadata | Schema, data types, row counts, storage location, partition keys |
+| Business metadata | Business owner, data steward, description, business terms, classification (PII, sensitive) |
+| Operational metadata | Freshness (last updated), pipeline job ID, SLA status, quality score |
+| Social metadata | User ratings, usage frequency, comments, "trusted by X teams" signals |
+| Lineage | Column-to-column and table-to-table lineage graph |
 
 ### Data Catalog Tools by Stack
 
-| Stack              | Recommended Catalog                                                                |
-| ------------------ | ---------------------------------------------------------------------------------- |
-| Databricks         | Unity Catalog (native; integrates lineage, access control, and governance)         |
-| AWS                | AWS Glue Data Catalog + optionally DataZone for business metadata                  |
-| GCP                | Dataplex + Data Catalog                                                            |
-| Multi-cloud / open | Apache Atlas (Hadoop-native), OpenMetadata (open source), Atlan, Alation           |
-| dbt-centric        | dbt docs (auto-generated from models + schema.yml); integrates with Atlan, DataHub |
+| Stack | Recommended Catalog |
+|---|---|
+| Databricks | Unity Catalog (native; integrates lineage, access control, and governance) |
+| AWS | AWS Glue Data Catalog + optionally DataZone for business metadata |
+| GCP | Dataplex + Data Catalog |
+| Multi-cloud / open | Apache Atlas (Hadoop-native), OpenMetadata (open source), Atlan, Alation |
+| dbt-centric | dbt docs (auto-generated from models + schema.yml); integrates with Atlan, DataHub |
 
 ### dbt-Generated Documentation as a Lightweight Catalog
 
@@ -922,12 +918,12 @@ models:
       Owner: Data Engineering (data-eng@company.com)
       SLA: Updated every hour. Data available within 90 minutes of transaction.
     meta:
-      owner: 'data-engineering'
-      classification: 'internal'
+      owner: "data-engineering"
+      classification: "internal"
 
     columns:
       - name: order_sk
-        description: 'Surrogate key. Generated from order_id.'
+        description: "Surrogate key. Generated from order_id."
       - name: order_amount_usd
         description: |
           Net revenue in USD. Excludes taxes and shipping.
@@ -935,16 +931,16 @@ models:
           Note: this is NET revenue, not gross. Use gross_revenue_usd for gross figures.
         meta:
           pii: false
-          classification: 'financial'
+          classification: "financial"
 ```
 
 ---
 
 ## 10. Business Metrics Governance {#metrics-governance}
 
-> **Source**: Caserta, J. (2023). _The Metrics Store_. O'Reilly.
-> dbt Labs (2023). _The Metrics Layer_. https://docs.getdbt.com/docs/build/metrics-overview
-> Transform (2022). _Headless BI and the Metrics Store_.
+> **Source**: Caserta, J. (2023). *The Metrics Store*. O'Reilly.
+> dbt Labs (2023). *The Metrics Layer*. https://docs.getdbt.com/docs/build/metrics-overview
+> Transform (2022). *Headless BI and the Metrics Store*.
 
 ### Why Metrics Governance Exists
 
@@ -955,7 +951,6 @@ sales team computes `revenue` as gross from the CRM. The data team computes
 same business question — and no one is wrong within their own context.
 
 Business metrics governance establishes:
-
 1. A single authoritative definition of every business metric
 2. A versioning and change management process for metric definitions
 3. A governance body (or automated contract) that approves changes
@@ -969,8 +964,8 @@ Every governed metric must document:
 # metrics/revenue.yml
 metric:
   name: revenue
-  label: 'Net Revenue (USD)'
-  version: '2.1.0'
+  label: "Net Revenue (USD)"
+  version: "2.1.0"
   status: active
 
   # Authoritative business definition
@@ -981,8 +976,8 @@ metric:
 
   # What this metric is NOT (prevents misinterpretation)
   not_to_be_confused_with:
-    - 'gross_revenue: revenue before discounts are applied'
-    - 'gmv (gross merchandise value): total transaction value before any deductions'
+    - "gross_revenue: revenue before discounts are applied"
+    - "gmv (gross merchandise value): total transaction value before any deductions"
 
   owner:
     team: finance
@@ -1001,20 +996,20 @@ metric:
     - product_category
 
   sla:
-    freshness: 'Updated within 30 minutes of transaction'
-    accuracy: 'Reconciled daily against finance ERP; tolerance ±0.01%'
+    freshness: "Updated within 30 minutes of transaction"
+    accuracy: "Reconciled daily against finance ERP; tolerance ±0.01%"
 
   versioning:
-    current: '2.1.0'
+    current: "2.1.0"
     changelog:
-      - version: '2.1.0'
-        date: '2024-06-01'
-        change: 'Excluded shipping revenue from definition (previously included)'
+      - version: "2.1.0"
+        date: "2024-06-01"
+        change: "Excluded shipping revenue from definition (previously included)"
         breaking: true
-        migration: 'Consumers using v2.0.0 will see ~3% lower revenue figures'
-      - version: '2.0.0'
-        date: '2024-01-01'
-        change: 'Changed from gross to net revenue definition'
+        migration: "Consumers using v2.0.0 will see ~3% lower revenue figures"
+      - version: "2.0.0"
+        date: "2024-01-01"
+        change: "Changed from gross to net revenue definition"
         breaking: true
 ```
 
@@ -1038,27 +1033,25 @@ authorized teams.
 
 ### Metric Certification Tiers
 
-| Tier           | Description                               | Requirements                                                      |
-| -------------- | ----------------------------------------- | ----------------------------------------------------------------- |
-| **Certified**  | Authoritative, governed, production-ready | Reviewed by governance committee; tested; documented; SLA defined |
-| **Validated**  | Accurate but not yet fully governed       | Tested; documented; pending governance approval                   |
-| **Draft**      | Under development                         | Not for production use; may change without notice                 |
-| **Deprecated** | Being phased out                          | Replacement certified metric identified; sunset date communicated |
+| Tier | Description | Requirements |
+|---|---|---|
+| **Certified** | Authoritative, governed, production-ready | Reviewed by governance committee; tested; documented; SLA defined |
+| **Validated** | Accurate but not yet fully governed | Tested; documented; pending governance approval |
+| **Draft** | Under development | Not for production use; may change without notice |
+| **Deprecated** | Being phased out | Replacement certified metric identified; sunset date communicated |
 
 ---
 
 ## 11. References {#references}
 
 **Books:**
-
-- Kimball, R., & Ross, M. (2013). _The Data Warehouse Toolkit_ (3rd ed.). Wiley. — The definitive reference on dimensional modeling.
-- Inmon, W. H. (2005). _Building the Data Warehouse_ (4th ed.). Wiley.
-- Reis, J., & Housley, M. (2022). _Fundamentals of Data Engineering_. O'Reilly.
-- Dehghani, Z. (2022). _Data Mesh_. O'Reilly.
-- Caserta, J. (2023). _The Metrics Store_. O'Reilly.
+- Kimball, R., & Ross, M. (2013). *The Data Warehouse Toolkit* (3rd ed.). Wiley. — The definitive reference on dimensional modeling.
+- Inmon, W. H. (2005). *Building the Data Warehouse* (4th ed.). Wiley.
+- Reis, J., & Housley, M. (2022). *Fundamentals of Data Engineering*. O'Reilly.
+- Dehghani, Z. (2022). *Data Mesh*. O'Reilly.
+- Caserta, J. (2023). *The Metrics Store*. O'Reilly.
 
 **Official Documentation:**
-
 - dbt Labs Documentation. https://docs.getdbt.com
 - dbt Semantic Layer / MetricFlow. https://docs.getdbt.com/docs/build/about-metricflow
 - Databricks Unity Catalog. https://docs.databricks.com/en/data-governance/unity-catalog
@@ -1067,11 +1060,9 @@ authorized teams.
 - OpenMetadata. https://open-metadata.org
 
 **Papers:**
-
-- Armbrust, M., et al. (2021). Lakehouse: A New Generation of Open Platforms. _CIDR 2021_.
-- Codd, E. F. (1970). A Relational Model of Data for Large Shared Data Banks. _CACM_, 13(6).
+- Armbrust, M., et al. (2021). Lakehouse: A New Generation of Open Platforms. *CIDR 2021*.
+- Codd, E. F. (1970). A Relational Model of Data for Large Shared Data Banks. *CACM*, 13(6).
 
 **Practitioner references:**
-
 - Fishtown Analytics (2016). The dbt Viewpoint. https://www.getdbt.com/analytics-engineering/viewpoint
 - Dehghani, Z. (2019). How to Move Beyond a Monolithic Data Lake to a Distributed Data Mesh. https://martinfowler.com/articles/data-monolith-to-mesh.html

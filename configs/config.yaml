@@ -18,6 +18,14 @@
 #   alt_strategy          : Alternate 2-stop or soft-start strategy.
 #   drs_zones             : Number of DRS activation zones.
 #   circuit_type          : "street" | "permanent" | "hybrid"
+#   streetness            : 0.0 (full permanent, wide run-off) → 1.0 (tight barriers,
+#                           limited run-off). Quantifies how "street-like" the layout is.
+#   speed_bias            : 0.0 (slow/technical) → 1.0 (power-dominant, long straights).
+#                           Correlates with top-speed sensitivity vs. downforce sensitivity.
+#   overtaking_ease       : 0.0 (impossible) → 1.0 (easy, many opportunities).
+#                           Inverse of overtake_difficulty but includes DRS effectiveness.
+#   tyre_stress           : 0.0 (low deg) → 1.0 (extreme deg). Encodes how much
+#                           tyre management skill separates drivers at this circuit.
 # =============================================================================
 
 circuits:
@@ -34,6 +42,10 @@ circuits:
     alt_strategy: ["SOFT", "MEDIUM", "HARD"]
     drs_zones: 4
     circuit_type: street
+    streetness: 0.75
+    speed_bias: 0.55
+    overtaking_ease: 0.55
+    tyre_stress: 0.45
 
   # ── Round 2: China ─────────────────────────────────────────────────────────
   "Chinese Grand Prix":
@@ -47,6 +59,10 @@ circuits:
     alt_strategy: ["SOFT", "HARD"]
     drs_zones: 2
     circuit_type: permanent
+    streetness: 0.10
+    speed_bias: 0.60
+    overtaking_ease: 0.70
+    tyre_stress: 0.55
 
   # ── Round 3: Japan ─────────────────────────────────────────────────────────
   "Japanese Grand Prix":
@@ -60,19 +76,27 @@ circuits:
     alt_strategy: ["SOFT", "MEDIUM"]
     drs_zones: 2
     circuit_type: permanent
+    streetness: 0.15
+    speed_bias: 0.65
+    overtaking_ease: 0.45
+    tyre_stress: 0.60
 
-  # ── Round 4: Bahrain ───────────────────────────────────────────────────────
-  "Bahrain Grand Prix":
-    base_lap_time_s: 91.6
+  # ── Round 4: Miami ─────────────────────────────────────────────────────────
+  "Miami Grand Prix":
+    base_lap_time_s: 88.0
     total_laps: 57
-    overtake_difficulty: 0.25
+    overtake_difficulty: 0.40
     tyre_wear_type: thermal
-    safety_car_probability: 0.35
-    pit_loss_time_s: 19.8
+    safety_car_probability: 0.55
+    pit_loss_time_s: 20.0
     typical_strategy: ["MEDIUM", "HARD"]
     alt_strategy: ["SOFT", "MEDIUM", "HARD"]
     drs_zones: 3
-    circuit_type: permanent
+    circuit_type: hybrid
+    streetness: 0.60
+    speed_bias: 0.65
+    overtaking_ease: 0.60
+    tyre_stress: 0.55
 
   # ── Round 5: Canada ────────────────────────────────────────────────────────
   "Canadian Grand Prix":
@@ -86,6 +110,10 @@ circuits:
     alt_strategy: ["SOFT", "HARD"]
     drs_zones: 3
     circuit_type: permanent
+    streetness: 0.30
+    speed_bias: 0.70
+    overtaking_ease: 0.65
+    tyre_stress: 0.50
 
   # ── Round 6: Monaco ────────────────────────────────────────────────────────
   # Monaco is the single biggest outlier on the F1 calendar.
@@ -107,19 +135,52 @@ circuits:
     alt_strategy: ["SOFT", "MEDIUM"]
     drs_zones: 1
     circuit_type: street
+    streetness: 1.00
+    speed_bias: 0.10
+    overtaking_ease: 0.05
+    tyre_stress: 0.35
 
-  # ── Round 7: Spain ─────────────────────────────────────────────────────────
+  # ── Round 7: Spain / Madrid (NEW CIRCUIT 2026) ─────────────────────────────
+  # Madrid GP is a brand-new semi-street circuit replacing Barcelona.
+  # No historical race data exists — all predictions rely on FP2 clean-air
+  # pace, qualifying gaps, and published practice-based priors.
+  # Key characteristics:
+  #   - Semi-street layout with high-speed sections through Madrid's IFEMA complex
+  #   - High tyre stress expected (new surface + fast sweepers)
+  #   - Moderate overtaking expected from DRS zones and long straights
+  #   - Safety car probability elevated (first year, new barriers)
+  "Barcelona Grand Prix":
+    base_lap_time_s: 76.3
+    total_laps: 66
+    overtake_difficulty: 0.50
+    tyre_wear_type: thermal
+    safety_car_probability: 0.45
+    pit_loss_time_s: 20.2
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "MEDIUM", "HARD"]
+    drs_zones: 2
+    circuit_type: hybrid
+    streetness: 0.80
+    speed_bias: 0.70
+    overtaking_ease: 0.40
+    tyre_stress: 0.85
+
+  # Also register under legacy name for backward compatibility
   "Spanish Grand Prix":
     base_lap_time_s: 76.3
     total_laps: 66
     overtake_difficulty: 0.50
     tyre_wear_type: thermal
-    safety_car_probability: 0.30
+    safety_car_probability: 0.45
     pit_loss_time_s: 20.2
     typical_strategy: ["MEDIUM", "HARD"]
     alt_strategy: ["SOFT", "MEDIUM", "HARD"]
     drs_zones: 2
-    circuit_type: permanent
+    circuit_type: hybrid
+    streetness: 0.80
+    speed_bias: 0.70
+    overtaking_ease: 0.40
+    tyre_stress: 0.85
 
   # ── Round 8: Austria ───────────────────────────────────────────────────────
   "Austrian Grand Prix":
@@ -133,6 +194,10 @@ circuits:
     alt_strategy: ["SOFT", "SOFT", "MEDIUM"]
     drs_zones: 3
     circuit_type: permanent
+    streetness: 0.05
+    speed_bias: 0.75
+    overtaking_ease: 0.65
+    tyre_stress: 0.40
 
   # ── Round 9: Great Britain ─────────────────────────────────────────────────
   "British Grand Prix":
@@ -146,21 +211,12 @@ circuits:
     alt_strategy: ["SOFT", "MEDIUM", "HARD"]
     drs_zones: 2
     circuit_type: permanent
+    streetness: 0.05
+    speed_bias: 0.70
+    overtaking_ease: 0.60
+    tyre_stress: 0.65
 
-  # ── Round 10: Hungary ──────────────────────────────────────────────────────
-  "Hungarian Grand Prix":
-    base_lap_time_s: 77.0
-    total_laps: 70
-    overtake_difficulty: 0.65
-    tyre_wear_type: thermal
-    safety_car_probability: 0.40
-    pit_loss_time_s: 19.5
-    typical_strategy: ["MEDIUM", "HARD"]
-    alt_strategy: ["SOFT", "MEDIUM"]
-    drs_zones: 1
-    circuit_type: permanent
-
-  # ── Round 11: Belgium ──────────────────────────────────────────────────────
+  # ── Round 10: Belgium ──────────────────────────────────────────────────────
   "Belgian Grand Prix":
     base_lap_time_s: 103.5
     total_laps: 44
@@ -172,6 +228,27 @@ circuits:
     alt_strategy: ["SOFT", "MEDIUM"]
     drs_zones: 2
     circuit_type: permanent
+    streetness: 0.05
+    speed_bias: 0.80
+    overtaking_ease: 0.70
+    tyre_stress: 0.50
+
+  # ── Round 11: Hungary ──────────────────────────────────────────────────────
+  "Hungarian Grand Prix":
+    base_lap_time_s: 77.0
+    total_laps: 70
+    overtake_difficulty: 0.65
+    tyre_wear_type: thermal
+    safety_car_probability: 0.40
+    pit_loss_time_s: 19.5
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "MEDIUM"]
+    drs_zones: 1
+    circuit_type: permanent
+    streetness: 0.20
+    speed_bias: 0.30
+    overtaking_ease: 0.35
+    tyre_stress: 0.70
 
   # ── Round 12: Netherlands ──────────────────────────────────────────────────
   "Dutch Grand Prix":
@@ -185,6 +262,10 @@ circuits:
     alt_strategy: ["SOFT", "MEDIUM"]
     drs_zones: 2
     circuit_type: permanent
+    streetness: 0.15
+    speed_bias: 0.45
+    overtaking_ease: 0.40
+    tyre_stress: 0.60
 
   # ── Round 13: Italy ────────────────────────────────────────────────────────
   "Italian Grand Prix":
@@ -198,8 +279,12 @@ circuits:
     alt_strategy: ["SOFT", "HARD"]
     drs_zones: 2
     circuit_type: permanent
+    streetness: 0.05
+    speed_bias: 0.90
+    overtaking_ease: 0.70
+    tyre_stress: 0.45
 
-  # ── Round 14: Azerbaijan ───────────────────────────────────────────────────
+  # ── Round 15: Azerbaijan ───────────────────────────────────────────────────
   "Azerbaijan Grand Prix":
     base_lap_time_s: 102.4
     total_laps: 51
@@ -211,8 +296,29 @@ circuits:
     alt_strategy: ["SOFT", "MEDIUM"]
     drs_zones: 2
     circuit_type: street
+    streetness: 0.90
+    speed_bias: 0.65
+    overtaking_ease: 0.65
+    tyre_stress: 0.55
 
-  # ── Round 15: Singapore ────────────────────────────────────────────────────
+  # ── Round 16: Bahrain ──────────────────────────────────────────────────────
+  "Bahrain Grand Prix":
+    base_lap_time_s: 91.6
+    total_laps: 57
+    overtake_difficulty: 0.25
+    tyre_wear_type: thermal
+    safety_car_probability: 0.35
+    pit_loss_time_s: 19.8
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "MEDIUM", "HARD"]
+    drs_zones: 3
+    circuit_type: permanent
+    streetness: 0.10
+    speed_bias: 0.60
+    overtaking_ease: 0.75
+    tyre_stress: 0.70
+
+  # ── Round 17: Singapore ────────────────────────────────────────────────────
   "Singapore Grand Prix":
     base_lap_time_s: 99.8
     total_laps: 62
@@ -224,8 +330,12 @@ circuits:
     alt_strategy: ["SOFT", "MEDIUM"]
     drs_zones: 3
     circuit_type: street
+    streetness: 0.95
+    speed_bias: 0.25
+    overtaking_ease: 0.20
+    tyre_stress: 0.60
 
-  # ── Round 16: United States (Austin) ───────────────────────────────────────
+  # ── Round 18: United States (Austin) ───────────────────────────────────────
   "United States Grand Prix":
     base_lap_time_s: 96.2
     total_laps: 56
@@ -237,8 +347,12 @@ circuits:
     alt_strategy: ["SOFT", "MEDIUM", "HARD"]
     drs_zones: 2
     circuit_type: permanent
+    streetness: 0.10
+    speed_bias: 0.60
+    overtaking_ease: 0.60
+    tyre_stress: 0.65
 
-  # ── Round 17: Mexico ───────────────────────────────────────────────────────
+  # ── Round 19: Mexico ───────────────────────────────────────────────────────
   "Mexico City Grand Prix":
     base_lap_time_s: 79.7
     total_laps: 71
@@ -250,8 +364,12 @@ circuits:
     alt_strategy: ["SOFT", "MEDIUM"]
     drs_zones: 3
     circuit_type: permanent
+    streetness: 0.10
+    speed_bias: 0.55
+    overtaking_ease: 0.60
+    tyre_stress: 0.45
 
-  # ── Round 18: Brazil ───────────────────────────────────────────────────────
+  # ── Round 20: Brazil ───────────────────────────────────────────────────────
   "São Paulo Grand Prix":
     base_lap_time_s: 73.0
     total_laps: 71
@@ -263,8 +381,12 @@ circuits:
     alt_strategy: ["SOFT", "HARD"]
     drs_zones: 2
     circuit_type: permanent
+    streetness: 0.15
+    speed_bias: 0.70
+    overtaking_ease: 0.70
+    tyre_stress: 0.55
 
-  # ── Round 19: Las Vegas ────────────────────────────────────────────────────
+  # ── Round 21: Las Vegas ────────────────────────────────────────────────────
   "Las Vegas Grand Prix":
     base_lap_time_s: 93.5
     total_laps: 50
@@ -276,8 +398,12 @@ circuits:
     alt_strategy: ["SOFT", "HARD"]
     drs_zones: 2
     circuit_type: street
+    streetness: 0.85
+    speed_bias: 0.80
+    overtaking_ease: 0.70
+    tyre_stress: 0.45
 
-  # ── Round 20: Qatar ────────────────────────────────────────────────────────
+  # ── Round 22: Qatar ────────────────────────────────────────────────────────
   "Qatar Grand Prix":
     base_lap_time_s: 83.9
     total_laps: 57
@@ -289,8 +415,12 @@ circuits:
     alt_strategy: ["SOFT", "MEDIUM"]
     drs_zones: 2
     circuit_type: permanent
+    streetness: 0.10
+    speed_bias: 0.65
+    overtaking_ease: 0.55
+    tyre_stress: 0.80
 
-  # ── Round 21: Abu Dhabi ────────────────────────────────────────────────────
+  # ── Round 23: Abu Dhabi ────────────────────────────────────────────────────
   "Abu Dhabi Grand Prix":
     base_lap_time_s: 86.4
     total_laps: 58
@@ -302,6 +432,10 @@ circuits:
     alt_strategy: ["SOFT", "MEDIUM"]
     drs_zones: 2
     circuit_type: permanent
+    streetness: 0.20
+    speed_bias: 0.60
+    overtaking_ease: 0.60
+    tyre_stress: 0.55
 
 # =============================================================================
 # Default fallback — used when EventName does not match any key above.
@@ -318,3 +452,7 @@ defaults:
   alt_strategy: ["SOFT", "MEDIUM"]
   drs_zones: 2
   circuit_type: permanent
+  streetness: 0.30
+  speed_bias: 0.50
+  overtaking_ease: 0.50
+  tyre_stress: 0.50

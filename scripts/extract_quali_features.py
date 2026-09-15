@@ -56,8 +56,25 @@ def extract_quali_features(
     # Build feature DataFrame
     features = []
 
-    pole_time_obj = session.laps.pick_fastest()
-    pole_time = pole_time_obj["LapTime"] if not pole_time_obj.empty else pd.NaT
+    pole_time = pd.NaT
+    if not session.laps.empty:
+        pole_time_obj = session.laps.pick_fastest()
+        if not pole_time_obj.empty and "LapTime" in pole_time_obj and pd.notna(pole_time_obj["LapTime"]):
+            pole_time = pole_time_obj["LapTime"]
+
+    # Fallback to minimum time in results table if laps laptime was not found
+    if pd.isna(pole_time):
+        min_q_secs = float("inf")
+        for _, r in results.iterrows():
+            for q_sess in ["Q3", "Q2", "Q1"]:
+                if q_sess in r and pd.notna(r[q_sess]):
+                    ts = r[q_sess].total_seconds() if hasattr(r[q_sess], "total_seconds") else float(r[q_sess])
+                    if ts < min_q_secs:
+                        min_q_secs = ts
+        if min_q_secs < float("inf"):
+            pole_time = pd.Timedelta(seconds=min_q_secs)
+
+    field_size = len(results)
 
     for _, driver_row in results.iterrows():
         driver = driver_row["Abbreviation"]
@@ -73,8 +90,17 @@ def extract_quali_features(
                 break
 
         delta_to_pole_s = float("nan")
+        quali_gap_pct = float("nan")
+        quali_no_time = pd.isna(best_q_time)
+
         if pd.notna(pole_time) and pd.notna(best_q_time):
-            delta_to_pole_s = (best_q_time - pole_time).total_seconds()
+            p_sec = pole_time.total_seconds()
+            q_sec = best_q_time.total_seconds()
+            delta_to_pole_s = q_sec - p_sec
+            if p_sec > 0:
+                quali_gap_pct = 100.0 * ((q_sec / p_sec) - 1.0)
+
+        grid_norm = (float(pos) - 1.0) / max(1.0, float(field_size) - 1.0) if pd.notna(pos) else 0.5
 
         features.append(
             {
@@ -82,6 +108,9 @@ def extract_quali_features(
                 "Team": team,
                 "Grid_Position": pos,
                 "Quali_Pace_Delta_s": delta_to_pole_s,
+                "Grid_Norm": grid_norm,
+                "Quali_Gap_Pct": quali_gap_pct,
+                "Quali_No_Time": quali_no_time,
             }
         )
 

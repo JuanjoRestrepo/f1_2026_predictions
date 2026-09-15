@@ -34,18 +34,18 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Order found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Order'
-        '404':
+                $ref: "#/components/schemas/Order"
+        "404":
           description: Order not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 components:
   schemas:
     Order:
@@ -129,12 +129,12 @@ NON-BREAKING (safe within the same version):
 
 ### Strategy Comparison
 
-| Strategy                                 | Example                                   | Pros                                                                                                                                   | Cons                                                                                                                             |
-| ---------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| **URI versioning**                       | `/v1/orders`, `/v2/orders`                | Simple, visible, cacheable per version                                                                                                 | URL "pollution"; encourages big-bang version jumps                                                                               |
-| **Header versioning**                    | `Api-Version: 2`                          | Clean URLs; version is metadata, not identity                                                                                          | Less discoverable; harder to test in a browser                                                                                   |
-| **Media-type versioning**                | `Accept: application/vnd.example.v2+json` | RESTfully "correct" (version is a representation detail)                                                                               | Most complex to implement and document; low adoption outside specific communities                                                |
-| **Date-based versioning (Stripe model)** | `Stripe-Version: 2024-06-20`              | Extremely granular — each account pins to the exact date it integrated; enables per-field migrations, not just per-major-version jumps | Requires significant internal tooling to maintain many concurrent "versions" as transformations over one internal representation |
+| Strategy | Example | Pros | Cons |
+|---|---|---|---|
+| **URI versioning** | `/v1/orders`, `/v2/orders` | Simple, visible, cacheable per version | URL "pollution"; encourages big-bang version jumps |
+| **Header versioning** | `Api-Version: 2` | Clean URLs; version is metadata, not identity | Less discoverable; harder to test in a browser |
+| **Media-type versioning** | `Accept: application/vnd.example.v2+json` | RESTfully "correct" (version is a representation detail) | Most complex to implement and document; low adoption outside specific communities |
+| **Date-based versioning (Stripe model)** | `Stripe-Version: 2024-06-20` | Extremely granular — each account pins to the exact date it integrated; enables per-field migrations, not just per-major-version jumps | Requires significant internal tooling to maintain many concurrent "versions" as transformations over one internal representation |
 
 **Practical recommendation:** URI versioning (`/v1/`, `/v2/`) for most APIs — simplest to
 reason about, document, and route. Reserve date-based versioning for APIs with a large,
@@ -171,7 +171,6 @@ Link: <https://api.example.com/v2/orders/123>; rel="successor-version"
 
 `Sunset` (RFC 8594) and `Deprecation` are standard HTTP headers for signaling that an endpoint
 or version will stop working. Always:
-
 - Announce deprecation with a fixed sunset date, communicated well in advance (industry norm:
   6–12 months for external APIs with real integrators)
 - Return the `Sunset` header on every response from the deprecated version

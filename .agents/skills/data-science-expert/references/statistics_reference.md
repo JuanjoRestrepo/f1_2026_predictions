@@ -1,7 +1,6 @@
 # Statistical Test Selection Guide
 
 ## Table of Contents
-
 1. [Test Selection Decision Tree](#decision-tree)
 2. [Parametric Tests](#parametric)
 3. [Non-Parametric Tests](#non-parametric)
@@ -293,15 +292,15 @@ def compute_sample_size(effect_size: float, alpha: float = 0.05,
 
 Every statistical result MUST be reported with the following components:
 
-| Component                    | Example                                                                          |
-| ---------------------------- | -------------------------------------------------------------------------------- |
-| Test name                    | "Welch's independent t-test"                                                     |
-| Test statistic               | t(df) = 3.42                                                                     |
-| p-value                      | p = .003                                                                         |
-| Effect size + interpretation | d = 0.61 (medium)                                                                |
-| Confidence interval          | 95% CI [1.2, 5.8]                                                                |
-| Sample sizes                 | n₁ = 120, n₂ = 118                                                               |
-| Conclusion                   | "There was a statistically significant and practically meaningful difference..." |
+| Component | Example |
+|---|---|
+| Test name | "Welch's independent t-test" |
+| Test statistic | t(df) = 3.42 |
+| p-value | p = .003 |
+| Effect size + interpretation | d = 0.61 (medium) |
+| Confidence interval | 95% CI [1.2, 5.8] |
+| Sample sizes | n₁ = 120, n₂ = 118 |
+| Conclusion | "There was a statistically significant and practically meaningful difference..." |
 
 **Critical reminder**: Statistical significance (p < α) does NOT imply practical significance.
 Always report and interpret the effect size alongside the p-value.
@@ -310,10 +309,10 @@ Always report and interpret the effect size alongside the p-value.
 
 ## 8. Variance and Standard Deviation — Foundations and ML Applications {#variance-std}
 
-> **References**: Fisher, R. A. (1925). _Statistical Methods for Research Workers_. Oliver & Boyd.
-> Montgomery, D. C., & Runger, G. C. (2014). _Applied Statistics and Probability for Engineers_ (6th ed.). Wiley.
-> Hastie, T., Tibshirani, R., & Friedman, J. (2009). _The Elements of Statistical Learning_ (2nd ed.). Springer.
-> Goodfellow, I., Bengio, Y., & Courville, A. (2016). _Deep Learning_. MIT Press.
+> **References**: Fisher, R. A. (1925). *Statistical Methods for Research Workers*. Oliver & Boyd.
+> Montgomery, D. C., & Runger, G. C. (2014). *Applied Statistics and Probability for Engineers* (6th ed.). Wiley.
+> Hastie, T., Tibshirani, R., & Friedman, J. (2009). *The Elements of Statistical Learning* (2nd ed.). Springer.
+> Goodfellow, I., Bengio, Y., & Courville, A. (2016). *Deep Learning*. MIT Press.
 
 ### Conceptual Foundation
 
@@ -333,13 +332,13 @@ in practice.
 
 ### Key Distinction: Units and Purpose
 
-| Property                | Variance (σ²)                                                               | Standard Deviation (σ)                                                    |
-| ----------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Unit of measurement     | Squared (e.g., USD², hours²)                                                | Original (e.g., USD, hours)                                               |
-| Human interpretability  | Low — squared units are not intuitive                                       | High — directly comparable to the data scale                              |
-| Primary use             | Mathematical optimization, PCA, ANOVA, loss functions                       | Business communication, outlier detection (Z-score), confidence intervals |
-| Sensitivity to outliers | Very high — squaring amplifies extreme deviations                           | High, but more moderate                                                   |
-| Additivity              | Variances of independent variables are additive: Var(X+Y) = Var(X) + Var(Y) | Standard deviations are NOT directly additive                             |
+| Property | Variance (σ²) | Standard Deviation (σ) |
+|---|---|---|
+| Unit of measurement | Squared (e.g., USD², hours²) | Original (e.g., USD, hours) |
+| Human interpretability | Low — squared units are not intuitive | High — directly comparable to the data scale |
+| Primary use | Mathematical optimization, PCA, ANOVA, loss functions | Business communication, outlier detection (Z-score), confidence intervals |
+| Sensitivity to outliers | Very high — squaring amplifies extreme deviations | High, but more moderate |
+| Additivity | Variances of independent variables are additive: Var(X+Y) = Var(X) + Var(Y) | Standard deviations are NOT directly additive |
 
 **Rule of thumb for communication**: Use variance when operating inside mathematical
 machinery (algorithms, proofs, optimization). Use standard deviation when reporting
@@ -352,11 +351,11 @@ report "10 ± 2 hours" — not "variance = 4 hours²."
 
 For a normally distributed variable with mean μ and standard deviation σ:
 
-| Interval | Probability | Practical Interpretation                               |
-| -------- | ----------- | ------------------------------------------------------ | --- | ---- |
-| μ ± 1σ   | 68.27%      | The central majority of observations                   |
-| μ ± 2σ   | 95.45%      | Standard threshold for "unusual" values in many fields |
-| μ ± 3σ   | 99.73%      | Basis for the Z-score outlier detection rule (         | Z   | > 3) |
+| Interval | Probability | Practical Interpretation |
+|---|---|---|
+| μ ± 1σ | 68.27% | The central majority of observations |
+| μ ± 2σ | 95.45% | Standard threshold for "unusual" values in many fields |
+| μ ± 3σ | 99.73% | Basis for the Z-score outlier detection rule (|Z| > 3) |
 
 This rule applies strictly to normal distributions. For non-normal data (skewed,
 heavy-tailed, bimodal), apply Chebyshev's inequality instead: at least 1 - 1/k²
@@ -377,14 +376,13 @@ in the training set. The expected prediction error decomposes as:
 
     E[(y - ŷ)²] = Bias² + Variance + Irreducible Noise
 
-| Term              | Definition                                                     | Symptom                               |
-| ----------------- | -------------------------------------------------------------- | ------------------------------------- |
-| Bias²             | Error from incorrect assumptions in the model (underfitting)   | High training error + high test error |
-| Variance          | Error from over-sensitivity to training data (overfitting)     | Low training error + high test error  |
-| Irreducible noise | Error from inherent randomness in the data — cannot be reduced | Persists regardless of model          |
+| Term | Definition | Symptom |
+|---|---|---|
+| Bias² | Error from incorrect assumptions in the model (underfitting) | High training error + high test error |
+| Variance | Error from over-sensitivity to training data (overfitting) | Low training error + high test error |
+| Irreducible noise | Error from inherent randomness in the data — cannot be reduced | Persists regardless of model |
 
 Strategies to reduce **high variance** (overfitting):
-
 - Regularization: L1 (Lasso), L2 (Ridge), Elastic Net — penalize large coefficient magnitudes
 - Ensemble methods: Random Forests, gradient boosting — average over many trees
 - Dropout (neural networks): randomly deactivate neurons during training
@@ -510,18 +508,19 @@ def variance_threshold_filter(
     return df[retained]
 ```
 
+
 ---
 
 ## 9. Bayesian Reasoning and Inference {#bayesian}
 
 > **References**: Gelman, A., Carlin, J. B., Stern, H. S., Dunson, D. B., Vehtari, A.,
-> & Rubin, D. B. (2013). _Bayesian Data Analysis_ (3rd ed.). CRC Press. [BDA3 — the
-> > definitive graduate-level reference.] · Bayes, T. (1763). An essay toward solving a
-> problem in the doctrine of chances. _Philosophical Transactions of the Royal Society_.
-> · Jaynes, E. T. (2003). _Probability Theory: The Logic of Science_. Cambridge.
-> · Murphy, K. P. (2022). _Probabilistic Machine Learning: An Introduction_. MIT Press.
-> · Neal, R. M. (2011). MCMC using Hamiltonian dynamics. In _Handbook of Markov Chain
-> Monte Carlo_. CRC Press. · PyMC Documentation. https://www.pymc.io/
+> & Rubin, D. B. (2013). *Bayesian Data Analysis* (3rd ed.). CRC Press. [BDA3 — the
+> definitive graduate-level reference.] · Bayes, T. (1763). An essay toward solving a
+> problem in the doctrine of chances. *Philosophical Transactions of the Royal Society*.
+> · Jaynes, E. T. (2003). *Probability Theory: The Logic of Science*. Cambridge.
+> · Murphy, K. P. (2022). *Probabilistic Machine Learning: An Introduction*. MIT Press.
+> · Neal, R. M. (2011). MCMC using Hamiltonian dynamics. In *Handbook of Markov Chain
+> Monte Carlo*. CRC Press. · PyMC Documentation. https://www.pymc.io/
 
 ### Conceptual Foundation
 
@@ -556,19 +555,17 @@ P(θ|D) = P(D|θ) * P(θ) / P(D)
 
 Component definitions:
 
-| Component | Symbol              | Name                            | Role                                   |
-| --------- | ------------------- | ------------------------------- | -------------------------------------- |
-| P(θ\|D)   | Posterior           | Updated belief                  | The inferential target — what we want  |
-| P(D\|θ)   | Likelihood          | Data-generating model           | How probable is the data under each θ? |
-| P(θ)      | Prior               | Prior belief                    | Knowledge about θ before seeing D      |
-| P(D)      | Marginal likelihood | Evidence / normalizing constant | Ensures posterior integrates to 1      |
+| Component | Symbol | Name | Role |
+|---|---|---|---|
+| P(θ\|D) | Posterior | Updated belief | The inferential target — what we want |
+| P(D\|θ) | Likelihood | Data-generating model | How probable is the data under each θ? |
+| P(θ) | Prior | Prior belief | Knowledge about θ before seeing D |
+| P(D) | Marginal likelihood | Evidence / normalizing constant | Ensures posterior integrates to 1 |
 
 **Unnormalized form** (used in computation): posterior is proportional to likelihood × prior:
-
 ```
 P(θ|D) ∝ P(D|θ) * P(θ)
 ```
-
 P(D) = ∫ P(D|θ) P(θ) dθ is a constant with respect to θ and typically intractable.
 MCMC methods sample from the unnormalized posterior, avoiding the need to compute P(D).
 
@@ -602,15 +599,15 @@ Prior P(θ)  →  Data D  →  Posterior P(θ|D)  →  Decisions / Predictions
 
 ### Frequentist vs. Bayesian Decision Guide
 
-| Question                                        | Frequentist approach                | Bayesian approach                           |
-| ----------------------------------------------- | ----------------------------------- | ------------------------------------------- |
-| Is there prior knowledge about θ?               | Ignored by design                   | Encoded in prior                            |
-| Is the sample size small?                       | Relies on asymptotic approximations | Exact finite-sample inference               |
-| Is sequential updating needed?                  | Requires full re-analysis           | Prior → posterior → next prior              |
-| Is parameter uncertainty needed in predictions? | Plug-in estimate (point)            | Posterior predictive (full distribution)    |
-| Is the model complex with many parameters?      | MLE / regularization                | Hierarchical Bayes with MCMC                |
-| Is computation time critical?                   | Fast (closed-form MLE)              | Slower (MCMC or VI required)                |
-| Is interpretability critical?                   | p-values, CIs                       | Credible intervals, posterior probabilities |
+| Question | Frequentist approach | Bayesian approach |
+|---|---|---|
+| Is there prior knowledge about θ? | Ignored by design | Encoded in prior |
+| Is the sample size small? | Relies on asymptotic approximations | Exact finite-sample inference |
+| Is sequential updating needed? | Requires full re-analysis | Prior → posterior → next prior |
+| Is parameter uncertainty needed in predictions? | Plug-in estimate (point) | Posterior predictive (full distribution) |
+| Is the model complex with many parameters? | MLE / regularization | Hierarchical Bayes with MCMC |
+| Is computation time critical? | Fast (closed-form MLE) | Slower (MCMC or VI required) |
+| Is interpretability critical? | p-values, CIs | Credible intervals, posterior probabilities |
 
 ### Prior Distributions — Selection
 
@@ -636,18 +633,17 @@ numerical integration or MCMC.
 
 ### Conjugate Prior Table
 
-| Likelihood              | Conjugate prior | Posterior                         | Sufficient statistic |
-| ----------------------- | --------------- | --------------------------------- | -------------------- |
-| Bernoulli(θ)            | Beta(α, β)      | Beta(α + Σxᵢ, β + n − Σxᵢ)        | Σxᵢ (successes)      |
-| Binomial(n, θ)          | Beta(α, β)      | Beta(α + x, β + n − x)            | x (successes)        |
-| Poisson(λ)              | Gamma(α, β)     | Gamma(α + Σxᵢ, β + n)             | Σxᵢ (total count)    |
-| Normal(θ, σ²), σ² known | Normal(μ₀, τ₀²) | Normal(μₙ, τₙ²)                   | x̄ (sample mean)      |
-| Normal(μ, θ), μ known   | InvGamma(α, β)  | InvGamma(α + n/2, β + Σ(xᵢ−μ)²/2) | Σ(xᵢ−μ)²             |
-| Exponential(λ)          | Gamma(α, β)     | Gamma(α + n, β + Σxᵢ)             | Σxᵢ                  |
-| Categorical(θ)          | Dirichlet(α)    | Dirichlet(α + count vector)       | Class counts         |
+| Likelihood | Conjugate prior | Posterior | Sufficient statistic |
+|---|---|---|---|
+| Bernoulli(θ) | Beta(α, β) | Beta(α + Σxᵢ, β + n − Σxᵢ) | Σxᵢ (successes) |
+| Binomial(n, θ) | Beta(α, β) | Beta(α + x, β + n − x) | x (successes) |
+| Poisson(λ) | Gamma(α, β) | Gamma(α + Σxᵢ, β + n) | Σxᵢ (total count) |
+| Normal(θ, σ²), σ² known | Normal(μ₀, τ₀²) | Normal(μₙ, τₙ²) | x̄ (sample mean) |
+| Normal(μ, θ), μ known | InvGamma(α, β) | InvGamma(α + n/2, β + Σ(xᵢ−μ)²/2) | Σ(xᵢ−μ)² |
+| Exponential(λ) | Gamma(α, β) | Gamma(α + n, β + Σxᵢ) | Σxᵢ |
+| Categorical(θ) | Dirichlet(α) | Dirichlet(α + count vector) | Class counts |
 
 **Normal-Normal update** (most important for continuous data):
-
 ```
 Prior:     θ ~ Normal(μ₀, τ₀²)     (prior mean μ₀, prior variance τ₀²)
 Likelihood: x̄|θ ~ Normal(θ, σ²/n)   (sample mean from n observations)
@@ -657,12 +653,10 @@ Posterior:  θ|x̄ ~ Normal(μₙ, τₙ²)
     τₙ² = 1 / (1/τ₀² + n/σ²)                         (posterior precision = sum of precisions)
     μₙ  = τₙ² * (μ₀/τ₀² + n*x̄/σ²)                    (precision-weighted average of prior and data)
 ```
-
 As n → ∞: μₙ → x̄ (data dominate); τₙ² → 0 (posterior concentrates).
 As τ₀² → ∞ (flat prior): μₙ → x̄, τₙ² → σ²/n (posterior = sampling distribution of mean).
 
 **Beta-Binomial update** (key for proportions and A/B testing):
-
 ```
 Prior:     θ ~ Beta(α, β)            α = prior successes, β = prior failures (pseudo-counts)
 Likelihood: X|θ ~ Binomial(n, θ)
@@ -684,7 +678,6 @@ statement about this specific interval.
 posterior probability that θ ∈ [L, U]. This is the direct, intuitive statement.
 
 Two variants of credible intervals:
-
 - **Equal-tailed interval**: 2.5th to 97.5th posterior percentile
 - **Highest Posterior Density (HPD) interval**: shortest interval containing 95%
   of posterior mass — preferred when the posterior is skewed
@@ -701,9 +694,9 @@ After a burn-in period, samples approximate draws from P(θ|D).
 
 **Metropolis-Hastings** (Metropolis et al., 1953; Hastings, 1970): propose θ* from
 a proposal distribution Q(θ*|θ_t); accept with probability min(1, P(θ*|D)Q(θ_t|θ*) /
-P(θ_t|D)Q(θ\*|θ_t)). General but slow in high dimensions.
+P(θ_t|D)Q(θ*|θ_t)). General but slow in high dimensions.
 
-**Gibbs sampling**: when full conditional distributions P(θᵢ|θ\_{-i}, D) are tractable
+**Gibbs sampling**: when full conditional distributions P(θᵢ|θ_{-i}, D) are tractable
 (often the case with conjugate priors), sample each parameter in turn from its
 conditional. Efficient when conditionals are conjugate; slow when parameters are
 highly correlated.
@@ -720,7 +713,6 @@ Bayesian problems because independent draws from the posterior are unavailable
 except in conjugate-prior exponential-family models.</cite>
 
 **MCMC diagnostics** (must check before reporting results):
-
 ```
 R̂ (Gelman-Rubin statistic): < 1.01 for all parameters → chains have converged
 Bulk-ESS:  effective sample size for central estimates → > 400 recommended
@@ -825,10 +817,9 @@ that features are conditionally independent given the class:
 P(y|x₁,...,xₙ) ∝ P(y) * ∏ᵢ P(xᵢ|y)
 ```
 
-Decision rule: ŷ = argmax_y P(y) \* ∏ᵢ P(xᵢ|y)
+Decision rule: ŷ = argmax_y P(y) * ∏ᵢ P(xᵢ|y)
 
 Variants by likelihood model:
-
 - **GaussianNB**: P(xᵢ|y) = Normal(μ_iy, σ²_iy) — for continuous features
 - **MultinomialNB**: P(xᵢ|y) ∝ θ^xᵢ_iy — for word counts (text classification)
 - **BernoulliNB**: P(xᵢ|y) = Bernoulli(θ_iy) — for binary features

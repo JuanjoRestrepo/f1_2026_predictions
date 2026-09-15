@@ -1,12 +1,12 @@
 # Graph Neural Networks & Neural Architecture Selection
 
-> **References**: Bronstein et al. (2021). _Geometric Deep Learning: Grids, Groups,
-> Graphs, Geodesics, and Gauges_. arXiv:2104.13478. · Wu et al. (2021). A Comprehensive
-> Survey on Graph Neural Networks. _IEEE TNNLS_, 32(1). · Kipf & Welling (2017). Semi-
-> Supervised Classification with Graph Convolutional Networks. _ICLR_. · Veličković et al.
-> (2018). Graph Attention Networks. _ICLR_. · Hamilton et al. (2017). Inductive
-> Representation Learning on Large Graphs. _NeurIPS_. · Xu et al. (2019). How Powerful
-> are Graph Neural Networks? _ICLR_. · Singh (2024). Over-Squashing in GNNs: A
+> **References**: Bronstein et al. (2021). *Geometric Deep Learning: Grids, Groups,
+> Graphs, Geodesics, and Gauges*. arXiv:2104.13478. · Wu et al. (2021). A Comprehensive
+> Survey on Graph Neural Networks. *IEEE TNNLS*, 32(1). · Kipf & Welling (2017). Semi-
+> Supervised Classification with Graph Convolutional Networks. *ICLR*. · Veličković et al.
+> (2018). Graph Attention Networks. *ICLR*. · Hamilton et al. (2017). Inductive
+> Representation Learning on Large Graphs. *NeurIPS*. · Xu et al. (2019). How Powerful
+> are Graph Neural Networks? *ICLR*. · Singh (2024). Over-Squashing in GNNs: A
 > Comprehensive Survey. arXiv:2308.15568.
 
 ## Table of Contents
@@ -39,13 +39,13 @@ is organized and how it should be processed.
 
 ### Data Geometry Map
 
-| Data shape                       | Structure                        | Canonical architecture              | Examples                                     |
-| -------------------------------- | -------------------------------- | ----------------------------------- | -------------------------------------------- |
-| Regular grid                     | Euclidean, shift-invariant       | CNN                                 | Images, video frames, satellite data         |
-| Sequence                         | Ordered, temporal dependency     | RNN / LSTM                          | Time series, sensor logs, short text         |
-| Sequence with long-range context | Ordered, global attention needed | Transformer                         | NLP, long sequences, code, audio             |
-| Graph (nodes + edges)            | Non-Euclidean, relational        | GNN                                 | Molecules, social networks, knowledge graphs |
-| Unstructured tabular             | No geometric structure           | GBM (XGBoost / LightGBM / CatBoost) | Structured business data                     |
+| Data shape | Structure | Canonical architecture | Examples |
+|---|---|---|---|
+| Regular grid | Euclidean, shift-invariant | CNN | Images, video frames, satellite data |
+| Sequence | Ordered, temporal dependency | RNN / LSTM | Time series, sensor logs, short text |
+| Sequence with long-range context | Ordered, global attention needed | Transformer | NLP, long sequences, code, audio |
+| Graph (nodes + edges) | Non-Euclidean, relational | GNN | Molecules, social networks, knowledge graphs |
+| Unstructured tabular | No geometric structure | GBM (XGBoost / LightGBM / CatBoost) | Structured business data |
 
 **The fundamental insight** (Bronstein et al., 2021): CNNs, RNNs, and Transformers
 are special cases of GNNs operating on specific graph topologies. A CNN layer applies
@@ -55,7 +55,6 @@ generalize to arbitrary graph topologies.
 
 This unification, called **Geometric Deep Learning**, provides a principled framework
 for selecting architectures by matching the symmetry group of the data:
-
 - Grid → translation symmetry → CNN
 - Sequence → time-shift symmetry → RNN
 - Complete graph → permutation invariance → Transformer
@@ -96,15 +95,15 @@ Question 5: Is the data structured/tabular with no geometric structure?
 
 ### Architecture comparison table
 
-| Dimension                       | CNN                                                 | RNN / LSTM                                | Transformer                                           | GNN                                                                       |
-| ------------------------------- | --------------------------------------------------- | ----------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------- |
-| **Data type**                   | Grid (images, video)                                | Ordered sequences                         | Sequences, text, long context                         | Graphs (nodes + edges)                                                    |
-| **Key strength**                | Local spatial pattern detection                     | Sequential temporal dependency            | Global attention across all positions                 | Relational structure, neighbor aggregation                                |
-| **Inductive bias**              | Translation equivariance                            | Time-shift equivariance                   | Permutation equivariance (full graph)                 | Permutation invariance over neighborhoods                                 |
-| **Scalability**                 | Excellent (parallel)                                | Poor for long sequences (sequential)      | Quadratic in sequence length (O(n²))                  | Scales with edge count; large graphs are challenging                      |
-| **Handles irregular structure** | No — requires fixed grid                            | No — requires fixed sequence              | No — requires fixed-length sequences                  | Yes — native irregular topology                                           |
-| **Real applications**           | Object detection, medical imaging, face recognition | Stock forecasting, IoT sensors, short NLP | Chatbots, code generation, summarization, translation | Drug discovery, fraud detection, recommendation systems, knowledge graphs |
-| **Primary frameworks**          | PyTorch, TensorFlow/Keras                           | PyTorch, TensorFlow/Keras                 | HuggingFace Transformers, PyTorch                     | PyTorch Geometric (PyG), DGL                                              |
+| Dimension | CNN | RNN / LSTM | Transformer | GNN |
+|---|---|---|---|---|
+| **Data type** | Grid (images, video) | Ordered sequences | Sequences, text, long context | Graphs (nodes + edges) |
+| **Key strength** | Local spatial pattern detection | Sequential temporal dependency | Global attention across all positions | Relational structure, neighbor aggregation |
+| **Inductive bias** | Translation equivariance | Time-shift equivariance | Permutation equivariance (full graph) | Permutation invariance over neighborhoods |
+| **Scalability** | Excellent (parallel) | Poor for long sequences (sequential) | Quadratic in sequence length (O(n²)) | Scales with edge count; large graphs are challenging |
+| **Handles irregular structure** | No — requires fixed grid | No — requires fixed sequence | No — requires fixed-length sequences | Yes — native irregular topology |
+| **Real applications** | Object detection, medical imaging, face recognition | Stock forecasting, IoT sensors, short NLP | Chatbots, code generation, summarization, translation | Drug discovery, fraud detection, recommendation systems, knowledge graphs |
+| **Primary frameworks** | PyTorch, TensorFlow/Keras | PyTorch, TensorFlow/Keras | HuggingFace Transformers, PyTorch | PyTorch Geometric (PyG), DGL |
 
 ---
 
@@ -113,7 +112,6 @@ Question 5: Is the data structured/tabular with no geometric structure?
 ### What is a graph?
 
 A graph G = (V, E) consists of:
-
 - V — a set of nodes (vertices), each potentially carrying a feature vector x_v
 - E — a set of edges (u, v) connecting nodes, each potentially carrying edge features e_uv
 - A — the adjacency matrix encoding connectivity
@@ -145,7 +143,6 @@ L-hop neighborhood. This is the graph analogue of a receptive field in CNNs.
 
 Standard neural networks (MLP, CNN, RNN) operate on Euclidean data with a fixed
 input structure. They cannot handle:
-
 - Variable-sized, irregularly connected neighborhoods
 - Permutation invariance: the prediction should not change if nodes are relabeled
 - Long-range relational reasoning across arbitrarily connected entities
@@ -160,7 +157,7 @@ arrangement. Two molecules with identical atoms but different bond structures
 
 > **References**: Kipf & Welling (2017) arXiv:1609.02907. Veličković et al. (2018)
 > arXiv:1710.10903. Hamilton et al. (2017) arXiv:1706.02216. Xu et al. (2019)
-> arXiv:1810.00826. Defferrard et al. (2016) _ChebNet_. NeurIPS. arXiv:1606.09375.
+> arXiv:1810.00826. Defferrard et al. (2016) *ChebNet*. NeurIPS. arXiv:1606.09375.
 
 ### Spectral Graph Theory — Mathematical Prerequisites
 
@@ -168,21 +165,17 @@ A graph signal is a function x: V → R assigning a scalar to each node.
 The graph Laplacian is the operator that measures how much x varies across edges.
 
 **Graph Laplacian matrices:**
-
 ```
 L = D − A                                  (combinatorial Laplacian)
 L_sym = D^(−1/2) L D^(−1/2)               (normalized — used in GCN)
       = I − D^(−1/2) A D^(−1/2)
 ```
-
 where A is the adjacency matrix and D_ii = Σ_j A_ij is the degree matrix.
 
 **Eigendecomposition:**
-
 ```
 L_sym = U Λ U^T
 ```
-
 - U = [u₁, ..., uₙ] ∈ R^(n×n): orthonormal eigenvectors (graph Fourier basis)
 - Λ = diag(λ₁, ..., λₙ): eigenvalues with 0 = λ₁ ≤ λ₂ ≤ ... ≤ λₙ ≤ 2
 - λ₂ (Fiedler eigenvalue / algebraic connectivity): measures graph connectivity.
@@ -190,58 +183,46 @@ L_sym = U Λ U^T
   Large λ₂ → well-connected → faster mixing → over-smoothing accelerates.
 
 **Graph Fourier Transform:**
-
 ```
 x̂ = U^T x          (forward: project node signal onto eigenbasis)
 x  = U x̂            (inverse: reconstruct from spectral coefficients)
 ```
-
 Interpretation: eigenvectors with small λ encode low-frequency (smooth) variation;
 eigenvectors with large λ encode high-frequency (sharp boundary) variation.
 
 **Spectral convolution** (Bruna et al., 2014):
-
 ```
 x *_G g_θ = U · diag(θ₁,...,θₙ) · U^T x
 ```
-
 Problem: n learnable parameters per filter — does not generalize to new graphs;
 O(n) computation; eigenvectors change when graph changes.
 
 **Chebyshev approximation** (ChebNet, Defferrard et al., 2016):
 Approximate the spectral filter with a K-th order polynomial of the Laplacian:
-
 ```
 g_θ(L̃) ≈ Σ_{k=0}^{K} θ_k T_k(L̃)        where L̃ = 2L/λₘₐₓ − I_n ∈ [−1, 1]
 T_k(x) = 2x T_{k−1}(x) − T_{k−2}(x),    T₀ = 1,  T₁ = x    (recurrence)
 ```
-
 Result: K learnable parameters per filter; K-localized (only uses K-hop neighborhoods);
 computation O(K|E|) — linear in edges. This is the origin of "graph convolution."
 
 ### GCN Derivation — From Spectral to Spatial
 
 Kipf & Welling (2017) simplify ChebNet to K = 1 and λₘₐₓ ≈ 2:
-
 ```
 g_θ *_G x ≈ θ₀ x + θ₁ (L_sym − I_n) x = θ₀ x − θ₁ D^(−1/2) A D^(−1/2) x
 ```
-
 Tie parameters θ = θ₀ = −θ₁ to reduce overfitting:
-
 ```
 g_θ *_G x ≈ θ (I_n + D^(−1/2) A D^(−1/2)) x
 ```
-
 **Renormalization trick**: replace I_n + D^(−1/2) A D^(−1/2) with the renormalized form
 to stabilize gradients (the original has eigenvalues in [0, 2] — problematic for deep networks):
-
 ```
 Ã = A + I_N    (add self-loops)
 D̃_ii = Σ_j Ã_ij    (degree of Ã)
 propagation rule: H^(l+1) = σ(D̃^(−1/2) Ã D̃^(−1/2) H^(l) W^(l))
 ```
-
 Eigenvalues of D̃^(−1/2) Ã D̃^(−1/2) lie in [0, 1] — numerically stable for
 gradient propagation through multiple layers.
 
@@ -254,40 +235,32 @@ contribute less per edge — normalization prevents dominant hubs.
 Veličković et al. (2018) replace fixed normalization with learned attention:
 
 **Step 1 — Linear transformation**: project all node features into a shared space:
-
 ```
 z_v = W h_v    for all v ∈ V,  W ∈ R^(F'×F)
 ```
 
 **Step 2 — Attention coefficient**: measure importance of neighbor u to node v:
-
 ```
 e_ij = LeakyReLU(a^T [z_i ∥ z_j])
 ```
-
 where a ∈ R^(2F') is a learnable attention vector, ∥ is concatenation.
 
 **Step 3 — Normalization** (softmax over each node's neighborhood):
-
 ```
 α_ij = exp(e_ij) / Σ_{k ∈ N(i) ∪ {i}} exp(e_ik)
 ```
-
 These are the attention coefficients: α_ij ≥ 0 and Σ_j α_ij = 1.
 
 **Step 4 — Aggregation**:
-
 ```
 h_i' = σ(Σ_{j ∈ N(i)} α_ij W h_j)    (single head)
 ```
 
 **Multi-head attention** (K independent heads for stability):
-
 ```
 h_i' = ∥_{k=1}^{K} σ(Σ_{j ∈ N(i)} α_ij^k W^k h_j)    (intermediate layers — concatenate)
 h_i' = σ((1/K) Σ_{k=1}^{K} Σ_{j ∈ N(i)} α_ij^k W^k h_j)  (final layer — average)
 ```
-
 Veličković et al. use K = 8 in intermediate layers and K = 1 in the output layer.
 
 **Attention interpretability**: α_ij is the learned contribution of neighbor j to node i's
@@ -310,7 +283,6 @@ representations. If AGGREGATE collapses distinct multisets to the same output,
 the GNN cannot distinguish them.
 
 **Aggregation expressiveness ranking**:
-
 ```
 AGGREGATE function    Injective over multisets?    Counterexample
 ─────────────────────────────────────────────────────────────────────────────
@@ -318,26 +290,21 @@ SUM                   YES — maximally expressive    none (injective)
 MEAN                  NO                            {a, a} vs {a} if same mean
 MAX                   NO                            {a, a, b} vs {a, b} — same max
 ```
-
 **GIN update rule**:
-
 ```
 h_v^(l) = MLP^(l)((1 + ε^(l)) · h_v^(l−1) + Σ_{u ∈ N(v)} h_u^(l−1))
 ```
-
 ε is a learnable scalar (or fixed to 0); the MLP ensures injectivity of the full update.
 Sum aggregation + MLP = the most expressive MPNN within the WL framework.
 
 ### GraphSAGE — Aggregator Variants
 
 Hamilton et al. (2017) define three aggregator choices:
-
 ```
 MEAN:  h_v^(l) = σ(W · MEAN({h_v^(l−1)} ∪ {h_u^(l−1) : u ∈ N(v)}))
 MAX:   h_v^(l) = σ(W · MAX({ReLU(W_pool h_u^(l−1) + b) : u ∈ N(v)}))
 LSTM:  h_v^(l) = σ(W · LSTM(h_v^(l−1), {h_u^(l−1) : u ∈ π(N(v))}))
 ```
-
 LSTM is most expressive but assumes an arbitrary (random) ordering of neighbors —
 valid only if the aggregation is applied consistently at training and inference.
 For production, MEAN aggregation is preferred: deterministic, interpretable, and
@@ -349,14 +316,12 @@ The loss L(θ) is defined on output node embeddings h_v^(L) (node tasks),
 decoded edge scores (link prediction), or a global readout (graph classification).
 
 **Gradient flow through one GCN layer:**
-
 ```
 H^(l+1) = σ(S H^(l) W^(l))    where S = D̃^(−1/2) Ã D̃^(−1/2)
 
 ∂L/∂W^(l) = (S H^(l))^T · (∂L/∂H^(l+1) ⊙ σ'(S H^(l) W^(l)))
 ∂L/∂H^(l) = S^T · (∂L/∂H^(l+1) ⊙ σ'(S H^(l) W^(l))) · W^(l)^T
 ```
-
 Since S is symmetric (S = S^T), the gradient back-propagates through the same
 graph structure as the forward pass — information flows backward along the same
 edges, weighted by the same normalization factors.
@@ -384,7 +349,6 @@ Graph classification L = −Σ_{G∈D} y_G log ŷ_G              (cross-entropy 
 
 Graph regression     L = Σ_{G∈D} (y_G − ŷ_G)²              (MSE on graph-level readout)
 ```
-
 Negative sampling for link prediction: sample k negative edges (non-existing) per
 positive edge. k ∈ [1, 5] is standard; higher k increases specificity at the cost
 of training time.
@@ -392,11 +356,9 @@ of training time.
 ### Over-Smoothing — Spectral Analysis
 
 **GCN filter after L layers:**
-
 ```
 P̂^L where P̂ = D̃^(−1/2) Ã D̃^(−1/2),  eigenvalues λ̂_i ∈ [0, 1]
 ```
-
 Repeatedly applying P̂ is a low-pass filter: λ̂_i^L → 0 for high-frequency components
 (large λ̂_i close to... wait: eigenvalues of P̂ are in [0,1]; λ̂_i^L → 0 for λ̂_i < 1)
 After many layers: all node representations converge to the principal eigenvector
@@ -404,11 +366,9 @@ After many layers: all node representations converge to the principal eigenvecto
 component become indistinguishable.
 
 **Dirichlet energy** measures representation diversity:
-
 ```
 E(H^(l)) = (1/|E|) Σ_{(u,v)∈E} ‖h_u^(l) − h_v^(l)‖²
 ```
-
 Over-smoothing ≡ E(H^(l)) → 0 as l → ∞. Monitor this during training:
 if E drops precipitously with layer depth, the GNN is over-smoothing.
 
@@ -438,7 +398,6 @@ The following shows the full forward computation pipeline for each architecture,
 enabling direct comparison of how information is transformed from input to output.
 
 ### CNN — Spatial Hierarchical Processing
-
 ```
 Input image (H×W×C)
   ↓ Convolution: feature maps via learned filters k×k
@@ -451,12 +410,10 @@ Input image (H×W×C)
   ↓ Fully connected layer(s): combine all features globally
   ↓ Softmax → class probabilities
 ```
-
 Inductive bias: translation equivariance — the same pattern detected anywhere in
 the image activates the same filter. Inappropriate for non-grid data.
 
 ### RNN / LSTM — Sequential State Propagation
-
 ```
 Input sequence (x₁, x₂, ..., x_T)
   ↓ Process step-by-step: t = 1, 2, ..., T
@@ -473,12 +430,10 @@ Input sequence (x₁, x₂, ..., x_T)
     gradients flow back through every timestep
     vanishing/exploding gradients for T >> 100
 ```
-
 Inductive bias: time-shift equivariance — the same pattern at any time step
 activates the same weights. The cell state c_t is the explicit memory mechanism.
 
 ### Transformer — Global Attention Mechanism
-
 ```
 Input sequence (w₁, w₂, ..., w_T)
   ↓ Tokenize & embed: wᵢ → eᵢ ∈ R^d_model
@@ -498,13 +453,11 @@ Input sequence (w₁, w₂, ..., w_T)
   ↓ Repeat for N layers
   ↓ Generate output (decoder uses cross-attention to encoder output)
 ```
-
 Inductive bias: none on sequence order (added via positional encoding).
 Full attention = complete graph — every token is connected to every other.
 Quadratic memory and compute O(T²) in sequence length.
 
 ### GNN — Relational Neighborhood Propagation
-
 ```
 Input graph G = (V, E) with node features X ∈ R^(|V|×F)
   ↓ Node feature initialization: h_v^(0) = x_v  ∀v ∈ V
@@ -520,18 +473,17 @@ Input graph G = (V, E) with node features X ∈ R^(|V|×F)
     Graph tasks:      h_G = READOUT({h_v^(L) : v ∈ V})  then ŷ = f(h_G)
     READOUT options: global mean pool, global sum pool, differentiable pooling (DiffPool)
 ```
-
 Inductive bias: permutation invariance over neighborhoods — the same subgraph
 structure produces the same embedding regardless of node labeling.
 
 ### Architecture Decision — Computational Complexity
 
-| Architecture | Memory            | Forward pass | Key bottleneck     |
-| ------------ | ----------------- | ------------ | ------------------ |
-| CNN          | O(F·K²) per layer | O(H·W·F·K²)  | Spatial resolution |
-| LSTM         | O(4·d²) per step  | O(T·d²)      | Sequence length T  |
-| Transformer  | O(T²·d)           | O(T²·d)      | Quadratic in T     |
-| GNN          | O(\|E\|·F)        | O(\|E\|·F)   | Edge count \|E\|   |
+| Architecture | Memory | Forward pass | Key bottleneck |
+|---|---|---|---|
+| CNN | O(F·K²) per layer | O(H·W·F·K²) | Spatial resolution |
+| LSTM | O(4·d²) per step | O(T·d²) | Sequence length T |
+| Transformer | O(T²·d) | O(T²·d) | Quadratic in T |
+| GNN | O(\|E\|·F) | O(\|E\|·F) | Edge count \|E\| |
 
 Transformers scale poorly to long sequences (T > 4096 without approximations).
 GNNs scale poorly to dense graphs (\|E\| = O(\|V\|²)) without sampling.
@@ -550,13 +502,11 @@ with self-loops, D is the degree matrix, H is the node feature matrix, W is a
 learned weight matrix.
 
 **When to use**:
-
 - Baseline for any node classification task on a static, known graph
 - Homophilic graphs (connected nodes tend to have the same label)
 - Transductive setting (all nodes are known at training time)
 
 **Limitations**:
-
 - All neighbors are weighted equally — cannot distinguish important from unimportant neighbors
 - Transductive: does not generalize to new nodes not seen at training time
 - Prone to over-smoothing at depth > 3–4 layers (see Section 7)
@@ -568,7 +518,6 @@ neighbor u to node v is learned from the data, not fixed by graph structure.
 Multi-head attention provides stable, expressive representations.
 
 **When to use**:
-
 - Heterophilic graphs (connected nodes may have different labels — attention can
   down-weight noisy neighbors)
 - When distinguishing informative from uninformative neighbors is critical
@@ -576,7 +525,6 @@ Multi-head attention provides stable, expressive representations.
   networks where some citations are more relevant than others)
 
 **Advantages over GCN**:
-
 - Attention scores are interpretable — which neighbors influenced a prediction?
 - Can run both transductively and inductively
 
@@ -587,7 +535,6 @@ subset of neighbors and aggregates their features (mean, max, or LSTM aggregatio
 Learns an inductive embedding function — not the embedding itself.
 
 **When to use**:
-
 - Inductive setting: new nodes appear at inference time (e.g., new users, new products)
 - Large-scale graphs where full neighborhood aggregation is computationally infeasible
 - Dynamic graphs where the structure evolves (e.g., social networks, transaction graphs)
@@ -603,7 +550,6 @@ Theoretically proven to be as expressive as the Weisfeiler-Lehman (WL) graph
 isomorphism test — the theoretical upper bound on distinguishing graph structures.
 
 **When to use**:
-
 - Graph classification tasks where distinguishing graph structure is paramount
 - Molecular property prediction (molecules as graphs)
 - When you need the most expressive possible GNN within the MPNN framework
@@ -611,12 +557,12 @@ isomorphism test — the theoretical upper bound on distinguishing graph structu
 
 ### Architecture selection summary
 
-| Architecture | Setting       | Best task                                     | Distinguishing property                    |
-| ------------ | ------------- | --------------------------------------------- | ------------------------------------------ |
-| GCN          | Transductive  | Node classification (homophilic)              | Simple, fast baseline                      |
-| GAT          | Both          | Node classification (heterophilic)            | Learned neighbor importance                |
-| GraphSAGE    | **Inductive** | Node classification, link prediction at scale | Handles unseen nodes — production standard |
-| GIN          | Both          | **Graph classification**                      | Maximum WL expressivity                    |
+| Architecture | Setting | Best task | Distinguishing property |
+|---|---|---|---|
+| GCN | Transductive | Node classification (homophilic) | Simple, fast baseline |
+| GAT | Both | Node classification (heterophilic) | Learned neighbor importance |
+| GraphSAGE | **Inductive** | Node classification, link prediction at scale | Handles unseen nodes — production standard |
+| GIN | Both | **Graph classification** | Maximum WL expressivity |
 
 ---
 
@@ -658,7 +604,7 @@ function to aggregate all node representations into a graph-level vector.
 ## 6. Implementation with PyTorch Geometric {#implementation}
 
 PyTorch Geometric (PyG) is the standard production library for GNNs.
-(Fey & Lenssen, 2019. _Fast Graph Representation Learning with PyTorch Geometric_.
+(Fey & Lenssen, 2019. *Fast Graph Representation Learning with PyTorch Geometric*.
 ICLR Workshop. https://pytorch-geometric.readthedocs.io)
 
 ### Environment setup
@@ -982,14 +928,13 @@ every node's representation is a weighted average of the entire graph.
 **Effect**: performance degrades with depth. Most GNNs peak at 2–4 layers.
 
 **Mitigation**:
-
 - Use 2–3 layers as the default; rarely exceed 5
 - Apply residual connections (skip connections between layers)
 - Use DropEdge (randomly remove edges during training)
 - Use PairNorm or GroupNorm for normalization
 
 **Reference**: ud din & Qureshi (2024). Limits of Depth: Over-Smoothing and
-Over-Squashing in GNNs. _Big Data Mining and Analytics_, 7(1).
+Over-Squashing in GNNs. *Big Data Mining and Analytics*, 7(1).
 
 ### Over-squashing (Alon & Yahav, 2021)
 
@@ -1002,7 +947,6 @@ compression causes loss of long-range information.
 the graph (e.g., detecting a pattern that requires looking 10 hops away).
 
 **Mitigation**:
-
 - Graph rewiring: add edges between distant nodes that should communicate
 - Use Graph Transformers (combine GNN with self-attention for global connectivity)
 
@@ -1021,7 +965,6 @@ rewiring or Graph Transformers for long-range tasks.
 
 Full neighborhood aggregation for very large graphs (millions of nodes, billions
 of edges) is computationally prohibitive. Approaches:
-
 - **Mini-batch sampling** (GraphSAGE, ClusterGCN): sample fixed-size neighborhoods
 - **Graph partitioning**: divide the graph and train on subgraphs
 - **Scalable GNN frameworks**: PyG with `NeighborLoader`, DGL with `NodeDataLoader`
@@ -1060,7 +1003,7 @@ that evolves over time.
 
 ### Drug discovery and molecular science
 
-**AlphaFold 2** (Jumper et al., 2021. _Nature_, 596) uses attention mechanisms over
+**AlphaFold 2** (Jumper et al., 2021. *Nature*, 596) uses attention mechanisms over
 amino acid graphs to predict 3D protein structure. GNNs are the standard for
 molecular property prediction: predicting toxicity, solubility, binding affinity.
 Graph = atoms (nodes) + chemical bonds (edges).
@@ -1082,7 +1025,7 @@ suspicious signals through message passing.
 
 ### Recommendation systems
 
-**PinSage** (Ying et al., 2018. _KDD_. Pinterest) is the canonical production GNN
+**PinSage** (Ying et al., 2018. *KDD*. Pinterest) is the canonical production GNN
 for recommendation. The graph = users + items, edges = interactions.
 GraphSAGE-based inductive embedding handles billions of new items per day.
 
@@ -1112,25 +1055,21 @@ as graph nodes.
 ## 10. References {#references}
 
 **Foundational papers:**
-
 - Bronstein, M. M., Bruna, J., Cohen, T., & Veličković, P. (2021). Geometric deep learning: Grids, groups, graphs, geodesics, and gauges. arXiv:2104.13478.
-- Wu, Z., Pan, S., Chen, F., Long, G., Zhang, C., & Yu, P. S. (2021). A comprehensive survey on graph neural networks. _IEEE Transactions on Neural Networks and Learning Systems_, 32(1), 4–24.
-- Gilmer, J., Schütt, A., Riley, P., Vinyals, O., & Dahl, G. (2017). Neural message passing for quantum chemistry. _ICML_. arXiv:1704.01212.
+- Wu, Z., Pan, S., Chen, F., Long, G., Zhang, C., & Yu, P. S. (2021). A comprehensive survey on graph neural networks. *IEEE Transactions on Neural Networks and Learning Systems*, 32(1), 4–24.
+- Gilmer, J., Schütt, A., Riley, P., Vinyals, O., & Dahl, G. (2017). Neural message passing for quantum chemistry. *ICML*. arXiv:1704.01212.
 
 **Core GNN architectures:**
-
-- Kipf, T. N., & Welling, M. (2017). Semi-supervised classification with graph convolutional networks. _ICLR_. arXiv:1609.02907.
-- Veličković, P., Cucurull, G., Casanova, A., Romero, A., Liò, P., & Bengio, Y. (2018). Graph attention networks. _ICLR_. arXiv:1710.10903.
-- Hamilton, W. L., Ying, R., & Leskovec, J. (2017). Inductive representation learning on large graphs. _NeurIPS_. arXiv:1706.02216.
-- Xu, K., Hu, W., Leskovec, J., & Jegelka, S. (2019). How powerful are graph neural networks? _ICLR_. arXiv:1810.00826.
+- Kipf, T. N., & Welling, M. (2017). Semi-supervised classification with graph convolutional networks. *ICLR*. arXiv:1609.02907.
+- Veličković, P., Cucurull, G., Casanova, A., Romero, A., Liò, P., & Bengio, Y. (2018). Graph attention networks. *ICLR*. arXiv:1710.10903.
+- Hamilton, W. L., Ying, R., & Leskovec, J. (2017). Inductive representation learning on large graphs. *NeurIPS*. arXiv:1706.02216.
+- Xu, K., Hu, W., Leskovec, J., & Jegelka, S. (2019). How powerful are graph neural networks? *ICLR*. arXiv:1810.00826.
 
 **Limitations:**
-
 - Singh, A. (2024). Over-squashing in graph neural networks: A comprehensive survey. arXiv:2308.15568.
-- Giraldo, J. H., Skianis, K., Bouwmans, T., & Malliaros, F. D. (2023). On the trade-off between over-smoothing and over-squashing in deep graph neural networks. _CIKM_. arXiv:2212.02374.
+- Giraldo, J. H., Skianis, K., Bouwmans, T., & Malliaros, F. D. (2023). On the trade-off between over-smoothing and over-squashing in deep graph neural networks. *CIKM*. arXiv:2212.02374.
 
 **Production and applications:**
-
-- Ying, R., He, R., Chen, K., Eksombatchai, P., Hamilton, W. L., & Leskovec, J. (2018). Graph convolutional neural networks for web-scale recommender systems. _KDD_. arXiv:1806.01973.
-- Jumper, J., Evans, R., Pritzel, A., et al. (2021). Highly accurate protein structure prediction with AlphaFold. _Nature_, 596, 583–589.
-- Fey, M., & Lenssen, J. E. (2019). Fast graph representation learning with PyTorch Geometric. _ICLR Workshop_. https://pytorch-geometric.readthedocs.io
+- Ying, R., He, R., Chen, K., Eksombatchai, P., Hamilton, W. L., & Leskovec, J. (2018). Graph convolutional neural networks for web-scale recommender systems. *KDD*. arXiv:1806.01973.
+- Jumper, J., Evans, R., Pritzel, A., et al. (2021). Highly accurate protein structure prediction with AlphaFold. *Nature*, 596, 583–589.
+- Fey, M., & Lenssen, J. E. (2019). Fast graph representation learning with PyTorch Geometric. *ICLR Workshop*. https://pytorch-geometric.readthedocs.io

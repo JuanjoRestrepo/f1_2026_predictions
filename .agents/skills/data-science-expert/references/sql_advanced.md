@@ -3,9 +3,9 @@
 > This reference covers advanced SQL patterns used in data analysis, data engineering,
 > EDA, and BI reporting. Content validated against: PostgreSQL 16/18 official documentation
 > (postgresql.org/docs), Microsoft T-SQL SELECT reference (learn.microsoft.com/sql),
-> Winand, M. (2012) _SQL Performance Explained_, Kimball, R. & Ross, M. (2013)
-> _The Data Warehouse Toolkit_ (3rd ed.), Molinaro, A. (2009) _SQL Cookbook_ (O'Reilly),
-> and Itzik Ben-Gan (2016) _T-SQL Fundamentals_ (3rd ed., Microsoft Press).
+> Winand, M. (2012) *SQL Performance Explained*, Kimball, R. & Ross, M. (2013)
+> *The Data Warehouse Toolkit* (3rd ed.), Molinaro, A. (2009) *SQL Cookbook* (O'Reilly),
+> and Itzik Ben-Gan (2016) *T-SQL Fundamentals* (3rd ed., Microsoft Press).
 > All examples use ANSI SQL unless noted.
 
 ## Table of Contents
@@ -27,10 +27,10 @@
 ## 0. SQL Order of Execution — Logical Processing Order {#execution-order}
 
 > **Primary references**:
-> PostgreSQL 18 Documentation. _Section 7 — Queries_. https://www.postgresql.org/docs/current/queries.html
-> Microsoft (2024). _Logical Processing Order of the SELECT statement (T-SQL)_.
+> PostgreSQL 18 Documentation. *Section 7 — Queries*. https://www.postgresql.org/docs/current/queries.html
+> Microsoft (2024). *Logical Processing Order of the SELECT statement (T-SQL)*.
 > https://learn.microsoft.com/en-us/sql/t-sql/queries/select-transact-sql
-> Ben-Gan, I. (2016). _T-SQL Fundamentals_ (3rd ed.). Microsoft Press. Chapter 1.
+> Ben-Gan, I. (2016). *T-SQL Fundamentals* (3rd ed.). Microsoft Press. Chapter 1.
 
 SQL is a declarative language: you describe the result you want, not the steps to
 produce it. As a consequence, the written order of clauses in a query does not match
@@ -194,12 +194,12 @@ GROUP BY departamento;
 
 ### WHERE vs. HAVING — Decision Rule
 
-| Use case                                        | Correct clause                   | Reason                                   |
-| ----------------------------------------------- | -------------------------------- | ---------------------------------------- |
-| Filter on a column value (non-aggregate)        | `WHERE`                          | Fires before GROUP BY — more efficient   |
-| Filter on an aggregate result (COUNT, SUM, AVG) | `HAVING`                         | Fires after GROUP BY — aggregates exist  |
-| Filter on a window function result              | Subquery / CTE wrapping `SELECT` | Window functions exist only after SELECT |
-| Filter on a SELECT alias                        | Subquery / CTE wrapping `SELECT` | Aliases exist only after SELECT          |
+| Use case | Correct clause | Reason |
+|---|---|---|
+| Filter on a column value (non-aggregate) | `WHERE` | Fires before GROUP BY — more efficient |
+| Filter on an aggregate result (COUNT, SUM, AVG) | `HAVING` | Fires after GROUP BY — aggregates exist |
+| Filter on a window function result | Subquery / CTE wrapping `SELECT` | Window functions exist only after SELECT |
+| Filter on a SELECT alias | Subquery / CTE wrapping `SELECT` | Aliases exist only after SELECT |
 
 ### Optimization Implication — Filter as Early as Possible
 
@@ -565,18 +565,18 @@ ORDER BY fecha;
 
 ## 5. Advanced JOINs {#joins}
 
-> **Reference**: Date, C. J. (2011). _SQL and Relational Theory_ (2nd ed.). O'Reilly.
+> **Reference**: Date, C. J. (2011). *SQL and Relational Theory* (2nd ed.). O'Reilly.
 
 ### JOIN type decision guide
 
-| JOIN type         | Rows returned                                          | When to use                                              |
-| ----------------- | ------------------------------------------------------ | -------------------------------------------------------- |
-| `INNER JOIN`      | Only matching rows from both tables                    | When only complete matches are needed                    |
-| `LEFT JOIN`       | All rows from left + matching right (NULL if no match) | Preserve all left-table rows; detect unmatched records   |
-| `RIGHT JOIN`      | All rows from right + matching left                    | Equivalent to LEFT JOIN with tables swapped              |
-| `FULL OUTER JOIN` | All rows from both tables (NULL where no match)        | Reconciliation; detect records present in one table only |
-| `CROSS JOIN`      | Cartesian product — every left × every right row       | Date dimension generation; combination tables            |
-| `SELF JOIN`       | A table joined to itself                               | Hierarchies; comparing rows within the same table        |
+| JOIN type | Rows returned | When to use |
+|---|---|---|
+| `INNER JOIN` | Only matching rows from both tables | When only complete matches are needed |
+| `LEFT JOIN` | All rows from left + matching right (NULL if no match) | Preserve all left-table rows; detect unmatched records |
+| `RIGHT JOIN` | All rows from right + matching left | Equivalent to LEFT JOIN with tables swapped |
+| `FULL OUTER JOIN` | All rows from both tables (NULL where no match) | Reconciliation; detect records present in one table only |
+| `CROSS JOIN` | Cartesian product — every left × every right row | Date dimension generation; combination tables |
+| `SELF JOIN` | A table joined to itself | Hierarchies; comparing rows within the same table |
 
 ```sql
 -- LEFT JOIN: all employees, with department name if mapped
@@ -684,7 +684,6 @@ GROUP BY ROLLUP (departamento, puesto);
 Set operations combine results from two or more `SELECT` statements.
 
 **Rules (ANSI SQL)**:
-
 - Each `SELECT` must return the same number of columns
 - Corresponding columns must have compatible data types
 - Column names are taken from the first `SELECT`
@@ -890,7 +889,7 @@ GROUP BY departamento;
 
 ## 9. Query Optimization & Execution Plans {#optimization}
 
-> **Primary reference**: Winand, M. (2012). _SQL Performance Explained_.
+> **Primary reference**: Winand, M. (2012). *SQL Performance Explained*.
 > Use The Index, Luke (use-the-index-luke.com). — The most accessible expert
 > reference on SQL indexing and execution plan analysis.
 
@@ -907,17 +906,17 @@ WHERE e.salario > 6000;
 
 Key terms in the output:
 
-| Term               | Meaning                                                                            |
-| ------------------ | ---------------------------------------------------------------------------------- |
-| `Seq Scan`         | Full table scan — no index used. Acceptable for small tables; problematic at scale |
-| `Index Scan`       | Index used to locate rows. Fast for selective predicates                           |
-| `Index Only Scan`  | All needed columns are in the index — zero heap access. Fastest                    |
-| `Hash Join`        | Efficient for large unsorted tables — builds a hash table on the smaller input     |
-| `Nested Loop Join` | Fast when the inner loop uses an index; catastrophic without one                   |
-| `Merge Join`       | Efficient when both inputs are pre-sorted on the join key                          |
-| `cost=X..Y`        | Estimated startup cost .. total cost in arbitrary units                            |
-| `actual time=X..Y` | Actual execution time in milliseconds                                              |
-| `rows=N`           | Actual row count — compare to `rows=N` estimate to detect stale statistics         |
+| Term | Meaning |
+|---|---|
+| `Seq Scan` | Full table scan — no index used. Acceptable for small tables; problematic at scale |
+| `Index Scan` | Index used to locate rows. Fast for selective predicates |
+| `Index Only Scan` | All needed columns are in the index — zero heap access. Fastest |
+| `Hash Join` | Efficient for large unsorted tables — builds a hash table on the smaller input |
+| `Nested Loop Join` | Fast when the inner loop uses an index; catastrophic without one |
+| `Merge Join` | Efficient when both inputs are pre-sorted on the join key |
+| `cost=X..Y` | Estimated startup cost .. total cost in arbitrary units |
+| `actual time=X..Y` | Actual execution time in milliseconds |
+| `rows=N` | Actual row count — compare to `rows=N` estimate to detect stale statistics |
 
 ### Indexing rules
 
@@ -939,7 +938,6 @@ INCLUDE (nombre, salario);
 ```
 
 **Winand (2012) three rules for index design**:
-
 1. The WHERE clause determines which columns need indexing.
 2. The ORDER BY clause benefits from index-sorted columns.
 3. The SELECT clause benefits from covering indexes (INCLUDE columns).
@@ -1110,15 +1108,15 @@ FROM user_funnel_events;
 
 ## References
 
-- PostgreSQL 18 Documentation. _Chapter 7 — Queries_. https://www.postgresql.org/docs/current/queries.html
-- PostgreSQL 18 Documentation. _EXPLAIN_. https://www.postgresql.org/docs/current/sql-explain.html
-- PostgreSQL 18 Documentation. _WITH Queries (Common Table Expressions)_. https://www.postgresql.org/docs/current/queries-with.html
-- Microsoft (2024). _SELECT — Transact-SQL: Logical Processing Order_. https://learn.microsoft.com/en-us/sql/t-sql/queries/select-transact-sql
-- Winand, M. (2012). _SQL Performance Explained_. Markus Winand. [use-the-index-luke.com]
-- Ben-Gan, I. (2016). _T-SQL Fundamentals_ (3rd ed.). Microsoft Press.
-- Date, C. J. (2011). _SQL and Relational Theory_ (2nd ed.). O'Reilly.
-- Kimball, R., & Ross, M. (2013). _The Data Warehouse Toolkit_ (3rd ed.). Wiley.
-- Molinaro, A. (2009). _SQL Cookbook_. O'Reilly.
-- Beaulieu, A. (2020). _Learning SQL_ (3rd ed.). O'Reilly.
-- Garcia-Molina, H., Ullman, J. D., & Widom, J. (2008). _Database Systems: The Complete Book_ (2nd ed.). Pearson.
+- PostgreSQL 18 Documentation. *Chapter 7 — Queries*. https://www.postgresql.org/docs/current/queries.html
+- PostgreSQL 18 Documentation. *EXPLAIN*. https://www.postgresql.org/docs/current/sql-explain.html
+- PostgreSQL 18 Documentation. *WITH Queries (Common Table Expressions)*. https://www.postgresql.org/docs/current/queries-with.html
+- Microsoft (2024). *SELECT — Transact-SQL: Logical Processing Order*. https://learn.microsoft.com/en-us/sql/t-sql/queries/select-transact-sql
+- Winand, M. (2012). *SQL Performance Explained*. Markus Winand. [use-the-index-luke.com]
+- Ben-Gan, I. (2016). *T-SQL Fundamentals* (3rd ed.). Microsoft Press.
+- Date, C. J. (2011). *SQL and Relational Theory* (2nd ed.). O'Reilly.
+- Kimball, R., & Ross, M. (2013). *The Data Warehouse Toolkit* (3rd ed.). Wiley.
+- Molinaro, A. (2009). *SQL Cookbook*. O'Reilly.
+- Beaulieu, A. (2020). *Learning SQL* (3rd ed.). O'Reilly.
+- Garcia-Molina, H., Ullman, J. D., & Widom, J. (2008). *Database Systems: The Complete Book* (2nd ed.). Pearson.
 - ISO/IEC 9075 — SQL Standard. ANSI SQL:2016.

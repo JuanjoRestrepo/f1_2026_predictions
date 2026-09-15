@@ -25,7 +25,6 @@ integration in 2026 — every major identity provider (Auth0, Okta, Microsoft En
 already enforces them.
 
 **What changed from OAuth 2.0:**
-
 ```
 ❌ REMOVED: Implicit Grant (response_type=token)
    Returned tokens directly in the URL fragment — vulnerable to token leakage via
@@ -49,12 +48,12 @@ already enforces them.
 
 Using the wrong grant type is the single most common OAuth2 integration mistake.
 
-| Grant Type                    | Use when                                                                                                                                   | Do NOT use when                                                                                     |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| **Authorization Code + PKCE** | A user is present and authorizes your app to act on their behalf against another service (e.g., "Connect your Google Calendar")            | No user is present — this requires a browser redirect and user interaction                          |
-| **Client Credentials**        | Your backend calls another service's API as _itself_, with no user involved (service-to-service, RPA bot calling a partner API)            | A user's specific permissions/identity need to flow through — this grant has no user context at all |
-| **Device Code**               | Authorizing on a device with no browser or limited input (CLI tools, smart TVs, IoT)                                                       | A normal browser-based flow is available — Device Code is a fallback, not a default                 |
-| **Refresh Token**             | Not a grant type itself — used to obtain a new access token without re-prompting the user, after an Authorization Code or Device Code flow | Never issue long-lived refresh tokens to public clients without rotation                            |
+| Grant Type | Use when | Do NOT use when |
+|---|---|---|
+| **Authorization Code + PKCE** | A user is present and authorizes your app to act on their behalf against another service (e.g., "Connect your Google Calendar") | No user is present — this requires a browser redirect and user interaction |
+| **Client Credentials** | Your backend calls another service's API as *itself*, with no user involved (service-to-service, RPA bot calling a partner API) | A user's specific permissions/identity need to flow through — this grant has no user context at all |
+| **Device Code** | Authorizing on a device with no browser or limited input (CLI tools, smart TVs, IoT) | A normal browser-based flow is available — Device Code is a fallback, not a default |
+| **Refresh Token** | Not a grant type itself — used to obtain a new access token without re-prompting the user, after an Authorization Code or Device Code flow | Never issue long-lived refresh tokens to public clients without rotation |
 
 **For RPA and backend integration work, Client Credentials is overwhelmingly the most common
 correct choice** — a bot or backend service authenticating to a partner API has no end user
@@ -65,14 +64,14 @@ in the loop.
 ```typescript
 // Node.js — obtaining and using a Client Credentials token
 async function getAccessToken(): Promise<string> {
-  const response = await fetch('https://auth.partner.com/oauth/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  const response = await fetch("https://auth.partner.com/oauth/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      grant_type: 'client_credentials',
+      grant_type: "client_credentials",
       client_id: process.env.PARTNER_CLIENT_ID!,
       client_secret: process.env.PARTNER_CLIENT_SECRET!,
-      scope: 'orders:read orders:write',
+      scope: "orders:read orders:write",
     }),
   });
 
@@ -88,8 +87,7 @@ class TokenCache {
   private expiresAt = 0;
 
   async getToken(): Promise<string> {
-    if (this.token && Date.now() < this.expiresAt - 60_000) {
-      // 60s safety margin
+    if (this.token && Date.now() < this.expiresAt - 60_000) {  // 60s safety margin
       return this.token;
     }
     const { access_token, expires_in } = await this.fetchNewToken();
@@ -141,40 +139,37 @@ class ClientCredentialsTokenCache:
 
 ```typescript
 // Step 1 — generate PKCE verifier and challenge, redirect user to authorize
-import crypto from 'crypto';
+import crypto from "crypto";
 
 function generatePKCE() {
-  const verifier = crypto.randomBytes(32).toString('base64url');
-  const challenge = crypto
-    .createHash('sha256')
-    .update(verifier)
-    .digest('base64url');
+  const verifier = crypto.randomBytes(32).toString("base64url");
+  const challenge = crypto.createHash("sha256").update(verifier).digest("base64url");
   return { verifier, challenge };
 }
 
 const { verifier, challenge } = generatePKCE();
 // Store `verifier` server-side (session or short-lived cache), keyed to this auth attempt
 
-const authUrl = new URL('https://partner.com/oauth/authorize');
-authUrl.searchParams.set('response_type', 'code');
-authUrl.searchParams.set('client_id', process.env.CLIENT_ID!);
-authUrl.searchParams.set('redirect_uri', 'https://myapp.com/oauth/callback');
-authUrl.searchParams.set('code_challenge', challenge);
-authUrl.searchParams.set('code_challenge_method', 'S256');
-authUrl.searchParams.set('scope', 'read write');
+const authUrl = new URL("https://partner.com/oauth/authorize");
+authUrl.searchParams.set("response_type", "code");
+authUrl.searchParams.set("client_id", process.env.CLIENT_ID!);
+authUrl.searchParams.set("redirect_uri", "https://myapp.com/oauth/callback");
+authUrl.searchParams.set("code_challenge", challenge);
+authUrl.searchParams.set("code_challenge_method", "S256");
+authUrl.searchParams.set("scope", "read write");
 // Redirect the user to authUrl
 
 // Step 2 — exchange the returned code for tokens, presenting the original verifier
 async function exchangeCodeForToken(code: string, verifier: string) {
-  const response = await fetch('https://partner.com/oauth/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  const response = await fetch("https://partner.com/oauth/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      grant_type: 'authorization_code',
+      grant_type: "authorization_code",
       code,
-      redirect_uri: 'https://myapp.com/oauth/callback',
+      redirect_uri: "https://myapp.com/oauth/callback",
       client_id: process.env.CLIENT_ID!,
-      code_verifier: verifier, // proves this client initiated the original request
+      code_verifier: verifier,  // proves this client initiated the original request
     }),
   });
   return response.json(); // { access_token, refresh_token, expires_in }
@@ -192,23 +187,21 @@ auth system in `web-devops/security.md`).
 **Mandatory validation checklist (RFC 8725 — JWT Best Current Practices):**
 
 ```typescript
-import { jwtVerify, createRemoteJWKSet } from 'jose';
+import { jwtVerify, createRemoteJWKSet } from "jose";
 
 // Fetch and cache the issuer's public keys (JWKS) — never hardcode a public key
-const JWKS = createRemoteJWKSet(
-  new URL('https://partner.com/.well-known/jwks.json'),
-);
+const JWKS = createRemoteJWKSet(new URL("https://partner.com/.well-known/jwks.json"));
 
 async function validateIncomingToken(token: string) {
   const { payload } = await jwtVerify(token, JWKS, {
-    issuer: 'https://partner.com', // MUST match exactly — prevents token substitution
-    audience: 'https://myapi.com', // MUST match — this token is for YOU specifically
+    issuer: "https://partner.com",          // MUST match exactly — prevents token substitution
+    audience: "https://myapi.com",          // MUST match — this token is for YOU specifically
     // algorithms is implicitly restricted by JWKS key type — never allow "alg: none"
   });
 
   // Additional checks beyond signature verification:
   if (payload.exp && Date.now() >= payload.exp * 1000) {
-    throw new Error('Token expired'); // jose already checks this, shown for clarity
+    throw new Error("Token expired");        // jose already checks this, shown for clarity
   }
 
   return payload;
@@ -216,7 +209,6 @@ async function validateIncomingToken(token: string) {
 ```
 
 **The critical mistakes RFC 8725 exists to prevent:**
-
 - **Algorithm confusion attack**: never accept `alg: none`, and never allow the token to
   dictate which algorithm family is used for verification — the verifier must enforce the
   expected algorithm, not trust the token's header

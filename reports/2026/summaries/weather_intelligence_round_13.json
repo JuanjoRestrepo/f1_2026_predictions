@@ -1,0 +1,17 @@
+{
+  "provider": "unavailable",
+  "event_name": "Italian Grand Prix",
+  "generated_at_utc": "2026-09-15T04:26:17.650501+00:00",
+  "latitude": 45.6156,
+  "longitude": 9.2811,
+  "target_date": "2026-09-06",
+  "race_day": null,
+  "forecast_days": [],
+  "rain_probability": null,
+  "risk_level": "unknown",
+  "confidence": "unavailable",
+  "summary": "No external weather forecast is available for Italian Grand Prix; Friday forecast keeps conservative dry-weather assumptions.",
+  "warnings": [
+    "No external weather API key configured."
+  ]
+}

@@ -1,9 +1,9 @@
 # Advanced Data Engineering Reference
 
-> **References**: Reis, J., & Housley, M. (2022). _Fundamentals of Data Engineering_.
-> O'Reilly. · Dehghani, Z. (2022). _Data Mesh_. O'Reilly. · Kleppmann, M. (2017).
-> _Designing Data-Intensive Applications_. O'Reilly. · Kimball, R., & Ross, M. (2013).
-> _The Data Warehouse Toolkit_ (3rd ed.). Wiley. · Delta Lake Documentation.
+> **References**: Reis, J., & Housley, M. (2022). *Fundamentals of Data Engineering*.
+> O'Reilly. · Dehghani, Z. (2022). *Data Mesh*. O'Reilly. · Kleppmann, M. (2017).
+> *Designing Data-Intensive Applications*. O'Reilly. · Kimball, R., & Ross, M. (2013).
+> *The Data Warehouse Toolkit* (3rd ed.). Wiley. · Delta Lake Documentation.
 > https://docs.delta.io · Apache Kafka Documentation. https://kafka.apache.org/documentation
 > · Databricks Documentation. https://docs.databricks.com · Microsoft Azure Event Hubs.
 > https://learn.microsoft.com/en-us/azure/event-hubs · Apache Spark Documentation.
@@ -30,7 +30,7 @@
 
 ## 1. Medallion Architecture — Depth Reference {#medallion}
 
-> **Source**: Databricks (2021). _The Medallion Architecture_.
+> **Source**: Databricks (2021). *The Medallion Architecture*.
 > https://www.databricks.com/glossary/medallion-architecture
 > Coined by Databricks; now adopted across AWS, GCP, Azure, and open-source Lakehouse
 > implementations as the de facto standard for Lakehouse layer design.
@@ -48,7 +48,6 @@ The Bronze layer is an exact, immutable copy of source data. Its purpose is
 preservation, not transformation. Every source record lands here exactly as it arrived.
 
 Responsibilities:
-
 - Ingest from all sources: databases (via CDC), files (CSV, JSON, Avro, Parquet), APIs, streams
 - Append-only or insert-only — never update or delete source records
 - Preserve original schema, encoding, and values (including nulls, malformed records)
@@ -65,7 +64,6 @@ handling, deduplication, cross-source joins, and schema validation. The result i
 clean, typed, deduplicated data at row level.
 
 Responsibilities:
-
 - Apply business validation rules and schema enforcement (Pandera, Great Expectations, or Delta constraints)
 - Deduplicate records (row-level deduplication using natural keys)
 - Resolve and join data from multiple Bronze sources into conformed entities
@@ -81,7 +79,6 @@ The Gold layer contains data structured for direct consumption by analysts, BI t
 ML feature stores, and APIs. It represents the business domain, not the source system.
 
 Responsibilities:
-
 - Apply business aggregations: daily revenue, monthly active users, churn rate
 - Model data in dimensional form: fact and dimension tables (see analytics_engineering.md)
 - Compute derived metrics: rolling averages, period-over-period comparisons, KPIs
@@ -192,7 +189,7 @@ def aggregate_to_gold(spark: SparkSession) -> None:
 
 ## 2. Batch vs. Streaming — Architecture Decision {#batch-streaming}
 
-> **Source**: Kleppmann, M. (2017). _Designing Data-Intensive Applications_. O'Reilly.
+> **Source**: Kleppmann, M. (2017). *Designing Data-Intensive Applications*. O'Reilly.
 > Ch. 10–11 (Batch and Stream Processing). · Flink Documentation. https://flink.apache.org
 > · Spark Structured Streaming. https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html
 
@@ -208,20 +205,19 @@ milliseconds to seconds. Correctness depends on handling out-of-order and late d
 
 ### Decision Framework
 
-| Criterion                  | Batch                                                | Streaming                                                       |
-| -------------------------- | ---------------------------------------------------- | --------------------------------------------------------------- |
-| Data availability          | All data available before processing                 | Data arrives continuously                                       |
-| Acceptable latency         | Minutes to hours                                     | Milliseconds to seconds                                         |
-| Throughput priority        | High — process large historical datasets efficiently | Lower — latency takes priority                                  |
-| Out-of-order data handling | Not applicable (static input)                        | Required — define watermarks                                    |
-| Use cases                  | ETL, reporting, model training, historical analysis  | Fraud detection, IoT monitoring, real-time dashboards, alerting |
-| Tooling                    | Spark, dbt, Airflow, SQL                             | Spark Structured Streaming, Apache Flink, Kafka Streams         |
-| Operational complexity     | Lower                                                | Higher — requires stateful processing, checkpointing            |
+| Criterion | Batch | Streaming |
+|---|---|---|
+| Data availability | All data available before processing | Data arrives continuously |
+| Acceptable latency | Minutes to hours | Milliseconds to seconds |
+| Throughput priority | High — process large historical datasets efficiently | Lower — latency takes priority |
+| Out-of-order data handling | Not applicable (static input) | Required — define watermarks |
+| Use cases | ETL, reporting, model training, historical analysis | Fraud detection, IoT monitoring, real-time dashboards, alerting |
+| Tooling | Spark, dbt, Airflow, SQL | Spark Structured Streaming, Apache Flink, Kafka Streams |
+| Operational complexity | Lower | Higher — requires stateful processing, checkpointing |
 
 ### Lambda Architecture
 
 Lambda combines both paradigms with a serving layer that merges outputs:
-
 ```
 Batch Layer:   historical, accurate, high-latency batch views
 Speed Layer:   low-latency, approximate, recent stream views
@@ -290,7 +286,7 @@ query = (
 
 > **Source**: Apache Spark Documentation (3.5).
 > https://spark.apache.org/docs/latest/cluster-overview.html
-> Zaharia, M. et al. (2012). Resilient Distributed Datasets. _NSDI_. (Original RDD paper.)
+> Zaharia, M. et al. (2012). Resilient Distributed Datasets. *NSDI*. (Original RDD paper.)
 
 ### Spark Architecture
 
@@ -397,15 +393,15 @@ Delta Lake, with integrated ML (MLflow), SQL analytics, and data governance (Uni
 
 ### Databricks Workspace Components
 
-| Component               | Purpose                                                                                       |
-| ----------------------- | --------------------------------------------------------------------------------------------- |
-| Clusters                | Spark compute resources. Interactive (notebooks) or job clusters (pipelines).                 |
-| Notebooks               | Collaborative Python/SQL/Scala/R development environment with Spark integration               |
-| Workflows / Jobs        | Orchestration of multi-task pipelines; DAG of notebooks, JARs, Python scripts                 |
-| Delta Live Tables (DLT) | Declarative ETL framework for building Medallion pipelines with automated data quality        |
-| Unity Catalog           | Centralized governance: data catalog, access control, lineage, and auditing across workspaces |
-| MLflow                  | Integrated experiment tracking, model registry, and model serving                             |
-| SQL Warehouse           | Serverless or provisioned compute for SQL analytics (photon-optimized)                        |
+| Component | Purpose |
+|---|---|
+| Clusters | Spark compute resources. Interactive (notebooks) or job clusters (pipelines). |
+| Notebooks | Collaborative Python/SQL/Scala/R development environment with Spark integration |
+| Workflows / Jobs | Orchestration of multi-task pipelines; DAG of notebooks, JARs, Python scripts |
+| Delta Live Tables (DLT) | Declarative ETL framework for building Medallion pipelines with automated data quality |
+| Unity Catalog | Centralized governance: data catalog, access control, lineage, and auditing across workspaces |
+| MLflow | Integrated experiment tracking, model registry, and model serving |
+| SQL Warehouse | Serverless or provisioned compute for SQL analytics (photon-optimized) |
 
 ### Delta Live Tables — Declarative Medallion Pipelines
 
@@ -549,7 +545,7 @@ ZORDER BY (region, order_date);
 ## 6. Lakehouse Architecture {#lakehouse}
 
 > **Source**: Armbrust, M., et al. (2021). Lakehouse: A New Generation of Open Platforms
-> that Unify Data Warehousing and Advanced Analytics. _CIDR_. (Databricks research.)
+> that Unify Data Warehousing and Advanced Analytics. *CIDR*. (Databricks research.)
 > https://www.cidrdb.org/cidr2021/papers/cidr2021_paper17.pdf
 
 The Lakehouse is an architectural pattern that combines the cost-efficiency and
@@ -571,17 +567,17 @@ all operate directly on the same data.
 
 ### Lakehouse vs. Warehouse vs. Lake
 
-| Dimension          | Data Warehouse                | Data Lake           | Lakehouse                                   |
-| ------------------ | ----------------------------- | ------------------- | ------------------------------------------- |
-| Storage format     | Proprietary                   | Open (Parquet, ORC) | Open (Parquet + Delta/Iceberg)              |
-| Storage cost       | High                          | Low                 | Low                                         |
-| ACID transactions  | Yes                           | No                  | Yes (Delta/Iceberg layer)                   |
-| Schema enforcement | Strong                        | None                | Configurable                                |
-| Query performance  | High (optimized)              | Low (full scans)    | High (Z-order, bloom filters, caching)      |
-| ML workloads       | Limited                       | Native              | Native                                      |
-| Streaming          | Limited                       | Limited             | Native (Structured Streaming)               |
-| Governance         | Strong                        | Weak                | Strong (Unity Catalog / AWS Glue)           |
-| Typical stack      | Snowflake, Redshift, BigQuery | S3 + Hive           | Databricks, AWS Lake Formation, GCP BigLake |
+| Dimension | Data Warehouse | Data Lake | Lakehouse |
+|---|---|---|---|
+| Storage format | Proprietary | Open (Parquet, ORC) | Open (Parquet + Delta/Iceberg) |
+| Storage cost | High | Low | Low |
+| ACID transactions | Yes | No | Yes (Delta/Iceberg layer) |
+| Schema enforcement | Strong | None | Configurable |
+| Query performance | High (optimized) | Low (full scans) | High (Z-order, bloom filters, caching) |
+| ML workloads | Limited | Native | Native |
+| Streaming | Limited | Limited | Native (Structured Streaming) |
+| Governance | Strong | Weak | Strong (Unity Catalog / AWS Glue) |
+| Typical stack | Snowflake, Redshift, BigQuery | S3 + Hive | Databricks, AWS Lake Formation, GCP BigLake |
 
 ---
 
@@ -604,12 +600,12 @@ are slow, and put load on the source database.
 
 ### CDC Mechanisms
 
-| Mechanism               | How it works                                      | Pros                                                  | Cons                                                     |
-| ----------------------- | ------------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------- |
-| **Log-based CDC**       | Reads database transaction log (WAL / binlog)     | Low latency; captures deletes; minimal source DB load | Requires DB-level access; log format varies by DB        |
-| **Trigger-based CDC**   | Database triggers write changes to an audit table | No special DB permissions needed                      | Adds write overhead to source DB; misses bulk operations |
-| **Timestamp-based CDC** | Queries rows WHERE updated_at > last_run          | Simple to implement                                   | Cannot detect deletes; requires updated_at column        |
-| **Full snapshot**       | Complete table export on every run                | No dependency on DB features                          | Slow; misses deletes between snapshots                   |
+| Mechanism | How it works | Pros | Cons |
+|---|---|---|---|
+| **Log-based CDC** | Reads database transaction log (WAL / binlog) | Low latency; captures deletes; minimal source DB load | Requires DB-level access; log format varies by DB |
+| **Trigger-based CDC** | Database triggers write changes to an audit table | No special DB permissions needed | Adds write overhead to source DB; misses bulk operations |
+| **Timestamp-based CDC** | Queries rows WHERE updated_at > last_run | Simple to implement | Cannot detect deletes; requires updated_at column |
+| **Full snapshot** | Complete table export on every run | No dependency on DB features | Slow; misses deletes between snapshots |
 
 **Production recommendation**: log-based CDC via Debezium (PostgreSQL, MySQL, MongoDB,
 Oracle, SQL Server) publishing to Kafka topics. Downstream consumers (Spark, Flink)
@@ -675,9 +671,9 @@ def upsert_from_cdc(batch_df, batch_id: int) -> None:
 
 ## 8. Data Contracts {#data-contracts}
 
-> **Source**: Jones, A. (2023). _Fundamentals of Data Observability_. O'Reilly.
-> Dehghani, Z. (2022). _Data Mesh_. O'Reilly, Ch. 9. · Andrew Jones (2023).
-> _Driving Data Quality with Data Contracts_. O'Reilly.
+> **Source**: Jones, A. (2023). *Fundamentals of Data Observability*. O'Reilly.
+> Dehghani, Z. (2022). *Data Mesh*. O'Reilly, Ch. 9. · Andrew Jones (2023).
+> *Driving Data Quality with Data Contracts*. O'Reilly.
 > Google Internal Paper: Data Contracts at Google Scale (VLDB 2023).
 
 ### What Data Contracts Are
@@ -713,13 +709,13 @@ this causes cascading failures across dependent pipelines and dashboards.
 kind: DataContract
 id: orders-v1
 name: orders
-version: '1.2.0' # Semantic versioning: MAJOR.MINOR.PATCH
+version: "1.2.0"           # Semantic versioning: MAJOR.MINOR.PATCH
 status: active
 
 description:
-  purpose: 'Transactional order records from the e-commerce platform.'
-  limitations: 'Does not include cancelled or draft orders.'
-  usage: 'Gold-layer analytics, revenue reporting, churn modeling.'
+  purpose: "Transactional order records from the e-commerce platform."
+  limitations: "Does not include cancelled or draft orders."
+  usage: "Gold-layer analytics, revenue reporting, churn modeling."
 
 owner:
   team: data-engineering
@@ -727,9 +723,9 @@ owner:
   escalation: platform-oncall@company.com
 
 sla:
-  availability: '99.5%'
-  freshness: 'Data available within 30 minutes of transaction'
-  latency: 'P99 query latency < 2 seconds on the Gold table'
+  availability: "99.5%"
+  freshness: "Data available within 30 minutes of transaction"
+  latency: "P99 query latency < 2 seconds on the Gold table"
 
 schema:
   - name: order_id
@@ -737,30 +733,30 @@ schema:
     required: true
     unique: true
     pii: false
-    description: 'Globally unique order identifier. Format: ORD-{UUID4}.'
+    description: "Globally unique order identifier. Format: ORD-{UUID4}."
 
   - name: customer_id
     type: string
     required: true
     pii: true
-    description: 'Anonymized customer identifier. Raw PII is not stored.'
+    description: "Anonymized customer identifier. Raw PII is not stored."
 
   - name: order_date
     type: date
-    format: 'YYYY-MM-DD'
+    format: "YYYY-MM-DD"
     required: true
-    description: 'UTC date when the order was placed.'
+    description: "UTC date when the order was placed."
 
   - name: amount
     type: decimal(18, 2)
     required: true
     minimum: 0
-    description: 'Net revenue in USD. Excludes taxes and shipping.'
+    description: "Net revenue in USD. Excludes taxes and shipping."
 
   - name: region
     type: string
     required: true
-    allowed_values: ['APAC', 'EMEA', 'AMER', 'LATAM']
+    allowed_values: ["APAC", "EMEA", "AMER", "LATAM"]
     description: "Geographic region of the customer's billing address."
 
 quality:
@@ -776,19 +772,19 @@ quality:
 
   validity:
     - column: amount
-      rule: 'amount >= 0'
+      rule: "amount >= 0"
     - column: region
       rule: "region IN ('APAC','EMEA','AMER','LATAM')"
 
 versioning:
   backward_compatible_changes:
-    - 'Adding new non-required columns'
-    - 'Expanding allowed_values for existing columns'
+    - "Adding new non-required columns"
+    - "Expanding allowed_values for existing columns"
   breaking_changes:
-    - 'Removing existing columns'
-    - 'Renaming columns'
-    - 'Changing column types'
-    - 'Changing semantics of existing fields'
+    - "Removing existing columns"
+    - "Renaming columns"
+    - "Changing column types"
+    - "Changing semantics of existing fields"
   breaking_change_policy: |
     Breaking changes require a new major version (v2.0.0) published 30 days
     before v1.x.x is deprecated. Consumers must migrate within the window.
@@ -881,7 +877,6 @@ def validate_against_contract(
 
 Data lineage tracks the origin, movement, and transformation of data across a pipeline —
 from source system to final consumption. It answers the questions:
-
 - Where did this data come from?
 - What transformations were applied?
 - Which downstream datasets and dashboards depend on this table?
@@ -981,15 +976,15 @@ Producer → [Kafka Cluster] → Consumer Group
 
 **Key concepts**:
 
-| Concept            | Definition                                                                                                                          |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Topic              | Named logical channel. Producers write to topics; consumers read from topics.                                                       |
-| Partition          | A topic is divided into N partitions for parallelism. Each partition is an ordered, immutable log.                                  |
-| Offset             | Each message in a partition has a monotonically increasing integer offset. Consumers track their own offset.                        |
-| Consumer Group     | A group of consumers that collectively read all partitions of a topic. Each partition is read by exactly one consumer in the group. |
-| Replication Factor | Number of brokers that store copies of each partition. Replication = 3 is standard for production.                                  |
-| Retention          | Messages are retained for a configurable duration (default 7 days) regardless of whether they have been consumed.                   |
-| Log Compaction     | For changelog topics: retain only the latest message per key. Enables rebuilding state from the topic.                              |
+| Concept | Definition |
+|---|---|
+| Topic | Named logical channel. Producers write to topics; consumers read from topics. |
+| Partition | A topic is divided into N partitions for parallelism. Each partition is an ordered, immutable log. |
+| Offset | Each message in a partition has a monotonically increasing integer offset. Consumers track their own offset. |
+| Consumer Group | A group of consumers that collectively read all partitions of a topic. Each partition is read by exactly one consumer in the group. |
+| Replication Factor | Number of brokers that store copies of each partition. Replication = 3 is standard for production. |
+| Retention | Messages are retained for a configurable duration (default 7 days) regardless of whether they have been consumed. |
+| Log Compaction | For changelog topics: retain only the latest message per key. Enables rebuilding state from the topic. |
 
 ### Kafka Producer and Consumer in Python
 
@@ -1088,7 +1083,7 @@ Registry, log compaction), or deep ecosystem integration is required.
 
 ## 11. Data Mesh {#data-mesh}
 
-> **Source**: Dehghani, Z. (2022). _Data Mesh: Delivering Data-Driven Value at Scale_.
+> **Source**: Dehghani, Z. (2022). *Data Mesh: Delivering Data-Driven Value at Scale*.
 > O'Reilly. — The authoritative reference on Data Mesh.
 > Dehghani, Z. (2019). How to Move Beyond a Monolithic Data Lake to a Distributed
 > Data Mesh. Martin Fowler blog. https://martinfowler.com/articles/data-monolith-to-mesh.html
@@ -1114,7 +1109,6 @@ Each domain team is responsible for producing, maintaining, and serving its data
 
 **2. Data as a Product**: domain teams treat their data outputs as products with
 defined consumers, SLAs, documentation, and quality guarantees. A data product has:
-
 - Discoverable: findable in a catalog with metadata, lineage, and documentation
 - Addressable: accessible via a stable, versioned endpoint
 - Trustworthy: quality SLOs defined and monitored
@@ -1135,24 +1129,24 @@ automatable — governance that requires manual review does not scale.
 
 ### Data Mesh vs. Centralized Architecture
 
-| Dimension              | Centralized Data Platform            | Data Mesh                                  |
-| ---------------------- | ------------------------------------ | ------------------------------------------ |
-| Data ownership         | Central data engineering team        | Domain teams                               |
-| Pipeline development   | Central team builds all pipelines    | Domain teams build their own               |
-| Quality accountability | Central team (bottleneck)            | Domain team (producer)                     |
-| Scalability            | Bottleneck as domains grow           | Scales with domain teams                   |
-| Domain expertise       | Central team must learn every domain | Domain experts own their data              |
-| Governance             | Enforced by central team             | Federated computational governance         |
-| Platform investment    | Data warehouse / central lake        | Self-serve platform infrastructure         |
-| Suitable for           | Small organizations, few domains     | Large organizations, many autonomous teams |
+| Dimension | Centralized Data Platform | Data Mesh |
+|---|---|---|
+| Data ownership | Central data engineering team | Domain teams |
+| Pipeline development | Central team builds all pipelines | Domain teams build their own |
+| Quality accountability | Central team (bottleneck) | Domain team (producer) |
+| Scalability | Bottleneck as domains grow | Scales with domain teams |
+| Domain expertise | Central team must learn every domain | Domain experts own their data |
+| Governance | Enforced by central team | Federated computational governance |
+| Platform investment | Data warehouse / central lake | Self-serve platform infrastructure |
+| Suitable for | Small organizations, few domains | Large organizations, many autonomous teams |
 
 ---
 
 ## 12. Data Fabric {#data-fabric}
 
-> **Source**: Gartner (2022). _Magic Quadrant for Data Integration Tools_.
+> **Source**: Gartner (2022). *Magic Quadrant for Data Integration Tools*.
 > IBM Data Fabric Overview. https://www.ibm.com/topics/data-fabric
-> Forrester Research (2023). _The Data Fabric Landscape_.
+> Forrester Research (2023). *The Data Fabric Landscape*.
 
 ### What Data Fabric Is
 
@@ -1170,21 +1164,21 @@ organizational change.
 
 These two approaches are frequently confused. They solve related but different problems:
 
-| Dimension         | Data Mesh                                                            | Data Fabric                                                 |
-| ----------------- | -------------------------------------------------------------------- | ----------------------------------------------------------- |
-| Primary focus     | Organizational design and domain ownership                           | Technology integration and automation                       |
-| Core driver       | Decentralized ownership; domain expertise                            | Unified metadata; AI-driven automation                      |
-| Governance model  | Federated computational governance                                   | Centralized governance via metadata                         |
-| Suitable when     | Organization has many autonomous domain teams                        | Organization has heterogeneous, siloed systems to integrate |
-| Key technologies  | Data contracts, domain-owned pipelines, self-serve platform          | Data catalogs, knowledge graphs, ML-driven data integration |
+| Dimension | Data Mesh | Data Fabric |
+|---|---|---|
+| Primary focus | Organizational design and domain ownership | Technology integration and automation |
+| Core driver | Decentralized ownership; domain expertise | Unified metadata; AI-driven automation |
+| Governance model | Federated computational governance | Centralized governance via metadata |
+| Suitable when | Organization has many autonomous domain teams | Organization has heterogeneous, siloed systems to integrate |
+| Key technologies | Data contracts, domain-owned pipelines, self-serve platform | Data catalogs, knowledge graphs, ML-driven data integration |
 | They can coexist? | Yes — Data Fabric can be the platform infrastructure for a Data Mesh |
 
 ---
 
 ## 13. Data Observability {#observability}
 
-> **Source**: Jones, A. (2023). _Fundamentals of Data Observability_. O'Reilly.
-> Barr, B. (2021). _The Data Engineering Podcast: Data Observability_ (Monte Carlo).
+> **Source**: Jones, A. (2023). *Fundamentals of Data Observability*. O'Reilly.
+> Barr, B. (2021). *The Data Engineering Podcast: Data Observability* (Monte Carlo).
 > Great Expectations Documentation. https://docs.greatexpectations.io
 > dbt Tests. https://docs.getdbt.com/docs/build/tests
 
@@ -1197,13 +1191,13 @@ discover data quality problems only when a stakeholder reports an incorrect dash
 
 ### Five Pillars of Data Observability (Monte Carlo)
 
-| Pillar           | What it monitors                                         | Example metric                                                   |
-| ---------------- | -------------------------------------------------------- | ---------------------------------------------------------------- |
-| **Freshness**    | When was the table last updated?                         | `max(updated_at)` > expected freshness threshold                 |
-| **Volume**       | Does the table have the expected number of rows?         | Row count is within 2 standard deviations of historical baseline |
-| **Schema**       | Has the schema changed unexpectedly?                     | Column added, removed, renamed, or type changed                  |
-| **Distribution** | Are column value distributions within expected bounds?   | % nulls, min/max, unique ratio — compared to historical baseline |
-| **Lineage**      | Which upstream dependencies caused a downstream failure? | Trace broken table back to source via lineage graph              |
+| Pillar | What it monitors | Example metric |
+|---|---|---|
+| **Freshness** | When was the table last updated? | `max(updated_at)` > expected freshness threshold |
+| **Volume** | Does the table have the expected number of rows? | Row count is within 2 standard deviations of historical baseline |
+| **Schema** | Has the schema changed unexpectedly? | Column added, removed, renamed, or type changed |
+| **Distribution** | Are column value distributions within expected bounds? | % nulls, min/max, unique ratio — compared to historical baseline |
+| **Lineage** | Which upstream dependencies caused a downstream failure? | Trace broken table back to source via lineage graph |
 
 ### Implementation with Great Expectations
 
@@ -1262,18 +1256,18 @@ version: 2
 
 models:
   - name: gold_daily_revenue
-    description: 'Daily revenue aggregated by region.'
+    description: "Daily revenue aggregated by region."
     columns:
       - name: date
         tests:
           - not_null
-          - unique # each date-region combination must be unique
+          - unique    # each date-region combination must be unique
 
       - name: region
         tests:
           - not_null
           - accepted_values:
-              values: ['APAC', 'EMEA', 'AMER', 'LATAM']
+              values: ["APAC", "EMEA", "AMER", "LATAM"]
 
       - name: total_revenue
         tests:
@@ -1286,19 +1280,19 @@ models:
       - dbt_utils.recency:
           datepart: hour
           field: date
-          interval: 2 # Table must have data from within the last 2 hours
+          interval: 2    # Table must have data from within the last 2 hours
 ```
 
 ---
 
 ## 14. References {#references}
 
-- Reis, J., & Housley, M. (2022). _Fundamentals of Data Engineering_. O'Reilly.
-- Dehghani, Z. (2022). _Data Mesh: Delivering Data-Driven Value at Scale_. O'Reilly.
-- Kleppmann, M. (2017). _Designing Data-Intensive Applications_. O'Reilly.
-- Armbrust, M., et al. (2021). Lakehouse: A New Generation of Open Platforms. _CIDR 2021_.
-- Zaharia, M., et al. (2012). Resilient Distributed Datasets. _USENIX NSDI_.
-- Jones, A. (2023). _Fundamentals of Data Observability_. O'Reilly.
+- Reis, J., & Housley, M. (2022). *Fundamentals of Data Engineering*. O'Reilly.
+- Dehghani, Z. (2022). *Data Mesh: Delivering Data-Driven Value at Scale*. O'Reilly.
+- Kleppmann, M. (2017). *Designing Data-Intensive Applications*. O'Reilly.
+- Armbrust, M., et al. (2021). Lakehouse: A New Generation of Open Platforms. *CIDR 2021*.
+- Zaharia, M., et al. (2012). Resilient Distributed Datasets. *USENIX NSDI*.
+- Jones, A. (2023). *Fundamentals of Data Observability*. O'Reilly.
 - Apache Kafka Documentation 3.7. https://kafka.apache.org/documentation
 - Apache Spark Documentation 3.5. https://spark.apache.org/docs/latest
 - Delta Lake Documentation. https://docs.delta.io

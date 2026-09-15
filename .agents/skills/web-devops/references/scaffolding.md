@@ -3,7 +3,6 @@
 ## T3 Stack (Next.js + tRPC + Prisma/Drizzle + NextAuth + Tailwind + Zod)
 
 Bootstrap with:
-
 ```bash
 pnpm create t3-app@latest my-app
 # Select: Next.js App Router, TypeScript, tRPC, Prisma, NextAuth, Tailwind, Zod
@@ -51,7 +50,6 @@ my-t3-app/
 ```
 
 ### T3 `.env.example`
-
 ```bash
 # Database — use a managed Postgres (Neon, Supabase, Railway, PlanetScale)
 DATABASE_URL="postgresql://user:pass@host:5432/db?sslmode=require"
@@ -70,10 +68,9 @@ GOOGLE_CLIENT_SECRET=""
 ```
 
 ### T3 `env.js` (type-safe env validation)
-
 ```typescript
-import { createEnv } from '@t3-oss/env-nextjs';
-import { z } from 'zod';
+import { createEnv } from "@t3-oss/env-nextjs";
+import { z } from "zod";
 
 export const env = createEnv({
   server: {
@@ -81,7 +78,7 @@ export const env = createEnv({
     NEXTAUTH_SECRET: z.string().min(1),
     NEXTAUTH_URL: z.preprocess(
       (str) => process.env.VERCEL_URL ?? str,
-      z.string().url(),
+      z.string().url()
     ),
   },
   client: {
@@ -96,19 +93,14 @@ export const env = createEnv({
 ```
 
 ### T3 tRPC Router Pattern
-
 ```typescript
 // src/server/api/routers/post.ts
-import { z } from 'zod';
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  publicProcedure,
-} from '~/server/api/trpc';
+import { z } from "zod";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/api/trpc";
 
 export const postRouter = createTRPCRouter({
   getAll: publicProcedure.query(async ({ ctx }) => {
-    return ctx.db.post.findMany({ orderBy: { createdAt: 'desc' } });
+    return ctx.db.post.findMany({ orderBy: { createdAt: "desc" } });
   }),
 
   create: protectedProcedure
@@ -122,6 +114,8 @@ export const postRouter = createTRPCRouter({
 ```
 
 ---
+
+
 
 ```
 my-app/
@@ -238,7 +232,6 @@ mern-app/
 ## Essential Config Files
 
 ### .gitignore (Node.js)
-
 ```
 node_modules/
 .env
@@ -250,7 +243,6 @@ coverage/
 ```
 
 ### .env.example
-
 ```
 # App
 NODE_ENV=development
@@ -269,7 +261,6 @@ SENDGRID_API_KEY=
 ```
 
 ### tsconfig.json (strict)
-
 ```json
 {
   "compilerOptions": {

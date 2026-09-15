@@ -1,7 +1,6 @@
 # ML Model Evaluation Reference
 
 ## Table of Contents
-
 0. [Environment Setup (uv)](#environment)
 1. [Feature Scaling and Normalization](#feature-scaling)
 2. [ML Algorithm Taxonomy — Selection Reference](#algorithm-taxonomy)
@@ -38,10 +37,10 @@ uv sync
 
 ## 1. Feature Scaling and Normalization {#feature-scaling}
 
-> **References**: Géron, A. (2022). _Hands-On Machine Learning with Scikit-Learn,
-> Keras, and TensorFlow_ (3rd ed.). O'Reilly, Ch. 2. · Hastie, T., Tibshirani, R.,
-> & Friedman, J. (2009). _The Elements of Statistical Learning_ (2nd ed.). Springer.
-> · scikit-learn Documentation. _Preprocessing data_.
+> **References**: Géron, A. (2022). *Hands-On Machine Learning with Scikit-Learn,
+> Keras, and TensorFlow* (3rd ed.). O'Reilly, Ch. 2. · Hastie, T., Tibshirani, R.,
+> & Friedman, J. (2009). *The Elements of Statistical Learning* (2nd ed.). Springer.
+> · scikit-learn Documentation. *Preprocessing data*.
 > https://scikit-learn.org/stable/modules/preprocessing.html
 
 ### Conceptual Foundation
@@ -58,7 +57,6 @@ Scaling is not optional polish — for scale-sensitive algorithms, it is a corre
 requirement, not a performance tweak.
 
 **What scaling fixes**:
-
 - Numerical instability (overflow/underflow) in matrix and vector computations
 - Slow or unstable convergence in gradient-based optimizers
 - One feature's scale dominating distance metrics or regularization penalties
@@ -67,16 +65,16 @@ requirement, not a performance tweak.
 
 ### Feature Scaling Technique Comparison
 
-| Technique                             | Formula                            | Output Range                  | Outlier Sensitivity                                            | Best Use Case                                                                            |
-| ------------------------------------- | ---------------------------------- | ----------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| **Min-Max Scaling**                   | X' = (X − X_min) / (X_max − X_min) | Fixed [0, 1] (or custom)      | High — a single extreme value compresses the rest of the range | Bounded features; neural network inputs; when the exact range matters                    |
-| **Z-Score Standardization**           | Z = (X − μ) / σ                    | Mean 0, std 1, unbounded      | Moderate                                                       | General-purpose default; distance-based and gradient-based algorithms                    |
-| **Robust Scaling**                    | X' = (X − median) / IQR            | Unbounded, centered on median | Low — explicitly designed to resist outliers                   | Skewed distributions or datasets with heavy outlier contamination                        |
-| **Max Absolute Scaling**              | X' = X / \|X\|\_max                | [−1, 1]                       | High                                                           | Sparse matrices — preserves zero entries exactly                                         |
-| **Unit Vector Normalization (L1/L2)** | x' = x / \|x\|                     | Norm = 1 per row              | Depends on norm                                                | NLP, recommendation systems, cosine similarity — scales per-observation, not per-feature |
+| Technique | Formula | Output Range | Outlier Sensitivity | Best Use Case |
+|---|---|---|---|---|
+| **Min-Max Scaling** | X' = (X − X_min) / (X_max − X_min) | Fixed [0, 1] (or custom) | High — a single extreme value compresses the rest of the range | Bounded features; neural network inputs; when the exact range matters |
+| **Z-Score Standardization** | Z = (X − μ) / σ | Mean 0, std 1, unbounded | Moderate | General-purpose default; distance-based and gradient-based algorithms |
+| **Robust Scaling** | X' = (X − median) / IQR | Unbounded, centered on median | Low — explicitly designed to resist outliers | Skewed distributions or datasets with heavy outlier contamination |
+| **Max Absolute Scaling** | X' = X / \|X\|_max | [−1, 1] | High | Sparse matrices — preserves zero entries exactly |
+| **Unit Vector Normalization (L1/L2)** | x' = x / \|x\| | Norm = 1 per row | Depends on norm | NLP, recommendation systems, cosine similarity — scales per-observation, not per-feature |
 
-**Key distinction**: the first four techniques scale each _feature_ (column)
-independently. Unit Vector Normalization scales each _observation_ (row) — it
+**Key distinction**: the first four techniques scale each *feature* (column)
+independently. Unit Vector Normalization scales each *observation* (row) — it
 answers a fundamentally different question (direction of a feature vector, not
 comparability across features) and is not interchangeable with the other four.
 
@@ -87,19 +85,19 @@ inner products — the geometry of the feature space directly enters the computa
 
 **Scale-sensitive — scaling required**:
 
-| Category                  | Algorithms                             | Why scale matters                                                                                                                                                     |
-| ------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Distance-based            | K-Means, K-Nearest Neighbors           | Euclidean/Manhattan distance is dominated by the largest-magnitude feature                                                                                            |
-| Margin-based              | Support Vector Machines                | The margin and kernel computations are scale-dependent                                                                                                                |
-| Neural networks           | MLP, deep learning architectures       | Unscaled inputs slow or destabilize backpropagation convergence                                                                                                       |
-| Linear models             | Linear Regression, Logistic Regression | Especially critical with L1/L2 regularization — penalty is applied uniformly across coefficients, which is only meaningful if features are on comparable scales       |
-| Dimensionality reduction  | PCA                                    | Directions of maximum variance are scale-dependent; an unscaled high-magnitude feature will dominate the principal components regardless of its actual signal content |
-| Gradient-based optimizers | Any model trained via gradient descent | Scale differences distort the loss surface geometry, slowing convergence                                                                                              |
+| Category | Algorithms | Why scale matters |
+|---|---|---|
+| Distance-based | K-Means, K-Nearest Neighbors | Euclidean/Manhattan distance is dominated by the largest-magnitude feature |
+| Margin-based | Support Vector Machines | The margin and kernel computations are scale-dependent |
+| Neural networks | MLP, deep learning architectures | Unscaled inputs slow or destabilize backpropagation convergence |
+| Linear models | Linear Regression, Logistic Regression | Especially critical with L1/L2 regularization — penalty is applied uniformly across coefficients, which is only meaningful if features are on comparable scales |
+| Dimensionality reduction | PCA | Directions of maximum variance are scale-dependent; an unscaled high-magnitude feature will dominate the principal components regardless of its actual signal content |
+| Gradient-based optimizers | Any model trained via gradient descent | Scale differences distort the loss surface geometry, slowing convergence |
 
 **Scale-invariant — scaling not required**:
 
-| Algorithms                                                 | Why scale doesn't matter                                                                                                                                                                                                                                  |
-| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Algorithms | Why scale doesn't matter |
+|---|---|
 | Decision Trees, Random Forest, XGBoost, LightGBM, CatBoost | Tree-based models split on per-feature thresholds (X_i > c). A monotonic transformation of a feature does not change which observations fall on which side of any threshold — the split points shift but the resulting partition of the data is identical |
 
 **Practical implication**: when benchmarking GBMs against linear models or neural
@@ -255,9 +253,9 @@ def recommend_scaler(
 ## 2. ML Algorithm Taxonomy — Selection Reference {#algorithm-taxonomy}
 
 > **Authoritative basis**: This taxonomy follows the classification established in
-> Bishop (2006) _Pattern Recognition and Machine Learning_, Hastie et al. (2009)
-> _The Elements of Statistical Learning_, Murphy (2012) _Machine Learning: A Probabilistic
-> Perspective_, and Goodfellow et al. (2016) _Deep Learning_. It represents the
+> Bishop (2006) *Pattern Recognition and Machine Learning*, Hastie et al. (2009)
+> *The Elements of Statistical Learning*, Murphy (2012) *Machine Learning: A Probabilistic
+> Perspective*, and Goodfellow et al. (2016) *Deep Learning*. It represents the
 > consensus categorization used across academic and industry practice.
 
 This section provides a structured reference for algorithm selection by learning paradigm
@@ -271,26 +269,26 @@ The model learns a mapping from input features to output labels or values.
 
 #### Classification — predicting discrete class labels
 
-| Algorithm                     | Key Characteristics                                                  | When to Use                                                             |
-| ----------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Logistic Regression           | Linear decision boundary; probabilistic output; L1/L2 regularization | Baseline for binary/multiclass; interpretable; sparse features          |
-| Naive Bayes                   | Assumes feature independence; fast; works well at small n            | Text classification, NLP, high-dimensional sparse data                  |
-| K-Nearest Neighbors (KNN)     | Instance-based; no training phase; sensitive to scale                | Small datasets; non-linear boundaries; interpretable locally            |
-| Support Vector Machine (SVM)  | Maximum-margin classifier; kernel trick for non-linearity            | High-dimensional spaces; small-to-medium datasets; text/image           |
-| Decision Tree                 | Hierarchical splits; interpretable; prone to overfitting             | Rule extraction; interpretability requirement; feature interaction      |
-| Random Forest                 | Ensemble of decorrelated trees; robust; handles missing values       | General-purpose; feature importance; tabular data at moderate scale     |
-| XGBoost / LightGBM / CatBoost | Gradient boosting ensembles; state-of-the-art on tabular data        | Production tabular classification — see GBM Selection Guide (Section 2) |
+| Algorithm | Key Characteristics | When to Use |
+|---|---|---|
+| Logistic Regression | Linear decision boundary; probabilistic output; L1/L2 regularization | Baseline for binary/multiclass; interpretable; sparse features |
+| Naive Bayes | Assumes feature independence; fast; works well at small n | Text classification, NLP, high-dimensional sparse data |
+| K-Nearest Neighbors (KNN) | Instance-based; no training phase; sensitive to scale | Small datasets; non-linear boundaries; interpretable locally |
+| Support Vector Machine (SVM) | Maximum-margin classifier; kernel trick for non-linearity | High-dimensional spaces; small-to-medium datasets; text/image |
+| Decision Tree | Hierarchical splits; interpretable; prone to overfitting | Rule extraction; interpretability requirement; feature interaction |
+| Random Forest | Ensemble of decorrelated trees; robust; handles missing values | General-purpose; feature importance; tabular data at moderate scale |
+| XGBoost / LightGBM / CatBoost | Gradient boosting ensembles; state-of-the-art on tabular data | Production tabular classification — see GBM Selection Guide (Section 2) |
 
 #### Regression — predicting continuous values
 
-| Algorithm                     | Key Characteristics                                    | When to Use                                                  |
-| ----------------------------- | ------------------------------------------------------ | ------------------------------------------------------------ |
-| Simple Linear Regression      | Single predictor; OLS closed-form solution             | Baseline; interpretable; linearity assumption holds          |
-| Multiple Linear Regression    | Multiple predictors; OLS; assumes no multicollinearity | Linear relationships; low-dimensional; inference required    |
-| Ridge Regression (L2)         | Shrinks all coefficients; handles multicollinearity    | Many correlated features; all features likely relevant       |
-| Lasso Regression (L1)         | Sparse solution; performs feature selection            | Many features; expect only a subset to be predictive         |
-| Elastic Net                   | L1 + L2 combined; balances sparsity and grouping       | Correlated features + sparsity needed simultaneously         |
-| XGBoost / LightGBM / CatBoost | Gradient boosting for regression; non-linear; robust   | Non-linear relationships; tabular data; production pipelines |
+| Algorithm | Key Characteristics | When to Use |
+|---|---|---|
+| Simple Linear Regression | Single predictor; OLS closed-form solution | Baseline; interpretable; linearity assumption holds |
+| Multiple Linear Regression | Multiple predictors; OLS; assumes no multicollinearity | Linear relationships; low-dimensional; inference required |
+| Ridge Regression (L2) | Shrinks all coefficients; handles multicollinearity | Many correlated features; all features likely relevant |
+| Lasso Regression (L1) | Sparse solution; performs feature selection | Many features; expect only a subset to be predictive |
+| Elastic Net | L1 + L2 combined; balances sparsity and grouping | Correlated features + sparsity needed simultaneously |
+| XGBoost / LightGBM / CatBoost | Gradient boosting for regression; non-linear; robust | Non-linear relationships; tabular data; production pipelines |
 
 ### 1.2 Unsupervised Learning
 
@@ -299,19 +297,19 @@ structure, patterns, or compact representations.
 
 #### Clustering — grouping similar observations
 
-| Algorithm                     | Key Characteristics                                                | When to Use                                                           |
-| ----------------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------- |
-| K-Means                       | Centroid-based; assumes spherical clusters; requires k             | Well-separated, roughly equal-sized clusters; large datasets          |
-| DBSCAN                        | Density-based; finds arbitrary shapes; detects noise/outliers      | Irregular cluster shapes; unknown number of clusters; spatial data    |
-| Hierarchical Clustering       | Builds a dendrogram; no k required; deterministic                  | Small datasets; cluster hierarchy matters; interpretability needed    |
+| Algorithm | Key Characteristics | When to Use |
+|---|---|---|
+| K-Means | Centroid-based; assumes spherical clusters; requires k | Well-separated, roughly equal-sized clusters; large datasets |
+| DBSCAN | Density-based; finds arbitrary shapes; detects noise/outliers | Irregular cluster shapes; unknown number of clusters; spatial data |
+| Hierarchical Clustering | Builds a dendrogram; no k required; deterministic | Small datasets; cluster hierarchy matters; interpretability needed |
 | Gaussian Mixture Models (GMM) | Probabilistic; soft assignments; fits K Gaussian components via EM | Overlapping or elliptical clusters; probabilistic membership required |
 
 ##### Gaussian Mixture Models (GMM) — Extended Reference
 
-> **References**: McLachlan, G., & Peel, D. (2000). _Finite Mixture Models_. Wiley.
-> Bishop, C. M. (2006). _Pattern Recognition and Machine Learning_ (Ch. 9). Springer.
+> **References**: McLachlan, G., & Peel, D. (2000). *Finite Mixture Models*. Wiley.
+> Bishop, C. M. (2006). *Pattern Recognition and Machine Learning* (Ch. 9). Springer.
 > Dempster, A. P., Laird, N. M., & Rubin, D. B. (1977). Maximum Likelihood from Incomplete
-> Data via the EM Algorithm. _Journal of the Royal Statistical Society_, Series B, 39(1), 1–38.
+> Data via the EM Algorithm. *Journal of the Royal Statistical Society*, Series B, 39(1), 1–38.
 
 A GMM assumes observed data is generated from a mixture of K Gaussian distributions,
 each with its own mean vector μ_k, covariance matrix Σ_k, and mixing weight π_k
@@ -334,15 +332,15 @@ initializations (n_init) and retain the solution with the highest log-likelihood
 
 **GMM vs. K-Means — decision criteria:**
 
-| Dimension                     | K-Means                          | GMM                                           |
-| ----------------------------- | -------------------------------- | --------------------------------------------- |
-| Cluster shape                 | Spherical (equal-radius Voronoi) | Elliptical (arbitrary covariance)             |
-| Assignment                    | Hard (one cluster per point)     | Soft (probability distribution over clusters) |
-| Output                        | Cluster labels                   | Posterior probabilities per component         |
-| Interpretability              | Simple centroid                  | Full density model (mean + covariance)        |
-| Sensitivity to initialization | High                             | High (use n_init > 1)                         |
-| Outlier handling              | Sensitive                        | Sensitive — consider DBSCAN for noisy data    |
-| Computational cost            | Low                              | Higher (EM iterations)                        |
+| Dimension | K-Means | GMM |
+|---|---|---|
+| Cluster shape | Spherical (equal-radius Voronoi) | Elliptical (arbitrary covariance) |
+| Assignment | Hard (one cluster per point) | Soft (probability distribution over clusters) |
+| Output | Cluster labels | Posterior probabilities per component |
+| Interpretability | Simple centroid | Full density model (mean + covariance) |
+| Sensitivity to initialization | High | High (use n_init > 1) |
+| Outlier handling | Sensitive | Sensitive — consider DBSCAN for noisy data |
+| Computational cost | Low | Higher (EM iterations) |
 
 **Component selection with AIC and BIC:**
 The number of components K is a hyperparameter. Selecting K by visual inspection
@@ -512,12 +510,12 @@ def score_gmm_anomalies(
 
 **Covariance type selection guide:**
 
-| Type          | Structure                                                       | Parameters                    | When to Use                                                                               |
-| ------------- | --------------------------------------------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------- |
-| `'full'`      | Each component has its own unrestricted covariance matrix       | Most — scales as O(K \* d²)   | Default; use when clusters may have different shapes, orientations, and sizes             |
-| `'tied'`      | All components share one covariance matrix                      | Fewest — one matrix for all K | Use when you expect clusters of similar shape but different locations                     |
-| `'diag'`      | Each component has a diagonal covariance (independent features) | Moderate                      | Use when features are approximately independent after standardization; faster than 'full' |
-| `'spherical'` | Each component has a single scalar variance (isotropic)         | Fewest per component          | Equivalent to soft K-Means; use only when clusters are approximately spherical            |
+| Type | Structure | Parameters | When to Use |
+|---|---|---|---|
+| `'full'` | Each component has its own unrestricted covariance matrix | Most — scales as O(K * d²) | Default; use when clusters may have different shapes, orientations, and sizes |
+| `'tied'` | All components share one covariance matrix | Fewest — one matrix for all K | Use when you expect clusters of similar shape but different locations |
+| `'diag'` | Each component has a diagonal covariance (independent features) | Moderate | Use when features are approximately independent after standardization; faster than 'full' |
+| `'spherical'` | Each component has a single scalar variance (isotropic) | Fewest per component | Equivalent to soft K-Means; use only when clusters are approximately spherical |
 
 Rule: start with `'full'` for maximum flexibility. If data is high-dimensional (d > 20),
 prefer `'diag'` or `'tied'` — full covariance estimation becomes unreliable as d grows
@@ -592,41 +590,43 @@ def pca_gmm_pipeline(
   - High dimensionality degrades covariance estimation — apply PCA before GMM when d > 20
   - K must be specified — use BIC for selection; domain knowledge to validate
 
+
+
 #### Dimensionality Reduction — compressing feature space
 
-| Algorithm                            | Key Characteristics                                        | When to Use                                                           |
-| ------------------------------------ | ---------------------------------------------------------- | --------------------------------------------------------------------- |
-| Principal Component Analysis (PCA)   | Linear; maximizes variance; orthogonal components          | High-dimensional tabular data; preprocessing before ML; visualization |
-| Independent Component Analysis (ICA) | Finds statistically independent components; non-Gaussian   | Signal separation (e.g., EEG, audio); latent source recovery          |
-| t-SNE                                | Non-linear; 2D/3D visualization; preserves local structure | Visualization only — not suitable as a preprocessing step for ML      |
-| UMAP                                 | Non-linear; faster than t-SNE; better global structure     | Visualization + preprocessing; large datasets; cluster inspection     |
+| Algorithm | Key Characteristics | When to Use |
+|---|---|---|
+| Principal Component Analysis (PCA) | Linear; maximizes variance; orthogonal components | High-dimensional tabular data; preprocessing before ML; visualization |
+| Independent Component Analysis (ICA) | Finds statistically independent components; non-Gaussian | Signal separation (e.g., EEG, audio); latent source recovery |
+| t-SNE | Non-linear; 2D/3D visualization; preserves local structure | Visualization only — not suitable as a preprocessing step for ML |
+| UMAP | Non-linear; faster than t-SNE; better global structure | Visualization + preprocessing; large datasets; cluster inspection |
 
 #### Association Rule Mining — finding co-occurrence patterns
 
-| Algorithm | Key Characteristics                                      | When to Use                                            |
-| --------- | -------------------------------------------------------- | ------------------------------------------------------ |
-| Apriori   | Breadth-first search; generates candidate itemsets       | Small-to-medium item sets; market basket analysis      |
+| Algorithm | Key Characteristics | When to Use |
+|---|---|---|
+| Apriori | Breadth-first search; generates candidate itemsets | Small-to-medium item sets; market basket analysis |
 | FP-Growth | Tree-based; no candidate generation; faster than Apriori | Large transaction datasets; scales better than Apriori |
 
 #### Anomaly Detection — identifying unusual observations
 
-| Algorithm                  | Key Characteristics                                                      | When to Use                                                                       |
-| -------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
-| Z-score                    | Univariate; assumes normality; flags points beyond N standard deviations | Simple univariate outlier detection; normally distributed features                |
-| Isolation Forest           | Ensemble of random trees; model-free; scales well                        | Multivariate anomaly detection; high-dimensional data; no distribution assumption |
-| Local Outlier Factor (LOF) | Density-based; detects local anomalies                                   | Anomalies in regions of varying density; spatial data                             |
-| One-Class SVM              | Boundary-based; trained on normal class only                             | When only normal examples are available during training                           |
+| Algorithm | Key Characteristics | When to Use |
+|---|---|---|
+| Z-score | Univariate; assumes normality; flags points beyond N standard deviations | Simple univariate outlier detection; normally distributed features |
+| Isolation Forest | Ensemble of random trees; model-free; scales well | Multivariate anomaly detection; high-dimensional data; no distribution assumption |
+| Local Outlier Factor (LOF) | Density-based; detects local anomalies | Anomalies in regions of varying density; spatial data |
+| One-Class SVM | Boundary-based; trained on normal class only | When only normal examples are available during training |
 
 ### 1.3 Semi-Supervised Learning
 
 Semi-supervised learning uses a small labeled dataset combined with a large unlabeled
 dataset. Applicable when labeling is expensive or time-consuming.
 
-| Algorithm         | Task           | Key Characteristics                                                                                              | When to Use                                                                     |
-| ----------------- | -------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Self-Training     | Classification | Trains on labeled data; iteratively labels high-confidence unlabeled examples                                    | Simple baseline; any classifier can be wrapped                                  |
-| Co-Training       | Classification | Two classifiers trained on two independent feature views; each labels data for the other (Blum & Mitchell, 1998) | Natural feature splits exist (e.g., text + metadata); redundant views available |
-| Label Propagation | Classification | Graph-based; propagates labels through similarity graph                                                          | Graph-structured data; local cluster assumption holds                           |
+| Algorithm | Task | Key Characteristics | When to Use |
+|---|---|---|---|
+| Self-Training | Classification | Trains on labeled data; iteratively labels high-confidence unlabeled examples | Simple baseline; any classifier can be wrapped |
+| Co-Training | Classification | Two classifiers trained on two independent feature views; each labels data for the other (Blum & Mitchell, 1998) | Natural feature splits exist (e.g., text + metadata); redundant views available |
+| Label Propagation | Classification | Graph-based; propagates labels through similarity graph | Graph-structured data; local cluster assumption holds |
 
 Note: Co-Training is a classification method — not a regression technique. Its
 theoretical guarantee requires two conditionally independent, sufficient feature views.
@@ -636,11 +636,11 @@ theoretical guarantee requires two conditionally independent, sufficient feature
 Reinforcement learning trains an agent to take actions in an environment to maximize
 cumulative reward. No labeled dataset — the signal comes from environmental feedback.
 
-| Paradigm                         | Algorithm                             | Key Characteristics                                             | When to Use                                                         |
-| -------------------------------- | ------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Model-Free / Policy Optimization | Policy Gradient (REINFORCE, PPO, A3C) | Directly optimizes the policy; handles continuous action spaces | Robotics, game playing, continuous control                          |
-| Model-Free / Value-Based         | Q-Learning, Deep Q-Network (DQN)      | Learns a value function; off-policy; discrete action spaces     | Game playing (Atari); discrete decision problems                    |
-| Model-Based                      | World Model + Planner                 | Learns environment dynamics; uses model for planning            | Data-efficient learning; environments where simulation is available |
+| Paradigm | Algorithm | Key Characteristics | When to Use |
+|---|---|---|---|
+| Model-Free / Policy Optimization | Policy Gradient (REINFORCE, PPO, A3C) | Directly optimizes the policy; handles continuous action spaces | Robotics, game playing, continuous control |
+| Model-Free / Value-Based | Q-Learning, Deep Q-Network (DQN) | Learns a value function; off-policy; discrete action spaces | Game playing (Atari); discrete decision problems |
+| Model-Based | World Model + Planner | Learns environment dynamics; uses model for planning | Data-efficient learning; environments where simulation is available |
 
 ### 1.5 Deep Learning Architecture Selection by Data Geometry
 
@@ -652,13 +652,13 @@ When the data has geometric structure, architecture selection must start from th
 data shape. Bronstein et al. (2021) unify CNN, RNN, Transformer, and GNN under a
 single framework: each architecture exploits a specific symmetry group of its data domain.
 
-| Data structure                             | Symmetry                            | Architecture                        | Task examples                                                |
-| ------------------------------------------ | ----------------------------------- | ----------------------------------- | ------------------------------------------------------------ |
-| Regular spatial grid (images, video)       | Translation equivariance            | CNN                                 | Object detection, medical imaging, satellite imagery         |
-| Ordered sequence (short-to-medium)         | Time-shift equivariance             | RNN / LSTM                          | Time series, IoT sensors, short NLP                          |
-| Sequence with long-range dependencies      | Global permutation equivariance     | Transformer                         | Language, code generation, summarization                     |
-| Graph — nodes + edges (arbitrary topology) | Neighborhood permutation invariance | GNN                                 | Molecules, fraud detection, recommendation, knowledge graphs |
-| Tabular — no geometric structure           | None                                | GBM (XGBoost / LightGBM / CatBoost) | Business analytics, structured datasets                      |
+| Data structure | Symmetry | Architecture | Task examples |
+|---|---|---|---|
+| Regular spatial grid (images, video) | Translation equivariance | CNN | Object detection, medical imaging, satellite imagery |
+| Ordered sequence (short-to-medium) | Time-shift equivariance | RNN / LSTM | Time series, IoT sensors, short NLP |
+| Sequence with long-range dependencies | Global permutation equivariance | Transformer | Language, code generation, summarization |
+| Graph — nodes + edges (arbitrary topology) | Neighborhood permutation invariance | GNN | Molecules, fraud detection, recommendation, knowledge graphs |
+| Tabular — no geometric structure | None | GBM (XGBoost / LightGBM / CatBoost) | Business analytics, structured datasets |
 
 **GNN is the correct architecture only when**: the data is explicitly structured as a
 graph (V nodes, E edges) and the connectivity pattern carries predictive signal beyond
@@ -699,38 +699,94 @@ Apply this as Step 1 of the Workflow Decision Logic defined in SKILL.md:
    See Section 3 (GBM Selection Guide) for detailed criteria.
 ```
 
+
+
 ---
 
 ## 3. Gradient Boosting Selection Guide — XGBoost vs LightGBM vs CatBoost {#gbm-guide}
 
-> **Scientific basis**: Gradient Boosting was formalized by Friedman (2001). Modern
-> implementations (XGBoost, LightGBM, CatBoost) dominate tabular ML.
-> Grinsztajn et al. (2022) — _"Why tree-based models still outperform deep learning
-> on tabular data"_ — empirically confirms that tree-based models are the default
+> **Scientific basis**: Gradient Boosting was formalized by Friedman (2001).
+> *Greedy Function Approximation: A Gradient Boosting Machine*. *Annals of Statistics*, 29(5).
+> Grinsztajn et al. (2022) empirically confirms tree-based models as the default
 > state-of-the-art for structured/tabular problems. Always benchmark all three
 > before considering neural networks on tabular data.
 
+### How Gradient Boosting Works — Theoretical Process
+
+Gradient Boosting builds an ensemble of weak learners (typically shallow decision
+trees) in a sequential, additive fashion. Each new tree is trained to correct the
+**residual errors** of the current ensemble — not to predict the target directly.
+This is functional gradient descent: instead of moving parameters in gradient space,
+we move the prediction function itself in the direction that most reduces the loss.
+
+**Formal algorithm (Friedman, 2001)**:
+
+```
+Initialize: F₀(x) = argmin_γ Σᵢ L(yᵢ, γ)
+            (e.g., for MSE: F₀(x) = mean(y))
+
+For t = 1, 2, ..., T:
+
+  Step 1 — Compute pseudo-residuals (negative gradient of the loss):
+    rᵢₜ = −[∂L(yᵢ, F(xᵢ)) / ∂F(xᵢ)]_{F=Fₜ₋₁}
+
+    For MSE loss: rᵢₜ = yᵢ − Fₜ₋₁(xᵢ)   (true residuals)
+    For log-loss: rᵢₜ = yᵢ − σ(Fₜ₋₁(xᵢ))  (residuals in probability space)
+
+  Step 2 — Fit a weak learner hₜ to the pseudo-residuals:
+    hₜ = argmin_h Σᵢ (rᵢₜ − h(xᵢ))²
+
+  Step 3 — Find optimal step size via line search:
+    γₜ = argmin_γ Σᵢ L(yᵢ, Fₜ₋₁(xᵢ) + γ hₜ(xᵢ))
+
+  Step 4 — Update the ensemble:
+    Fₜ(x) = Fₜ₋₁(x) + η γₜ hₜ(x)
+
+    where η ∈ (0,1] is the learning rate (shrinkage parameter)
+
+Output: F_T(x) = F₀(x) + Σₜ₌₁ᵀ η γₜ hₜ(x)
+```
+
+**Why it works**: each tree hₜ is a local approximation to the negative gradient
+of the loss — the direction in function space that most reduces error. Summing many
+such corrections progressively minimizes the loss, similar to how gradient descent
+navigates a parameter landscape, but operating on the prediction function itself.
+
+**The learning rate η** controls the contribution of each tree. Small η requires
+more trees (higher T) but generalizes better — the standard tradeoff. Common
+practice: η ∈ [0.01, 0.1] with T ∈ [100, 10,000].
+
+### Real-World Applications by Domain
+
+| Domain | Task | Why GBM Excels |
+|---|---|---|
+| **Financial / Fraud Detection** | Binary classification of fraudulent transactions | Handles class imbalance via scale_pos_weight; models non-linear spending patterns; fast inference for real-time scoring |
+| **Credit Risk** | Probability of default estimation | Regulated industry requires explainability (SHAP); handles mixed numeric + categorical features; monotonicity constraints enforce regulatory requirements |
+| **Healthcare / Biostatistics** | Disease prediction, readmission risk | Robust to missing data; handles heterogeneous feature types (labs, demographics, diagnoses); SHAP enables clinical interpretability |
+| **Retail / Demand Forecasting** | Sales volume regression | Models promotions, holidays, and seasonal interactions without explicit feature engineering |
+| **Marketing / Churn Prediction** | Customer retention classification | High-cardinality categoricals (product IDs, campaign codes) handled natively by CatBoost |
+| **Recommendation / Ranking** | LambdaRank objective (LightGBM) | Optimizes ranking metrics (NDCG, MAP) directly; scales to millions of items |
+
 ### Framework Comparison Matrix
 
-| Dimension                | XGBoost                  | LightGBM                         | CatBoost                            |
-| ------------------------ | ------------------------ | -------------------------------- | ----------------------------------- |
-| **Authors**              | Chen & Guestrin, 2016    | Microsoft / Ke et al., 2017      | Yandex / Prokhorenkova et al., 2018 |
-| **Tree growth**          | Level-wise (depth-first) | Leaf-wise (best-first)           | Symmetric (oblivious) trees         |
-| **Training speed**       | Moderate                 | ⚡ Fastest                       | Moderate–Slow (more epochs)         |
-| **Memory usage**         | Moderate                 | Low                              | Moderate                            |
-| **Categorical features** | Manual encoding required | Manual encoding required         | ✅ Native, no encoding needed       |
-| **Data leakage risk**    | Standard                 | Standard                         | ✅ Reduced via ordered boosting     |
-| **Regularization**       | L1 + L2                  | L1 + L2                          | Built-in + ordered boosting         |
-| **Overfitting control**  | Strong                   | Good (needs careful leaf tuning) | Strong                              |
-| **GPU support**          | ✅ Yes                   | ✅ Yes                           | ✅ Yes (optimized)                  |
-| **SHAP integration**     | ✅ Native                | ✅ Native                        | ✅ Native (highly optimized)        |
-| **Kaggle dominance**     | ✅ Very strong           | ✅ Very strong                   | Moderate                            |
-| **Production maturity**  | ✅ Excellent             | ✅ Excellent                     | ✅ Good                             |
+| Dimension | XGBoost | LightGBM | CatBoost |
+|---|---|---|---|
+| **Authors** | Chen & Guestrin, 2016 | Microsoft / Ke et al., 2017 | Yandex / Prokhorenkova et al., 2018 |
+| **Tree growth** | Level-wise (depth-first) | Leaf-wise (best-first) | Symmetric (oblivious) trees |
+| **Training speed** | Moderate | ⚡ Fastest | Moderate–Slow (more epochs) |
+| **Memory usage** | Moderate | Low | Moderate |
+| **Categorical features** | Manual encoding required | Manual encoding required | ✅ Native, no encoding needed |
+| **Data leakage risk** | Standard | Standard | ✅ Reduced via ordered boosting |
+| **Regularization** | L1 + L2 | L1 + L2 | Built-in + ordered boosting |
+| **Overfitting control** | Strong | Good (needs careful leaf tuning) | Strong |
+| **GPU support** | ✅ Yes | ✅ Yes | ✅ Yes (optimized) |
+| **SHAP integration** | ✅ Native | ✅ Native | ✅ Native (highly optimized) |
+| **Kaggle dominance** | ✅ Very strong | ✅ Very strong | Moderate |
+| **Production maturity** | ✅ Excellent | ✅ Excellent | ✅ Good |
 
 ### Decision Criteria — When to Use Each
 
 **Use XGBoost when:**
-
 - You need a robust, well-regularized baseline on any structured dataset
 - The dataset is moderate size (up to ~10M rows with standard hardware)
 - You want the most battle-tested, widely supported gradient boosting library
@@ -738,7 +794,6 @@ Apply this as Step 1 of the Workflow Decision Logic defined in SKILL.md:
 - You are competing in Kaggle or benchmarking against literature
 
 **Use LightGBM when:**
-
 - Training speed is a hard constraint (large datasets, frequent retraining, production pipelines)
 - Dataset exceeds tens of millions of rows — LightGBM's histogram-based algorithm handles this efficiently
 - Memory is constrained — LightGBM uses significantly less RAM than XGBoost at scale
@@ -746,7 +801,6 @@ Apply this as Step 1 of the Workflow Decision Logic defined in SKILL.md:
 - You need fast hyperparameter search across many iterations
 
 **Use CatBoost when:**
-
 - The dataset contains many high-cardinality categorical features (e.g., user IDs, product codes, geographic codes)
 - You want to eliminate manual encoding pipelines (`OrdinalEncoder`, `OneHotEncoder`, `TargetEncoder`) entirely
 - Reducing data leakage risk is a priority — CatBoost's ordered boosting computes target statistics in a way that prevents the target leakage common in naive target encoding
@@ -1091,25 +1145,21 @@ def shap_summary(model, X_train, X_test=None, model_type: str = "tree") -> None:
 Before finalizing any model evaluation, verify:
 
 **Data Leakage**
-
 - [ ] No target-derived features in the feature set
 - [ ] Train/test split performed BEFORE any preprocessing fitted on training data only
 - [ ] No temporal leakage in time series (always use walk-forward validation)
 
 **Class Imbalance**
-
 - [ ] Check class distribution in train and test sets
 - [ ] Report precision, recall, F1 per class — not just accuracy
 - [ ] Consider SMOTE, class weighting, or threshold tuning if imbalanced
 
 **Statistical Validity**
-
 - [ ] Cross-validation strategy matches problem type (Stratified K-Fold for classification)
 - [ ] Report confidence intervals on key metrics (use bootstrap if needed)
 - [ ] Perform paired statistical tests when comparing models (Wilcoxon signed-rank)
 
 **Business Interpretation**
-
 - [ ] Translate metrics into business impact (cost of false positives vs. false negatives)
 - [ ] Document model limitations and failure modes
 - [ ] Specify monitoring strategy for production deployment

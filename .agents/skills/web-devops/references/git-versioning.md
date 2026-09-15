@@ -24,7 +24,6 @@ main ─────────────────────────
 ```
 
 **Rules:**
-
 - `main` is always deployable — every commit on `main` must pass CI
 - All work happens on short-lived feature branches cut from `main`
 - Branches are merged via Pull Request only — never push directly to `main`
@@ -73,7 +72,6 @@ release/v2.1.0
 ```
 
 **Rules:**
-
 - Lowercase only
 - Hyphens as word separators — no underscores, no spaces
 - Include ticket/issue ID when applicable
@@ -100,32 +98,30 @@ follow this format exactly.
 
 ### Type Reference
 
-| Type       | Purpose                                  | Triggers semver bump |
-| ---------- | ---------------------------------------- | -------------------- |
-| `feat`     | New feature visible to users             | `MINOR`              |
-| `fix`      | Bug fix visible to users                 | `PATCH`              |
-| `perf`     | Performance improvement                  | `PATCH`              |
-| `refactor` | Code change with no feature/fix          | none                 |
-| `docs`     | Documentation only                       | none                 |
-| `test`     | Adding or correcting tests               | none                 |
-| `build`    | Build system or dependency changes       | none                 |
-| `ci`       | CI/CD configuration changes              | none                 |
-| `chore`    | Maintenance tasks, tooling               | none                 |
-| `style`    | Formatting, whitespace (no logic change) | none                 |
-| `revert`   | Reverts a previous commit                | depends              |
+| Type | Purpose | Triggers semver bump |
+|---|---|---|
+| `feat` | New feature visible to users | `MINOR` |
+| `fix` | Bug fix visible to users | `PATCH` |
+| `perf` | Performance improvement | `PATCH` |
+| `refactor` | Code change with no feature/fix | none |
+| `docs` | Documentation only | none |
+| `test` | Adding or correcting tests | none |
+| `build` | Build system or dependency changes | none |
+| `ci` | CI/CD configuration changes | none |
+| `chore` | Maintenance tasks, tooling | none |
+| `style` | Formatting, whitespace (no logic change) | none |
+| `revert` | Reverts a previous commit | depends |
 
 **Breaking change** (triggers `MAJOR` bump): add `!` after the type, or add `BREAKING CHANGE:` footer.
 
 ### Commit Message Examples
 
 **Simple feature:**
-
 ```
 feat(auth): add OAuth2 login with GitHub provider
 ```
 
 **Bug fix with scope:**
-
 ```
 fix(api): resolve null pointer exception in payment processing
 
@@ -136,7 +132,6 @@ Closes #108
 ```
 
 **Breaking change — method 1 (exclamation mark):**
-
 ```
 feat(api)!: replace REST endpoints with tRPC router
 
@@ -145,7 +140,6 @@ Clients must migrate to the tRPC client. See MIGRATION.md.
 ```
 
 **Breaking change — method 2 (footer):**
-
 ```
 refactor(db): migrate from Sequelize to Prisma ORM
 
@@ -154,7 +148,6 @@ Run `prisma migrate deploy` before starting the application.
 ```
 
 **Multiple footers:**
-
 ```
 fix(auth): invalidate all sessions on password change
 
@@ -170,7 +163,7 @@ Reviewed-by: @teammate
 - **Subject line:** imperative mood ("add", "fix", "remove" — not "added", "fixes", "removed")
 - **Subject line:** 72 characters maximum — no period at the end
 - **Subject line:** lowercase after the colon
-- **Body:** wrap at 100 characters per line; explain _what_ and _why_, not _how_
+- **Body:** wrap at 100 characters per line; explain *what* and *why*, not *how*
 - **Blank line** mandatory between subject and body
 - **Scope:** optional, lowercase, refers to the module/domain affected (`auth`, `api`, `db`, `ui`)
 - **Never** use vague messages: `wip`, `fix`, `update`, `changes`, `stuff` — these are rejected by commitlint
@@ -188,29 +181,17 @@ pnpm add -D @commitlint/cli @commitlint/config-conventional
 ```javascript
 // commitlint.config.js
 export default {
-  extends: ['@commitlint/config-conventional'],
+  extends: ["@commitlint/config-conventional"],
   rules: {
-    'subject-case': [2, 'always', 'lower-case'],
-    'subject-max-length': [2, 'always', 72],
-    'body-max-line-length': [2, 'always', 100],
-    'scope-case': [2, 'always', 'lower-case'],
+    "subject-case": [2, "always", "lower-case"],
+    "subject-max-length": [2, "always", 72],
+    "body-max-line-length": [2, "always", 100],
+    "scope-case": [2, "always", "lower-case"],
     // Enforce only allowed types
-    'type-enum': [
+    "type-enum": [
       2,
-      'always',
-      [
-        'feat',
-        'fix',
-        'perf',
-        'refactor',
-        'docs',
-        'test',
-        'build',
-        'ci',
-        'chore',
-        'style',
-        'revert',
-      ],
+      "always",
+      ["feat", "fix", "perf", "refactor", "docs", "test", "build", "ci", "chore", "style", "revert"],
     ],
   },
 };
@@ -236,9 +217,9 @@ pnpm exec lint-staged
 ```javascript
 // lint-staged.config.js
 export default {
-  '*.{ts,tsx,js,jsx}': ['eslint --fix', 'prettier --write'],
-  '*.{json,md,yaml,yml}': ['prettier --write'],
-  '*.py': ['ruff check --fix', 'ruff format'],
+  "*.{ts,tsx,js,jsx}": ["eslint --fix", "prettier --write"],
+  "*.{json,md,yaml,yml}": ["prettier --write"],
+  "*.py": ["ruff check --fix", "ruff format"],
 };
 ```
 
@@ -287,14 +268,13 @@ MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]
   2   . 4  .  1  -   rc.1
 ```
 
-| Segment | Increment when...                                   | Example          |
-| ------- | --------------------------------------------------- | ---------------- |
-| `MAJOR` | Breaking change — existing API consumers must adapt | `1.9.2 → 2.0.0`  |
-| `MINOR` | New feature, fully backward-compatible              | `1.9.2 → 1.10.0` |
-| `PATCH` | Bug fix, backward-compatible                        | `1.9.2 → 1.9.3`  |
+| Segment | Increment when... | Example |
+|---|---|---|
+| `MAJOR` | Breaking change — existing API consumers must adapt | `1.9.2 → 2.0.0` |
+| `MINOR` | New feature, fully backward-compatible | `1.9.2 → 1.10.0` |
+| `PATCH` | Bug fix, backward-compatible | `1.9.2 → 1.9.3` |
 
 **Pre-release identifiers (in order of maturity):**
-
 ```
 v2.0.0-alpha.1   → internal, unstable, not for public use
 v2.0.0-beta.1    → public testing, API may still change
@@ -303,7 +283,6 @@ v2.0.0            → stable release
 ```
 
 **Rules:**
-
 - `MAJOR` resets `MINOR` and `PATCH` to zero: `1.9.2 → 2.0.0`
 - `MINOR` resets `PATCH` to zero: `1.9.2 → 1.10.0`
 - `0.y.z` signals initial development — anything may change at any time
@@ -375,19 +354,16 @@ pnpm add -D semantic-release \
 ```javascript
 // release.config.js
 export default {
-  branches: ['main'],
+  branches: ["main"],
   plugins: [
-    '@semantic-release/commit-analyzer', // determines version bump from commits
-    '@semantic-release/release-notes-generator', // generates changelog content
-    ['@semantic-release/changelog', { changelogFile: 'CHANGELOG.md' }],
-    '@semantic-release/github', // creates GitHub Release
-    [
-      '@semantic-release/git',
-      {
-        assets: ['CHANGELOG.md', 'package.json'],
-        message: 'chore(release): ${nextRelease.version} [skip ci]',
-      },
-    ],
+    "@semantic-release/commit-analyzer",           // determines version bump from commits
+    "@semantic-release/release-notes-generator",   // generates changelog content
+    ["@semantic-release/changelog", { changelogFile: "CHANGELOG.md" }],
+    "@semantic-release/github",                    // creates GitHub Release
+    ["@semantic-release/git", {
+      assets: ["CHANGELOG.md", "package.json"],
+      message: "chore(release): ${nextRelease.version} [skip ci]",
+    }],
   ],
 };
 ```
@@ -447,7 +423,7 @@ jobs:
       - uses: googleapis/release-please-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          release-type: node # or: python, go, rust, etc.
+          release-type: node  # or: python, go, rust, etc.
 ```
 
 **How it works:** every push to `main` → `release-please` updates a "Release PR" with the
@@ -463,7 +439,6 @@ pnpm exec changeset init
 ```
 
 **Developer workflow:**
-
 ```bash
 # After making changes to one or more packages:
 pnpm exec changeset
@@ -477,11 +452,11 @@ pnpm exec changeset publish   # publishes to npm
 
 **Comparison:**
 
-| Tool               | Best for                  | Versioning trigger             | Manual control         |
-| ------------------ | ------------------------- | ------------------------------ | ---------------------- |
-| `semantic-release` | Single packages, CI-first | Automatic on push              | None — fully automated |
-| `release-please`   | Single packages, PR-based | Automatic, release on PR merge | When to merge          |
-| `changesets`       | Monorepos                 | Manual changeset files         | Full                   |
+| Tool | Best for | Versioning trigger | Manual control |
+|---|---|---|---|
+| `semantic-release` | Single packages, CI-first | Automatic on push | None — fully automated |
+| `release-please` | Single packages, PR-based | Automatic, release on PR merge | When to merge |
+| `changesets` | Monorepos | Manual changeset files | Full |
 
 ---
 
@@ -521,7 +496,6 @@ jobs:
 
 ```markdown
 <!-- .github/pull_request_template.md -->
-
 ## What does this PR do?
 
 <!-- One paragraph: what problem does it solve, what was changed, and why. -->
@@ -552,12 +526,12 @@ jobs:
 
 ### PR Size Guidelines
 
-| Lines changed | Assessment                                                |
-| ------------- | --------------------------------------------------------- |
-| < 200         | Ideal — fast to review, easy to reason about              |
-| 200–500       | Acceptable with clear scope                               |
-| 500–1000      | Requires strong justification (e.g., migration, scaffold) |
-| > 1000        | Split into smaller PRs unless physically impossible       |
+| Lines changed | Assessment |
+|---|---|
+| < 200 | Ideal — fast to review, easy to reason about |
+| 200–500 | Acceptable with clear scope |
+| 500–1000 | Requires strong justification (e.g., migration, scaffold) |
+| > 1000 | Split into smaller PRs unless physically impossible |
 
 Large PRs accumulate more bugs, take longer to review, and are harder to revert.
 
@@ -578,7 +552,6 @@ git rebase -i origin/main
 ```
 
 In the editor:
-
 ```
 pick abc1234 feat(auth): scaffold OAuth module
 squash def5678 wip: OAuth almost working
@@ -586,13 +559,13 @@ squash ghi9012 fix typo
 reword jkl3456 add token refresh logic
 ```
 
-| Command  | Effect                                           |
-| -------- | ------------------------------------------------ |
-| `pick`   | Keep commit as-is                                |
-| `reword` | Keep commit, edit the message                    |
-| `squash` | Merge into previous commit, combine messages     |
-| `fixup`  | Merge into previous commit, discard this message |
-| `drop`   | Remove the commit entirely                       |
+| Command | Effect |
+|---|---|
+| `pick` | Keep commit as-is |
+| `reword` | Keep commit, edit the message |
+| `squash` | Merge into previous commit, combine messages |
+| `fixup` | Merge into previous commit, discard this message |
+| `drop` | Remove the commit entirely |
 
 **Rule:** never rebase commits that have been pushed to a shared remote branch. Rebase is for
 local cleanup before the PR is opened.
@@ -656,7 +629,7 @@ src/components/     @org/frontend-team
 # .github/ISSUE_TEMPLATE/bug_report.yml
 name: Bug Report
 description: Report a reproducible bug
-labels: ['bug', 'triage']
+labels: ["bug", "triage"]
 body:
   - type: textarea
     id: description

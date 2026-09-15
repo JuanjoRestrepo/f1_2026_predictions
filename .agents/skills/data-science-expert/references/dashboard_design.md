@@ -23,27 +23,27 @@
 ## 1. Foundational Principles — Perceptual Hierarchy {#perception}
 
 > **Primary reference**: Cleveland, W. S., & McGill, R. (1985). Graphical perception and
-> graphical methods for analyzing scientific data. _Science_, 229(4716), 828–833.
+> graphical methods for analyzing scientific data. *Science*, 229(4716), 828–833.
 
 The human visual system does not perceive all chart encodings with equal accuracy.
 Cleveland and McGill (1985) established the following hierarchy from most accurate
 (easiest to decode) to least accurate (most error-prone):
 
-| Rank               | Encoding                           | Typical Chart Type                   |
-| ------------------ | ---------------------------------- | ------------------------------------ |
-| 1 (most accurate)  | Position along a common scale      | Bar chart, scatter plot              |
-| 2                  | Position along a non-aligned scale | Multiple bar charts, small multiples |
-| 3                  | Length                             | Bar chart (unstacked)                |
-| 4                  | Angle and slope                    | Pie chart, line chart                |
-| 5                  | Area                               | Bubble chart, treemap                |
-| 6                  | Volume, density, color saturation  | 3D charts, choropleth maps           |
-| 7 (least accurate) | Color hue                          | Categorical color encoding           |
+| Rank | Encoding | Typical Chart Type |
+|---|---|---|
+| 1 (most accurate) | Position along a common scale | Bar chart, scatter plot |
+| 2 | Position along a non-aligned scale | Multiple bar charts, small multiples |
+| 3 | Length | Bar chart (unstacked) |
+| 4 | Angle and slope | Pie chart, line chart |
+| 5 | Area | Bubble chart, treemap |
+| 6 | Volume, density, color saturation | 3D charts, choropleth maps |
+| 7 (least accurate) | Color hue | Categorical color encoding |
 
 **Practical implication**: A bar chart (rank 1–3) is always more perceptually accurate
 than a pie chart (rank 4) or bubble chart (rank 5) for comparing magnitudes. Default
 to the most accurate encoding that communicates the intended message.
 
-**Jacques Bertin's efficiency principle** (_Sémiologie Graphique_, 1967): An efficient
+**Jacques Bertin's efficiency principle** (*Sémiologie Graphique*, 1967): An efficient
 chart requires the shortest period of perception to obtain a correct and complete answer
 to a given question. Every design decision should reduce perception time, not add to it.
 
@@ -61,15 +61,15 @@ Before selecting any visual, answer these questions explicitly:
 
 **Audience-driven design rules:**
 
-| Audience                   | Design approach                                         | Chart complexity                       |
-| -------------------------- | ------------------------------------------------------- | -------------------------------------- |
-| Executive / C-suite        | KPIs dominant, one-screen, minimal drill-down           | Low — bars, lines, KPI cards           |
-| Operational managers       | Comparison to plan/prior period, trend lines, variances | Medium — bars with variance, waterfall |
-| Analysts / data scientists | Statistical distributions, drill-through, filters       | High — scatter, histogram, heatmap     |
-| Public / general audience  | Annotated, context-rich, limited color                  | Low-medium — bar, line, map            |
+| Audience | Design approach | Chart complexity |
+|---|---|---|
+| Executive / C-suite | KPIs dominant, one-screen, minimal drill-down | Low — bars, lines, KPI cards |
+| Operational managers | Comparison to plan/prior period, trend lines, variances | Medium — bars with variance, waterfall |
+| Analysts / data scientists | Statistical distributions, drill-through, filters | High — scatter, histogram, heatmap |
+| Public / general audience | Annotated, context-rich, limited color | Low-medium — bar, line, map |
 
-> **Reference**: Few, S. (2013). _Information Dashboard Design_ (2nd ed.). Analytics Press.
-> Alberto Cairo (2016). _The Truthful Art_. New Riders Press.
+> **Reference**: Few, S. (2013). *Information Dashboard Design* (2nd ed.). Analytics Press.
+> Alberto Cairo (2016). *The Truthful Art*. New Riders Press.
 
 ---
 
@@ -93,19 +93,19 @@ a horizontal bar chart.
 Determine the analytical task before selecting the chart. Ask: what does the reader
 need to know?
 
-| Analytical Task                         | Recommended Chart                                     | Avoid                               | Notes                                                          |
-| --------------------------------------- | ----------------------------------------------------- | ----------------------------------- | -------------------------------------------------------------- |
-| Compare magnitudes across categories    | Horizontal bar chart, ordered by value                | Pie chart, 3D chart                 | Sort descending unless natural order exists (e.g., age groups) |
-| Show trend over time (dense data)       | Line chart                                            | Bar chart                           | Lines show continuity; bars fragment it                        |
-| Show trend over time (few periods, < 8) | Column chart                                          | Line chart                          | Columns allow discrete period comparison                       |
-| Show part-to-whole composition          | Donut chart (< 6 categories) / Treemap (hierarchical) | 3D pie, stacked bar                 | Limit pie/donut to < 6 clearly distinct slices                 |
-| Show variance to plan / prior year      | Waterfall chart / integrated variance bar             | Clustered bar                       | Waterfall explains the "why" behind a net change               |
-| Show contribution to a total            | Waterfall chart                                       | Stacked bar                         | Waterfall preserves subtotals and hierarchy                    |
-| Show correlation between two metrics    | Scatter plot + trend line + r² annotation             | Dual-axis line                      | Always annotate with correlation statistic                     |
-| Show distribution of a measure          | Histogram / Box plot                                  | Bar chart                           | Use for quality control, outlier detection, normality check    |
-| Show progress against a goal            | Gauge / Bullet chart                                  | Donut used as gauge                 | Bullet chart (Few, 2006) is more space-efficient than gauge    |
-| Show geographic data                    | Map (filled / bubble)                                 | Bar chart for geographic comparison | Use bubble maps for magnitude; filled maps for rate/density    |
-| Compare many series simultaneously      | Small multiples (trellis)                             | Single overcrowded chart            | All panels must share the same scale                           |
+| Analytical Task | Recommended Chart | Avoid | Notes |
+|---|---|---|---|
+| Compare magnitudes across categories | Horizontal bar chart, ordered by value | Pie chart, 3D chart | Sort descending unless natural order exists (e.g., age groups) |
+| Show trend over time (dense data) | Line chart | Bar chart | Lines show continuity; bars fragment it |
+| Show trend over time (few periods, < 8) | Column chart | Line chart | Columns allow discrete period comparison |
+| Show part-to-whole composition | Donut chart (< 6 categories) / Treemap (hierarchical) | 3D pie, stacked bar | Limit pie/donut to < 6 clearly distinct slices |
+| Show variance to plan / prior year | Waterfall chart / integrated variance bar | Clustered bar | Waterfall explains the "why" behind a net change |
+| Show contribution to a total | Waterfall chart | Stacked bar | Waterfall preserves subtotals and hierarchy |
+| Show correlation between two metrics | Scatter plot + trend line + r² annotation | Dual-axis line | Always annotate with correlation statistic |
+| Show distribution of a measure | Histogram / Box plot | Bar chart | Use for quality control, outlier detection, normality check |
+| Show progress against a goal | Gauge / Bullet chart | Donut used as gauge | Bullet chart (Few, 2006) is more space-efficient than gauge |
+| Show geographic data | Map (filled / bubble) | Bar chart for geographic comparison | Use bubble maps for magnitude; filled maps for rate/density |
+| Compare many series simultaneously | Small multiples (trellis) | Single overcrowded chart | All panels must share the same scale |
 
 ### Chart type descriptions
 
@@ -150,11 +150,11 @@ produce false comparisons.
 
 Design every dashboard for three levels of reading attention:
 
-| Level       | Time budget   | Content                                   | Examples                             |
-| ----------- | ------------- | ----------------------------------------- | ------------------------------------ |
-| 3 seconds   | At-a-glance   | High-level KPIs, traffic light indicators | Revenue vs. target, MoM growth       |
-| 30 seconds  | Engaged scan  | Primary charts, trends, key comparisons   | Time series, variance analysis       |
-| 300 seconds | Deep analysis | Drill-through, detailed tables, filters   | Transaction-level data, segmentation |
+| Level | Time budget | Content | Examples |
+|---|---|---|---|
+| 3 seconds | At-a-glance | High-level KPIs, traffic light indicators | Revenue vs. target, MoM growth |
+| 30 seconds | Engaged scan | Primary charts, trends, key comparisons | Time series, variance analysis |
+| 300 seconds | Deep analysis | Drill-through, detailed tables, filters | Transaction-level data, segmentation |
 
 Design implication: KPI cards and headline metrics belong in the top-left of the
 dashboard. Detail tables and drill-through pages belong at the bottom or on secondary
@@ -166,7 +166,6 @@ Most audiences read top-to-bottom, left-to-right (F-pattern or Z-pattern for Wes
 languages). The eye is drawn to the top-left corner first.
 
 Rules:
-
 - Place the most important metric or insight in the top-left.
 - Move from summary (top) to detail (bottom).
 - Move from context (left) to specifics (right).
@@ -176,7 +175,7 @@ Rules:
 ### Density and cognitive load
 
 > **Reference**: Miller, G. A. (1956). The magical number seven, plus or minus two.
-> _Psychological Review_, 63(2), 81–97. — Cognitive load theory applied to dashboard design.
+> *Psychological Review*, 63(2), 81–97. — Cognitive load theory applied to dashboard design.
 
 - Limit visible content to 5–8 visuals per page. Beyond 8, cognitive load degrades
   reading speed and decision quality.
@@ -200,7 +199,7 @@ content. Apply these rules:
 
 ## 5. Color Strategy for Business Dashboards {#color}
 
-> **Reference**: Ware, C. (2012). _Information Visualization: Perception for Design_
+> **Reference**: Ware, C. (2012). *Information Visualization: Perception for Design*
 > (3rd ed.). Morgan Kaufmann. — The authoritative scientific treatment of color in visualization.
 
 ### Functional color principles
@@ -235,14 +234,14 @@ must carry explicit meaning.
 
 ### Semantic color conventions
 
-| Color            | Conventional meaning in BI dashboards                    |
-| ---------------- | -------------------------------------------------------- |
-| Green            | Positive performance, above target, favorable variance   |
-| Red              | Negative performance, below target, unfavorable variance |
-| Grey             | Neutral, prior period, background, secondary context     |
-| Blue             | Actuals, primary metric, current period                  |
-| Orange / Yellow  | Warning, near threshold, attention required              |
-| Dark blue / Navy | Plan, budget, forecast                                   |
+| Color | Conventional meaning in BI dashboards |
+|---|---|
+| Green | Positive performance, above target, favorable variance |
+| Red | Negative performance, below target, unfavorable variance |
+| Grey | Neutral, prior period, background, secondary context |
+| Blue | Actuals, primary metric, current period |
+| Orange / Yellow | Warning, near threshold, attention required |
+| Dark blue / Navy | Plan, budget, forecast |
 
 ---
 
@@ -253,7 +252,7 @@ serve the story — the insight the data is trying to communicate.
 
 ### The McCandless hierarchy of information visualization
 
-> **Reference**: McCandless, D. (2012). _Information is Beautiful_ (2nd ed.). Collins.
+> **Reference**: McCandless, D. (2012). *Information is Beautiful* (2nd ed.). Collins.
 
 Effective data visualizations combine four properties:
 
@@ -281,8 +280,8 @@ A chart that has story but poor function misleads.
 
 ## 7. Power BI — Design Guidelines {#powerbi}
 
-> **Primary reference**: Microsoft Learn (2024). _Dashboard design best practices in
-> Power BI_. https://learn.microsoft.com/en-us/power-bi/create-reports/service-dashboards-design-tips
+> **Primary reference**: Microsoft Learn (2024). *Dashboard design best practices in
+> Power BI*. https://learn.microsoft.com/en-us/power-bi/create-reports/service-dashboards-design-tips
 
 ### Core structural rules
 
@@ -328,7 +327,7 @@ A chart that has story but poor function misleads.
 
 ## 8. Tableau — Design Guidelines {#tableau}
 
-> **Primary reference**: Tableau (2024). _Visual Best Practices_.
+> **Primary reference**: Tableau (2024). *Visual Best Practices*.
 > https://help.tableau.com/current/blueprint/en-us/bp_visual_best_practices.htm
 
 ### Core structural rules
@@ -368,52 +367,48 @@ A chart that has story but poor function misleads.
 The following patterns consistently produce dashboards that mislead, confuse, or
 fail to support decisions. Avoid them without exception.
 
-| Anti-pattern                                  | Correct practice                                    | Authority                              |
-| --------------------------------------------- | --------------------------------------------------- | -------------------------------------- |
-| Pie chart with > 5 categories                 | Horizontal bar chart, ordered by value              | Cleveland & McGill (1985); Few (2012)  |
-| 3D charts of any type                         | Flat 2D equivalent                                  | Tufte (2001); Cairo (2016)             |
-| Y-axis not starting at zero on bar chart      | Always start at zero for bars                       | Few (2012); Microsoft Learn            |
-| Line chart with > 4–5 lines                   | Small multiples                                     | Tufte (1990) _Envisioning Information_ |
-| Mean reported without distribution context    | Mean + variance + histogram or box plot             | Cleveland (1993)                       |
-| Scatter plot without trend line and r²        | Add OLS line and correlation annotation             | Wilke (2019)                           |
-| Inconsistent color for the same dimension     | One color per dimension value, enforced globally    | Ware (2012)                            |
-| Red/green used for non-performance encoding   | Reserve red/green for target comparison only        | Ware (2012)                            |
-| Stacked bar for magnitude comparison          | Grouped bar chart                                   | Few (2012)                             |
-| Sequential color scale on divergent data      | Divergent scale centered at zero                    | Ware (2012)                            |
-| Dashboard requiring scroll to see key metrics | Restructure to one-screen summary + drill-through   | Microsoft Learn                        |
-| > 8 visuals per dashboard page                | Max 5–8 visuals; move detail to drill-through pages | Miller (1956); Few (2013)              |
-| Chart titled with variable name               | Title states the insight ("Revenue up 14% YoY")     | Cairo (2016)                           |
-| Data without comparison (plan/prior year)     | Always provide context — variance is the story      | Few (2013)                             |
+| Anti-pattern | Correct practice | Authority |
+|---|---|---|
+| Pie chart with > 5 categories | Horizontal bar chart, ordered by value | Cleveland & McGill (1985); Few (2012) |
+| 3D charts of any type | Flat 2D equivalent | Tufte (2001); Cairo (2016) |
+| Y-axis not starting at zero on bar chart | Always start at zero for bars | Few (2012); Microsoft Learn |
+| Line chart with > 4–5 lines | Small multiples | Tufte (1990) *Envisioning Information* |
+| Mean reported without distribution context | Mean + variance + histogram or box plot | Cleveland (1993) |
+| Scatter plot without trend line and r² | Add OLS line and correlation annotation | Wilke (2019) |
+| Inconsistent color for the same dimension | One color per dimension value, enforced globally | Ware (2012) |
+| Red/green used for non-performance encoding | Reserve red/green for target comparison only | Ware (2012) |
+| Stacked bar for magnitude comparison | Grouped bar chart | Few (2012) |
+| Sequential color scale on divergent data | Divergent scale centered at zero | Ware (2012) |
+| Dashboard requiring scroll to see key metrics | Restructure to one-screen summary + drill-through | Microsoft Learn |
+| > 8 visuals per dashboard page | Max 5–8 visuals; move detail to drill-through pages | Miller (1956); Few (2013) |
+| Chart titled with variable name | Title states the insight ("Revenue up 14% YoY") | Cairo (2016) |
+| Data without comparison (plan/prior year) | Always provide context — variance is the story | Few (2013) |
 
 ---
 
 ## 10. References {#references}
 
 **Books — foundational:**
-
-- Few, S. (2006). _Show Me the Numbers: Designing Tables and Graphs to Enlighten_ (2nd ed.). Analytics Press.
-- Few, S. (2013). _Information Dashboard Design_ (2nd ed.). Analytics Press.
-- Few, S. (2009). _Now You See It: Simple Visualization Techniques for Quantitative Analysis_. Analytics Press.
-- Tufte, E. R. (2001). _The Visual Display of Quantitative Information_ (2nd ed.). Graphics Press.
-- Tufte, E. R. (1990). _Envisioning Information_. Graphics Press.
-- Cairo, A. (2012). _The Functional Art: An Introduction to Information Graphics and Visualization_. New Riders Press.
-- Cairo, A. (2016). _The Truthful Art: Data, Charts, and Maps for Communication_. New Riders Press.
-- Ware, C. (2012). _Information Visualization: Perception for Design_ (3rd ed.). Morgan Kaufmann.
-- Wilke, C. O. (2019). _Fundamentals of Data Visualization_. O'Reilly Media.
+- Few, S. (2006). *Show Me the Numbers: Designing Tables and Graphs to Enlighten* (2nd ed.). Analytics Press.
+- Few, S. (2013). *Information Dashboard Design* (2nd ed.). Analytics Press.
+- Few, S. (2009). *Now You See It: Simple Visualization Techniques for Quantitative Analysis*. Analytics Press.
+- Tufte, E. R. (2001). *The Visual Display of Quantitative Information* (2nd ed.). Graphics Press.
+- Tufte, E. R. (1990). *Envisioning Information*. Graphics Press.
+- Cairo, A. (2012). *The Functional Art: An Introduction to Information Graphics and Visualization*. New Riders Press.
+- Cairo, A. (2016). *The Truthful Art: Data, Charts, and Maps for Communication*. New Riders Press.
+- Ware, C. (2012). *Information Visualization: Perception for Design* (3rd ed.). Morgan Kaufmann.
+- Wilke, C. O. (2019). *Fundamentals of Data Visualization*. O'Reilly Media.
 
 **Seminal academic papers:**
-
-- Cleveland, W. S., & McGill, R. (1985). Graphical perception and graphical methods for analyzing scientific data. _Science_, 229(4716), 828–833.
-- Bertin, J. (1967). _Sémiologie Graphique_. Gauthier-Villars. (English: _Semiology of Graphics_, 1983, University of Wisconsin Press.)
-- Miller, G. A. (1956). The magical number seven, plus or minus two. _Psychological Review_, 63(2), 81–97.
+- Cleveland, W. S., & McGill, R. (1985). Graphical perception and graphical methods for analyzing scientific data. *Science*, 229(4716), 828–833.
+- Bertin, J. (1967). *Sémiologie Graphique*. Gauthier-Villars. (English: *Semiology of Graphics*, 1983, University of Wisconsin Press.)
+- Miller, G. A. (1956). The magical number seven, plus or minus two. *Psychological Review*, 63(2), 81–97.
 
 **Official documentation:**
-
 - Microsoft Learn (2024). Dashboard design best practices in Power BI. https://learn.microsoft.com/en-us/power-bi/create-reports/service-dashboards-design-tips
 - Tableau (2024). Visual Best Practices. https://help.tableau.com/current/blueprint/en-us/bp_visual_best_practices.htm
 - IBM (2024). Chart Selection Guide. https://www.ibm.com/design/language/data-visualization/chart-types/
 
 **Practitioner references:**
-
 - Zebra BI (2024). How to choose the correct chart type for your Power BI report. https://zebrabi.com/guide/how-to-choose-the-correct-chart-for-your-power-bi-report/
 - Berkeley Library (2024). Choosing a Chart Type. https://guides.lib.berkeley.edu/data-visualization/type

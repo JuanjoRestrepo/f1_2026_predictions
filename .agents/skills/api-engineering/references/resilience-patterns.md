@@ -8,7 +8,7 @@ which failure it prevents.
 draft-ietf-httpqos-rate-limit-headers (RateLimit header fields); AWS Architecture Blog,
 "Exponential Backoff and Jitter" (Marc Brooker, 2015 — the canonical algorithm); Google SRE
 Book, Chapter 22 (Addressing Cascading Failures); Martin Fowler, "CircuitBreaker" (2014);
-Michael Nygard, _Release It!_ (2007, 2nd ed. 2018 — origin of the Circuit Breaker pattern in
+Michael Nygard, *Release It!* (2007, 2nd ed. 2018 — origin of the Circuit Breaker pattern in
 software); Stripe API documentation on idempotent requests (the reference implementation);
 IETF draft-ietf-httpapi-idempotency-key-header (standardizing the Idempotency-Key header,
 2025–2026, based directly on Stripe's design).
@@ -46,11 +46,7 @@ interface RetryOptions {
 
 async function retryWithBackoff<T>(
   fn: () => Promise<T>,
-  options: RetryOptions = {
-    maxRetries: 5,
-    baseDelayMs: 200,
-    maxDelayMs: 10_000,
-  },
+  options: RetryOptions = { maxRetries: 5, baseDelayMs: 200, maxDelayMs: 10_000 },
 ): Promise<T> {
   let lastError: unknown;
 
@@ -61,15 +57,12 @@ async function retryWithBackoff<T>(
       lastError = err;
 
       if (!isRetryable(err) || attempt === options.maxRetries) {
-        throw err; // don't retry non-transient errors or exhaust the budget silently
+        throw err;  // don't retry non-transient errors or exhaust the budget silently
       }
 
       // "Full Jitter" formula (AWS): random delay between 0 and the exponential cap.
       // This spreads retries far more evenly than "equal jitter" or no jitter at all.
-      const exponentialCap = Math.min(
-        options.maxDelayMs,
-        options.baseDelayMs * 2 ** attempt,
-      );
+      const exponentialCap = Math.min(options.maxDelayMs, options.baseDelayMs * 2 ** attempt);
       const delay = Math.random() * exponentialCap;
 
       await sleep(delay);
@@ -141,14 +134,14 @@ async function callWithRetryAfterSupport(url: string): Promise<Response> {
   const response = await fetch(url);
 
   if (response.status === 429 || response.status === 503) {
-    const retryAfter = response.headers.get('Retry-After');
+    const retryAfter = response.headers.get("Retry-After");
     if (retryAfter) {
       // Retry-After can be seconds (e.g., "120") or an HTTP date
       const delayMs = /^\d+$/.test(retryAfter)
         ? parseInt(retryAfter, 10) * 1000
         : new Date(retryAfter).getTime() - Date.now();
       await sleep(Math.max(0, delayMs));
-      return callWithRetryAfterSupport(url); // one retry attempt shown; wrap in your budget
+      return callWithRetryAfterSupport(url);  // one retry attempt shown; wrap in your budget
     }
   }
   return response;
@@ -174,7 +167,7 @@ async function callWithRetryAfterSupport(url: string): Promise<Response> {
 **Defends against:** cascading failure — repeatedly calling a dependency that is already
 failing wastes resources, adds latency to every caller waiting for a timeout, and can prevent
 the failing service from ever recovering (it never stops receiving load long enough to
-stabilize). Introduced to mainstream software practice by Michael Nygard in _Release It!_
+stabilize). Introduced to mainstream software practice by Michael Nygard in *Release It!*
 (2007) and formalized by Martin Fowler.
 
 ### The State Machine
@@ -205,10 +198,10 @@ HALF-OPEN: After a cooldown, allow ONE trial request through. Success → CLOSED
 ### Implementation
 
 ```typescript
-type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
+type CircuitState = "CLOSED" | "OPEN" | "HALF_OPEN";
 
 class CircuitBreaker {
-  private state: CircuitState = 'CLOSED';
+  private state: CircuitState = "CLOSED";
   private failureCount = 0;
   private lastFailureTime = 0;
 
@@ -218,12 +211,12 @@ class CircuitBreaker {
   ) {}
 
   async execute<T>(fn: () => Promise<T>): Promise<T> {
-    if (this.state === 'OPEN') {
+    if (this.state === "OPEN") {
       if (Date.now() - this.lastFailureTime > this.cooldownMs) {
-        this.state = 'HALF_OPEN'; // cooldown elapsed — allow one trial
+        this.state = "HALF_OPEN";  // cooldown elapsed — allow one trial
       } else {
         // Fail fast — do NOT call the dependency at all
-        throw new CircuitOpenError('Circuit breaker is open — failing fast');
+        throw new CircuitOpenError("Circuit breaker is open — failing fast");
       }
     }
 
@@ -239,17 +232,14 @@ class CircuitBreaker {
 
   private onSuccess(): void {
     this.failureCount = 0;
-    this.state = 'CLOSED';
+    this.state = "CLOSED";
   }
 
   private onFailure(): void {
     this.failureCount++;
     this.lastFailureTime = Date.now();
-    if (
-      this.failureCount >= this.failureThreshold ||
-      this.state === 'HALF_OPEN'
-    ) {
-      this.state = 'OPEN';
+    if (this.failureCount >= this.failureThreshold || this.state === "HALF_OPEN") {
+      this.state = "OPEN";
     }
   }
 }
@@ -327,7 +317,7 @@ Netflix Hystrix, which is now in maintenance mode), `pybreaker` (Python), `Polly
   bounded retry already provides adequate protection — not every external call needs a full
   state machine
 - **When failing fast has no benefit** — if there's no fallback behavior and no meaningful way
-  to shed load, a circuit breaker just changes _how_ you fail, not whether you fail gracefully
+  to shed load, a circuit breaker just changes *how* you fail, not whether you fail gracefully
 
 ---
 
@@ -357,9 +347,8 @@ IETF (`draft-ietf-httpapi-idempotency-key-header`, published October 2025) — m
 converging into a formal HTTP standard, not just a vendor-specific convention.
 
 **As a consumer (calling someone else's API):**
-
 ```typescript
-import crypto from 'crypto';
+import crypto from "crypto";
 
 async function createOrder(orderData: OrderInput) {
   // Generate ONE key per logical operation attempt — reuse it across retries of
@@ -367,11 +356,11 @@ async function createOrder(orderData: OrderInput) {
   const idempotencyKey = crypto.randomUUID();
 
   return retryWithBackoff(() =>
-    fetch('https://api.partner.com/orders', {
-      method: 'POST',
+    fetch("https://api.partner.com/orders", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Idempotency-Key': idempotencyKey, // SAME key on every retry of this attempt
+        "Content-Type": "application/json",
+        "Idempotency-Key": idempotencyKey,  // SAME key on every retry of this attempt
       },
       body: JSON.stringify(orderData),
     }),
@@ -380,31 +369,22 @@ async function createOrder(orderData: OrderInput) {
 ```
 
 **As a provider (implementing idempotency in your own API):**
-
 ```typescript
 // Express middleware — cache responses by idempotency key
-async function idempotencyMiddleware(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) {
-  const key = req.headers['idempotency-key'] as string | undefined;
-  if (!key || req.method !== 'POST') return next(); // only applies to unsafe methods
+async function idempotencyMiddleware(req: Request, res: Response, next: NextFunction) {
+  const key = req.headers["idempotency-key"] as string | undefined;
+  if (!key || req.method !== "POST") return next();  // only applies to unsafe methods
 
   const cached = await redis.get(`idempotency:${key}`);
   if (cached) {
     const { status, body } = JSON.parse(cached);
-    return res.status(status).json(body); // return the ORIGINAL result — don't re-execute
+    return res.status(status).json(body);  // return the ORIGINAL result — don't re-execute
   }
 
   // Wrap res.json to cache the response before sending it
   const originalJson = res.json.bind(res);
   res.json = (body: unknown) => {
-    redis.setex(
-      `idempotency:${key}`,
-      86400,
-      JSON.stringify({ status: res.statusCode, body }),
-    );
+    redis.setex(`idempotency:${key}`, 86400, JSON.stringify({ status: res.statusCode, body }));
     return originalJson(body);
   };
 
@@ -479,25 +459,24 @@ OPTIONAL (often unnecessary):
 resources and degrading service for everyone else.
 
 ```typescript
-import rateLimit from 'express-rate-limit';
+import rateLimit from "express-rate-limit";
 
 const apiLimiter = rateLimit({
   windowMs: 60_000,
-  max: 100, // 100 requests per minute per key
-  standardHeaders: true, // sends RateLimit-* headers (IETF draft standard)
+  max: 100,               // 100 requests per minute per key
+  standardHeaders: true,  // sends RateLimit-* headers (IETF draft standard)
   legacyHeaders: false,
-  keyGenerator: (req) => (req.headers['x-api-key'] as string) ?? req.ip,
+  keyGenerator: (req) => req.headers["x-api-key"] as string ?? req.ip,
   handler: (req, res) => {
-    res.status(429).json({ error: 'Rate limit exceeded' });
+    res.status(429).json({ error: "Rate limit exceeded" });
     // Always include Retry-After — see the callWithRetryAfterSupport example above
   },
 });
 
-app.use('/api/', apiLimiter);
+app.use("/api/", apiLimiter);
 ```
 
 **Standard response headers (IETF draft, widely adopted):**
-
 ```http
 HTTP/1.1 429 Too Many Requests
 RateLimit-Limit: 100
@@ -521,8 +500,8 @@ class RateLimitAwareClient {
 
     const response = await fetch(url, options);
 
-    const remaining = response.headers.get('RateLimit-Remaining');
-    const reset = response.headers.get('RateLimit-Reset');
+    const remaining = response.headers.get("RateLimit-Remaining");
+    const reset = response.headers.get("RateLimit-Reset");
     if (remaining) this.remaining = parseInt(remaining, 10);
     if (reset) this.resetAt = Date.now() + parseInt(reset, 10) * 1000;
 

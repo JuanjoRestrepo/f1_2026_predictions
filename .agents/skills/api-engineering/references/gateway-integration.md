@@ -1,7 +1,7 @@
 # API Gateway & Integration Patterns
 
 **Sources:** AWS API Gateway documentation; Azure API Management documentation; Kong Gateway
-documentation; Gregor Hohpe & Bobby Woolf, _Enterprise Integration Patterns_ (2003) — the
+documentation; Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (2003) — the
 canonical reference for messaging/integration patterns, still the standard vocabulary used
 across the industry; W3C WebSub (formerly PubSubHubbub) for webhook standardization patterns.
 
@@ -42,13 +42,13 @@ themselves.
 
 ### Product Comparison
 
-| Product                  | Best for                                    | Notes                                                              |
-| ------------------------ | ------------------------------------------- | ------------------------------------------------------------------ |
-| **AWS API Gateway**      | AWS-native architectures                    | Tight Lambda integration; usage-based pricing                      |
-| **Azure API Management** | Azure-native, enterprise API programs       | Strong developer portal, policy XML for transforms                 |
-| **Kong Gateway**         | Cloud-agnostic, self-hosted or Kong Konnect | Plugin ecosystem; open-source core                                 |
-| **Cloudflare**           | Edge-first, DDoS/WAF-integrated             | Runs at the edge, closest to the client globally                   |
-| **NGINX (as gateway)**   | Simple routing/rate-limiting needs          | Lower-level; more configuration required for full gateway features |
+| Product | Best for | Notes |
+|---|---|---|
+| **AWS API Gateway** | AWS-native architectures | Tight Lambda integration; usage-based pricing |
+| **Azure API Management** | Azure-native, enterprise API programs | Strong developer portal, policy XML for transforms |
+| **Kong Gateway** | Cloud-agnostic, self-hosted or Kong Konnect | Plugin ecosystem; open-source core |
+| **Cloudflare** | Edge-first, DDoS/WAF-integrated | Runs at the edge, closest to the client globally |
+| **NGINX (as gateway)** | Simple routing/rate-limiting needs | Lower-level; more configuration required for full gateway features |
 
 ### When NOT to Introduce an API Gateway
 
@@ -57,7 +57,7 @@ themselves.
   auth/rate-limiting directly in that service or its reverse proxy
 - **Early-stage projects still discovering their service boundaries** — introducing a gateway
   before you know how many services you'll actually have (see `software-architecture/
-microservices-monolith.md` on preferring a modular monolith initially) adds infrastructure
+  microservices-monolith.md` on preferring a modular monolith initially) adds infrastructure
   ahead of the need it serves
 - **When a simpler reverse proxy (NGINX, Caddy) already meets the actual requirement** — full
   API Gateway products add capability (usage plans, developer portals, complex transforms)
@@ -65,130 +65,325 @@ microservices-monolith.md` on preferring a modular monolith initially) adds infr
 
 ---
 
-## 2. Webhooks — Push-Based Event Notification
+## 2. Webhooks — Production-Grade Push Notifications
 
-**Use when:** you need near-real-time notification of events, and the sending system supports
-outbound HTTP callbacks. This is the preferred pattern whenever available — it's efficient
-(no wasted polling requests) and timely.
+**Webhooks** are HTTP callbacks: your system registers a URL with a provider, and the provider
+POSTs an HTTP request to that URL whenever an event occurs. Simple to understand, non-trivial
+to operate reliably at scale.
+
+**Sources:** CNCF CloudEvents specification v1.0 (CNCF Graduated project, January 2024;
+ThoughtWorks Tech Radar "Adopt" category, April 2024); CNCF HTTP Webhook specification; W3C
+WebSub (push subscription over HTTP); Stripe webhook documentation (the reference production
+implementation); Svix open-source webhook delivery infrastructure.
+
+### The Delivery Problem
+
+The fundamental challenge with webhooks is that neither party has guaranteed delivery. Your
+endpoint can be down, slow, or return an error; the provider may retry or may not. **Webhooks
+are "at-least-once" delivery, not exactly-once** — design every receiver for idempotency.
 
 ```
-Your System                              Partner System
-     │                                          │
-     │  1. Register webhook URL                  │
-     │────────────────────────────────────────▶│
-     │                                          │
-     │              (time passes — an event happens on their side)
-     │                                          │
-     │  2. POST /your-webhook-endpoint            │
-     │     { event: "order.shipped", data: {...} }│
-     │◀────────────────────────────────────────│
-     │                                          │
-     │  3. 200 OK (acknowledge receipt)           │
-     │────────────────────────────────────────▶│
+Failure modes you must handle:
+  - Your endpoint is down → provider retries (maybe)
+  - Your endpoint times out (response takes > 5s) → provider treats as failure, retries
+  - Your endpoint returns 5xx → provider retries
+  - Your endpoint returns 2xx but processing fails internally → event is "lost" (your problem)
+  - Same event arrives twice → MUST be idempotent
+  - Events arrive out of order → MUST be order-independent or use sequence numbers
+```
+
+### Event Schema — CloudEvents Standard (CNCF Graduated 2024)
+
+CloudEvents is a CNCF-graduated specification for describing event data in a common format —
+adopted by Azure Event Grid, Google Cloud Eventarc, AWS EventBridge, the European Commission,
+Adobe I/O Events, and IBM Cloud Code Engine. ThoughtWorks moved it to "Adopt" in April 2024.
+
+Use CloudEvents as your event schema when building your own webhook system — it provides a
+standard envelope that downstream consumers can parse without understanding your specific
+domain:
+
+```json
+{
+  "specversion": "1.0",
+  "type": "com.example.order.shipped",
+  "source": "https://api.example.com/orders",
+  "subject": "order-12345",
+  "id": "unique-event-id-uuid",
+  "time": "2026-05-19T14:30:00Z",
+  "datacontenttype": "application/json",
+  "data": {
+    "orderId": "order-12345",
+    "customerId": "customer-789",
+    "shippedAt": "2026-05-19T14:28:00Z",
+    "trackingNumber": "1Z999AA10123456784"
+  }
+}
+```
+
+**CloudEvents HTTP delivery headers (binary content mode — preferred):**
+
+```http
+POST /webhook HTTP/1.1
+ce-specversion: 1.0
+ce-type: com.example.order.shipped
+ce-source: https://api.example.com/orders
+ce-id: unique-event-id-uuid
+ce-time: 2026-05-19T14:30:00Z
+Content-Type: application/json
+
+{ "orderId": "order-12345", ... }
+```
+
+**Event type naming convention:**
+
+```
+<reverse-domain>.<noun>.<past-tense-verb>
+com.example.order.created
+com.example.order.shipped
+com.example.user.password-changed
+com.example.payment.failed
 ```
 
 ### Receiving Webhooks Correctly — Signature Verification (Mandatory)
 
-Never trust an incoming webhook payload without verifying it actually came from the claimed
-sender — webhook endpoints are public URLs, and anyone can POST to them.
+Never trust an incoming webhook payload without verifying it came from the claimed sender.
 
 ```typescript
-import crypto from 'crypto';
+import crypto from "crypto";
 
 function verifyWebhookSignature(
-  payload: string,
+  rawBody: string, // MUST be raw bytes — parse after verification, not before
   signatureHeader: string,
   webhookSecret: string,
 ): boolean {
-  const expectedSignature = crypto
+  const expectedSig = crypto
     .createHmac('sha256', webhookSecret)
-    .update(payload)
+    .update(rawBody)
     .digest('hex');
 
-  // Timing-safe comparison — prevents timing attacks that could leak the signature
   return crypto.timingSafeEqual(
+    // timing-safe — prevents timing oracle attacks
     Buffer.from(signatureHeader),
-    Buffer.from(expectedSignature),
+    Buffer.from(expectedSig),
   );
 }
 
+// Express — critical: use express.raw() BEFORE express.json() for webhook routes
+// The signature is computed over the raw body bytes — parsing to JSON first corrupts the check
 app.post(
-  '/webhooks/partner',
-  express.raw({ type: 'application/json' }),
+  "/webhooks/partner",
+  express.raw({ type: "application/json" }),
   (req, res) => {
     const signature = req.headers['x-partner-signature'] as string;
-    const payload = req.body.toString('utf8'); // raw body — signature is computed over raw bytes
+    const rawBody = req.body.toString('utf8');
 
     if (
-      !verifyWebhookSignature(payload, signature, process.env.WEBHOOK_SECRET!)
+      !verifyWebhookSignature(rawBody, signature, process.env.WEBHOOK_SECRET!)
     ) {
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
-    const event = JSON.parse(payload);
-    // Process asynchronously — acknowledge receipt FAST, then process
+    // Timestamp validation — reject stale payloads (prevents replay attacks)
+    const timestamp = Number(req.headers['x-partner-timestamp']);
+    if (Math.abs(Date.now() / 1000 - timestamp) > 300) {
+      // 5-minute window
+      return res.status(400).json({ error: 'Timestamp too old' });
+    }
+
+    const event = JSON.parse(rawBody);
+    // Acknowledge FAST — process asynchronously to prevent timeout retries
     queue.enqueue(event);
-    res.status(200).send(); // acknowledge within a few seconds — most providers time out and retry otherwise
+    res.status(200).send();
   },
 );
 ```
 
 ```python
-import hmac
-import hashlib
-
-def verify_webhook_signature(payload: bytes, signature_header: str, webhook_secret: str) -> bool:
-    expected_signature = hmac.new(
-        webhook_secret.encode(), payload, hashlib.sha256
-    ).hexdigest()
-    # Timing-safe comparison
-    return hmac.compare_digest(signature_header, expected_signature)
+import hashlib, hmac, json, time
+from fastapi import Header, HTTPException, Request, Response
 
 
-@router.post("/webhooks/partner")
 async def receive_webhook(request: Request) -> Response:
     raw_body = await request.body()
     signature = request.headers.get("x-partner-signature", "")
+    timestamp = request.headers.get("x-partner-timestamp", "0")
 
-    if not verify_webhook_signature(raw_body, signature, settings.WEBHOOK_SECRET):
+    # Verify signature
+    expected = hmac.new(
+        settings.WEBHOOK_SECRET.encode(), raw_body, hashlib.sha256
+    ).hexdigest()
+    if not hmac.compare_digest(signature, expected):
         raise HTTPException(status_code=401, detail="Invalid signature")
 
+    # Reject stale timestamps (replay protection)
+    if abs(time.time() - int(timestamp)) > 300:
+        raise HTTPException(status_code=400, detail="Stale timestamp")
+
     event = json.loads(raw_body)
-    await queue.enqueue(event)  # process asynchronously, acknowledge fast
+    await queue.enqueue(event)    # async processing — never block the response
     return Response(status_code=200)
 ```
 
-### Webhook Reliability Concerns
+### Idempotent Processing — Handle Duplicates (Mandatory)
 
-**Idempotency (webhooks retry on failure — expect duplicates):**
+Most providers retry on non-2xx responses and on timeouts. The same event WILL arrive more
+than once. Use the event ID as a deduplication key:
 
 ```typescript
-// Most webhook providers retry on non-2xx responses or timeouts — the SAME event
-// may arrive more than once. Deduplicate using the event's own ID.
-async function processWebhookEvent(event: WebhookEvent) {
-  const alreadyProcessed = await redis.get(`webhook:processed:${event.id}`);
-  if (alreadyProcessed) return; // already handled this exact event — skip
+async function processWebhookEvent(event: CloudEvent): Promise<void> {
+  const lockKey = `webhook:lock:${event.id}`;
 
-  await handleEvent(event);
-  await redis.setex(`webhook:processed:${event.id}`, 604800, '1'); // 7-day dedup window
+  // SET NX (set if not exists) with TTL — atomic check-and-set
+  const acquired = await redis.set(lockKey, '1', { NX: true, EX: 86400 }); // 24h
+  if (!acquired) {
+    logger.info('Duplicate webhook event — skipping', { eventId: event.id });
+    return;
+  }
+
+  try {
+    await handleEvent(event);
+  } catch (err) {
+    await redis.del(lockKey); // release lock on failure so the event can be retried
+    throw err;
+  }
 }
 ```
 
-**Ordering is not guaranteed** — webhooks can arrive out of order (e.g., `order.shipped`
-before `order.confirmed` due to retry timing). Design handlers to be order-independent, or
-include a sequence number/timestamp in the payload and reconcile explicitly.
+### Ordering Is Not Guaranteed
 
-**Replay protection** — verify the event's timestamp is recent (reject anything older than a
-few minutes) to prevent replay attacks using a captured, previously-valid signed payload.
+Webhooks can arrive out of order — `order.shipped` before `order.confirmed` due to retry
+timing, network routes, or parallel delivery. Two defensive strategies:
+
+```typescript
+// Strategy 1 — event timestamp comparison (if provider includes reliable timestamps)
+async function handleOrderEvent(event: CloudEvent): Promise<void> {
+  const existing = await db.orderEvent.findFirst({
+    where: { orderId: event.data.orderId },
+    orderBy: { occurredAt: 'desc' },
+  });
+
+  if (existing && new Date(event.time) <= existing.occurredAt) {
+    logger.warn('Out-of-order event — ignoring', { eventId: event.id });
+    return;
+  }
+  await applyEvent(event);
+}
+
+// Strategy 2 — sequence numbers (if provider supports them)
+// Store the last processed sequence; reject lower ones
+```
+
+### Webhook Registration Handshake (CNCF HTTP Webhook Spec)
+
+When **you** are the webhook sender, protect your delivery infrastructure from being used to
+flood arbitrary URLs. The CNCF HTTP Webhook specification defines a standard handshake:
+
+```typescript
+// Before delivering events to a newly registered webhook URL, send a validation challenge
+async function validateWebhookRegistration(
+  webhookUrl: string,
+): Promise<boolean> {
+  const challenge = crypto.randomBytes(32).toString('base64url');
+
+  const response = await fetch(webhookUrl, {
+    method: 'OPTIONS',
+    headers: {
+      'WebHook-Request-Callback': `${process.env.API_BASE}/webhooks/validate?challenge=${challenge}`,
+      'WebHook-Request-Rate': '120', // max events per minute we'll send
+    },
+  });
+
+  // Receiver must respond 200 OK — confirms they control the endpoint
+  return response.ok;
+}
+```
+
+### Building Your Own Webhook Delivery System
+
+For teams sending webhooks (not just receiving them), reliable delivery requires a queue:
+
+```
+EVENT OCCURS → Persist to outbox table → Queue worker picks it up →
+Attempt delivery → 2xx? → Mark delivered
+                    → 4xx? → Do NOT retry (client error; tell the user)
+                    → 5xx / timeout? → Retry with exponential backoff
+                               → Exhausted retries? → Mark failed, alert user
+```
+
+```typescript
+// Outbox pattern — atomically record the event and enqueue for delivery
+async function emitEvent(event: CloudEvent, db: Transaction): Promise<void> {
+  // Within the SAME database transaction as the state change that caused the event:
+  await db.webhookOutbox.create({
+    data: {
+      eventId: event.id,
+      type: event.type,
+      payload: event,
+      status: 'PENDING',
+      attempts: 0,
+      nextAttemptAt: new Date(),
+    },
+  });
+  // Worker polls the outbox table and delivers — never fire-and-forget from the request handler
+}
+
+async function deliverWebhook(outboxEntry: WebhookOutbox): Promise<void> {
+  const response = await fetch(outboxEntry.targetUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-signature-sha256': sign(
+        outboxEntry.payload,
+        outboxEntry.signingSecret,
+      ),
+      'x-timestamp': String(Math.floor(Date.now() / 1000)),
+    },
+    body: JSON.stringify(outboxEntry.payload),
+    signal: AbortSignal.timeout(10_000), // 10s timeout — enforce strictly
+  });
+
+  if (response.ok) {
+    await db.webhookOutbox.update({
+      where: { id: outboxEntry.id },
+      data: { status: 'DELIVERED' },
+    });
+  } else if (response.status < 500) {
+    // 4xx — client error; mark as permanently failed, notify the endpoint owner
+    await db.webhookOutbox.update({
+      where: { id: outboxEntry.id },
+      data: { status: 'CLIENT_ERROR' },
+    });
+  } else {
+    // 5xx — retry with backoff
+    const nextAttempt = new Date(Date.now() + backoffMs(outboxEntry.attempts));
+    await db.webhookOutbox.update({
+      where: { id: outboxEntry.id },
+      data: {
+        attempts: { increment: 1 },
+        nextAttemptAt: nextAttempt,
+        status: outboxEntry.attempts >= 10 ? 'EXHAUSTED' : 'PENDING',
+      },
+    });
+  }
+}
+```
+
+**Managed webhook delivery (strongly recommended over building from scratch):**
+
+- **Svix** (open-source core, hosted option) — the production-grade open-source webhook
+  delivery infrastructure used by many SaaS companies; handles retries, signing, delivery
+  logs, dashboard, and consumer management
+- **Hookdeck** — managed webhook delivery and event gateway; useful for both sending and
+  receiving with built-in retry, inspection, and replay
 
 ### When NOT to Rely on Webhooks
 
-- **The sending system doesn't support them** — common in RPA integration work with legacy
-  systems, government portals, and older enterprise software; polling is the only option
-- **You need a guaranteed, ordered, complete event log** — webhooks can be missed (network
-  failure during the provider's retry window) or arrive out of order; for critical financial
-  or compliance-relevant event streams, pair webhooks with a periodic reconciliation job that
-  polls for the authoritative state, rather than trusting webhooks alone
+- **The sending system doesn't support them** — common for legacy ERPs, government portals,
+  older enterprise systems in RPA work; polling is the only alternative
+- **You need guaranteed exactly-once delivery** — webhooks are at-least-once; for critical
+  financial operations or audit trails, pair webhooks with periodic reconciliation jobs that
+  fetch the authoritative state from the provider's API, rather than relying solely on
+  webhook delivery
 
 ---
 
@@ -210,13 +405,12 @@ async function pollForChanges() {
     lastCheckedAt = new Date();
     await savePollTimestamp(lastCheckedAt);
 
-    await sleep(POLL_INTERVAL_MS); // never poll in a tight loop — always a deliberate interval
+    await sleep(POLL_INTERVAL_MS);  // never poll in a tight loop — always a deliberate interval
   }
 }
 ```
 
 **Polling with adaptive backoff** — reduce load on the source system when nothing is changing:
-
 ```typescript
 let currentInterval = MIN_INTERVAL_MS;
 
@@ -224,9 +418,9 @@ async function adaptivePoll() {
   const changes = await fetchChangesSince(lastCheckedAt);
 
   if (changes.length === 0) {
-    currentInterval = Math.min(currentInterval * 1.5, MAX_INTERVAL_MS); // back off when idle
+    currentInterval = Math.min(currentInterval * 1.5, MAX_INTERVAL_MS);  // back off when idle
   } else {
-    currentInterval = MIN_INTERVAL_MS; // reset to fast polling when activity is detected
+    currentInterval = MIN_INTERVAL_MS;  // reset to fast polling when activity is detected
   }
 
   await sleep(currentInterval);
@@ -251,17 +445,17 @@ but the client can maintain an open connection:
 
 ```typescript
 // Server-Sent Events — one-directional server → client stream over plain HTTP
-app.get('/events', (req, res) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
+app.get("/events", (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
 
   const listener = (event: DomainEvent) => {
     res.write(`data: ${JSON.stringify(event)}\n\n`);
   };
-  eventEmitter.on('order.updated', listener);
+  eventEmitter.on("order.updated", listener);
 
-  req.on('close', () => eventEmitter.off('order.updated', listener));
+  req.on("close", () => eventEmitter.off("order.updated", listener));
 });
 ```
 

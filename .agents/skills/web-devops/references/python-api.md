@@ -11,15 +11,15 @@ directly. Python 3.12. Static analysis: Ruff (linter + formatter) + mypy (strict
 
 ## 1. Framework Selection
 
-| Criterion           | Flask                                               | FastAPI                                         |
-| ------------------- | --------------------------------------------------- | ----------------------------------------------- |
-| Gateway interface   | WSGI — synchronous by default                       | ASGI — async-first, sync supported              |
-| Performance         | Good; single-threaded per worker                    | Excellent; concurrent via async I/O             |
-| Built-in validation | None — add marshmallow/webargs manually             | Pydantic v2 — automatic request/response        |
-| Auto-documentation  | None — add flasgger/flask-smorest                   | Built-in `/docs` (Swagger) + `/redoc`           |
-| Type safety         | Optional                                            | First-class — types drive validation            |
-| Learning curve      | Lower — minimal, explicit                           | Moderate — requires understanding Pydantic + DI |
-| Best for            | Simple services, prototypes, teams already on Flask | New APIs, high-throughput, type-safe contracts  |
+| Criterion | Flask | FastAPI |
+|---|---|---|
+| Gateway interface | WSGI — synchronous by default | ASGI — async-first, sync supported |
+| Performance | Good; single-threaded per worker | Excellent; concurrent via async I/O |
+| Built-in validation | None — add marshmallow/webargs manually | Pydantic v2 — automatic request/response |
+| Auto-documentation | None — add flasgger/flask-smorest | Built-in `/docs` (Swagger) + `/redoc` |
+| Type safety | Optional | First-class — types drive validation |
+| Learning curve | Lower — minimal, explicit | Moderate — requires understanding Pydantic + DI |
+| Best for | Simple services, prototypes, teams already on Flask | New APIs, high-throughput, type-safe contracts |
 
 **Decision rule:** choose FastAPI for all new production APIs. Choose Flask only when inheriting
 an existing Flask codebase or building a quick internal tool where Pydantic's overhead is
@@ -525,13 +525,11 @@ class UserCreate(BaseModel):
 ```
 
 Access at runtime:
-
 - `http://localhost:8000/docs` — Swagger UI (interactive, try-it-out enabled)
 - `http://localhost:8000/redoc` — ReDoc (clean, read-only reference)
 - `http://localhost:8000/openapi.json` — raw OpenAPI schema (import to Postman, Insomnia)
 
 **Production note:** disable or auth-protect `/docs` and `/redoc` for public-facing APIs:
-
 ```python
 app = FastAPI(docs_url=None, redoc_url=None)  # disabled in prod
 # or restrict to internal IPs via middleware
@@ -696,7 +694,6 @@ target_metadata = Base.metadata
 ```
 
 **CI/CD integration — run migrations before starting the server:**
-
 ```dockerfile
 # Dockerfile entrypoint
 CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
@@ -776,7 +773,6 @@ async def test_create_user_duplicate_email(client: AsyncClient) -> None:
 ```
 
 Run tests:
-
 ```bash
 uv run pytest tests/ -v --tb=short
 uv run pytest tests/ --cov=app --cov-report=term-missing  # with coverage
@@ -786,15 +782,15 @@ uv run pytest tests/ --cov=app --cov-report=term-missing  # with coverage
 
 ## 9. Key Patterns Summary
 
-| Pattern      | Rule                                                                                       |
-| ------------ | ------------------------------------------------------------------------------------------ |
-| Routes       | Thin — call service methods only, no business logic                                        |
-| Services     | Own business logic — no HTTP imports, no SQLAlchemy sessions directly                      |
-| Repositories | Own all DB queries — services call repos, not the session directly                         |
-| Schemas      | Separate `Create`, `Update`, `Out` per resource — never reuse input as output              |
-| Config       | `pydantic-settings` — fails at startup if required env vars are missing                    |
-| Sessions     | Always yield from `get_db()` dependency — never create sessions manually in routes         |
-| Errors       | Typed exception hierarchy — never return raw strings or expose internal messages           |
-| Migrations   | Alembic — never `create_all()` in production                                               |
-| Docs         | FastAPI auto-docs at `/docs` and `/redoc` — enrich with `summary`, `responses`, `examples` |
-| Tooling      | `uv` for all package management — never `pip`; `pyproject.toml` — never `requirements.txt` |
+| Pattern | Rule |
+|---|---|
+| Routes | Thin — call service methods only, no business logic |
+| Services | Own business logic — no HTTP imports, no SQLAlchemy sessions directly |
+| Repositories | Own all DB queries — services call repos, not the session directly |
+| Schemas | Separate `Create`, `Update`, `Out` per resource — never reuse input as output |
+| Config | `pydantic-settings` — fails at startup if required env vars are missing |
+| Sessions | Always yield from `get_db()` dependency — never create sessions manually in routes |
+| Errors | Typed exception hierarchy — never return raw strings or expose internal messages |
+| Migrations | Alembic — never `create_all()` in production |
+| Docs | FastAPI auto-docs at `/docs` and `/redoc` — enrich with `summary`, `responses`, `examples` |
+| Tooling | `uv` for all package management — never `pip`; `pyproject.toml` — never `requirements.txt` |

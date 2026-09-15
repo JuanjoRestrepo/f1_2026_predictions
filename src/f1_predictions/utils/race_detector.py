@@ -21,8 +21,8 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 # Races older than this threshold are considered "stale" and skipped.
-# Set to 2 to cover Monday + Tuesday UTC edge cases.
-_DEFAULT_DAYS_BACK: int = 2
+# Set to 7 to safely cover full post-race audit windows.
+_DEFAULT_DAYS_BACK: int = 7
 
 # FastF1 event type identifier for a full race weekend.
 _RACE_EVENT_TYPE: str = "Race"
@@ -53,17 +53,13 @@ def find_last_completed_race(
 ) -> dict[str, Any] | None:
     """Determine if a race was completed within the last N days.
 
-    Compares each race event's date against the current UTC time. Returns
+    Compares each race event's date against the current UTC date. Returns
     the most recently completed event metadata if found, otherwise None.
-
-    This function is pure — it takes the schedule as input rather than
-    fetching it, making it trivially testable without network access.
 
     Args:
         schedule: FastF1 event schedule DataFrame from `get_event_schedule`.
-        now_utc: The reference timestamp. Defaults to `datetime.utcnow()`.
-            Inject a fixed datetime in tests for deterministic behaviour.
-        days_back: Number of days to look back from `now_utc`. Default 2.
+        now_utc: The reference timestamp. Defaults to `datetime.now(tz=UTC)`.
+        days_back: Number of days to look back from `now_utc`. Default 7.
 
     Returns:
         A dict with keys 'round', 'gp_name', 'event_date' if a race is
@@ -76,16 +72,16 @@ def find_last_completed_race(
         logger.info("Event schedule is empty, no race to detect.")
         return None
 
-    # Normalize schedule dates to UTC-aware timestamps for comparison.
-    # FastF1 returns timezone-naive dates; we assume UTC convention.
+    # Normalize dates for clean calendar-day comparison regardless of UTC hour.
     schedule = schedule.copy()
     schedule["EventDate"] = pd.to_datetime(schedule["EventDate"], utc=True)
+    today_date = now_utc.date()
+    cutoff_date = (now_utc - pd.Timedelta(days=days_back)).date()
 
-    # Filter to completed race events within the lookback window.
-    cutoff = now_utc - pd.Timedelta(days=days_back)
+    event_dates = schedule["EventDate"].dt.date
     mask = (
-        (schedule["EventDate"] >= cutoff)
-        & (schedule["EventDate"] <= now_utc)
+        (event_dates >= cutoff_date)
+        & (event_dates <= today_date)
         & (schedule["EventFormat"] != "testing")
     )
     recent = schedule.loc[mask]
@@ -98,7 +94,7 @@ def find_last_completed_race(
         )
         return None
 
-    # Take the most recent event if multiple fall in the window (edge case).
+    # Take the most recent event if multiple fall in the window.
     latest = recent.sort_values("EventDate").iloc[-1]
     result: dict[str, Any] = {
         "round": int(latest["RoundNumber"]),
@@ -137,12 +133,13 @@ def find_upcoming_race(
 
     schedule = schedule.copy()
     schedule["EventDate"] = pd.to_datetime(schedule["EventDate"], utc=True)
+    today_date = now_utc.date()
+    cutoff_date = (now_utc + pd.Timedelta(days=days_ahead)).date()
 
-    # Filter to future race events within the lookahead window.
-    cutoff = now_utc + pd.Timedelta(days=days_ahead)
+    event_dates = schedule["EventDate"].dt.date
     mask = (
-        (schedule["EventDate"] > now_utc)
-        & (schedule["EventDate"] <= cutoff)
+        (event_dates >= today_date)
+        & (event_dates <= cutoff_date)
         & (schedule["EventFormat"] != "testing")
     )
     upcoming = schedule.loc[mask]

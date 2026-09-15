@@ -7,16 +7,23 @@ from typing import Any, cast
 import numpy as np
 import pandas as pd
 
+from f1_predictions.features.clean_air_pace import (
+    MADRID_PUBLISHED_PRIOR,
+    candidate_long_run_laps,
+    summarize_clean_air,
+)
 from f1_predictions.features.external_weather import (
     WeatherIntelligence,
     simulation_weather_features,
 )
+from f1_predictions.features.historical_performance import add_ewma_form_features
 from f1_predictions.models import (
     LightGBMPaceRegressor,
     StackingPaceRegressor,
 )
 from f1_predictions.models.common import prepare_feature_matrix
 from f1_predictions.utils.analysis import build_driver_standings, build_predictions_df
+from f1_predictions.utils.circuit_config import get_circuit_config
 from f1_predictions.utils.config import get_settings
 from f1_predictions.utils.logging_setup import (
     configure_root_pipeline_logger,
@@ -82,6 +89,20 @@ def _enrich_with_track_metadata(df: pd.DataFrame) -> pd.DataFrame:
         "CornerCount",
     ]
     enriched_df[fill_cols] = enriched_df[fill_cols].fillna(0)
+
+    # Populate circuit_config parameters
+    if "EventName" in enriched_df.columns:
+        for col in ["streetness", "speed_bias", "overtaking_ease", "tyre_stress"]:
+            if col not in enriched_df.columns:
+                enriched_df[col] = 0.5
+        unique_events = enriched_df["EventName"].dropna().unique()
+        for evt in unique_events:
+            cfg = get_circuit_config(str(evt))
+            mask = enriched_df["EventName"] == evt
+            enriched_df.loc[mask, "streetness"] = cfg.streetness
+            enriched_df.loc[mask, "speed_bias"] = cfg.speed_bias
+            enriched_df.loc[mask, "overtaking_ease"] = cfg.overtaking_ease
+            enriched_df.loc[mask, "tyre_stress"] = cfg.tyre_stress
 
     return enriched_df
 
@@ -286,6 +307,7 @@ def run_race_simulation(
 
     for driver in drivers:
         d_info = driver_stats[driver_stats["Driver"] == driver].iloc[0]
+        prior_delta, prior_conf = MADRID_PUBLISHED_PRIOR.get(driver, (1.50, 0.50))
         sim_data.append(
             {
                 "Season": year,
@@ -313,6 +335,8 @@ def run_race_simulation(
                 "delta_roll_pace": d_info["delta_roll_pace"],
                 "tyre_deg_slope": d_info["tyre_deg_slope"],
                 "tyre_life_norm": d_info["tyre_life_norm"],
+                "clean_air_pace_delta_s": prior_delta,
+                "clean_air_confidence": prior_conf,
                 "PitInTime_s": 0,
                 "PitOutTime_s": 0,
                 "LapTime_s": 0,
@@ -331,10 +355,14 @@ def run_race_simulation(
     gold_all = pd.concat([pd.read_parquet(f) for f in gold_all_files])
     df_train_full = gold_all[gold_all["Season"].isin(train_years)]
 
-    # ENRICH with track metadata
+    # ENRICH with track metadata & EWMA features
     logger.info("Enriching data and calculating temporal weights...")
     df_train_full = _enrich_with_track_metadata(df_train_full)
     df_sim = _enrich_with_track_metadata(df_sim)
+
+    # Add EWMA form features
+    df_sim = add_ewma_form_features(df_sim)
+    df_train_full = add_ewma_form_features(df_train_full)
 
     # APPLY track pace normalization to simulation scenario.
     logger.info(

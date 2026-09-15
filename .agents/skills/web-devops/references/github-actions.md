@@ -12,7 +12,6 @@ that uses `pull_request_target` AND checks out fork code effectively hands base-
 to the attacker who opened the PR.
 
 **Audit immediately:**
-
 ```bash
 grep -r "pull_request_target" .github/workflows/
 grep -r -A 20 "pull_request_target" .github/workflows/ | grep -i "checkout"
@@ -22,18 +21,19 @@ grep -r -A 20 "pull_request_target" .github/workflows/ | grep -i "checkout"
 only for metadata operations (labeling, commenting) that never check out fork code.
 
 **Minimum permissions on every job:**
-
 ```yaml
 jobs:
   build:
     permissions:
-      contents: read # grant only what is needed — never write-all
+      contents: read   # grant only what is needed — never write-all
 ```
 
 → Full technical details, the safe and dangerous patterns, and cache poisoning defense
 are in `references/security.md` Section 13.
 
 ---
+
+
 
 Reference template for a professional CD pipeline with semantic versioning, Docker image tagging,
 and automated GitHub Releases. All corrections from code review applied inline.
@@ -95,7 +95,7 @@ jobs:
           push: true
           tags: ${{ steps.meta-api.outputs.tags }}
           labels: ${{ steps.meta-api.outputs.labels }}
-          cache-from: type=gha # ← required: cuts build time significantly
+          cache-from: type=gha          # ← required: cuts build time significantly
           cache-to: type=gha,mode=max
 
       - name: Extract metadata for Frontend image
@@ -123,7 +123,7 @@ jobs:
 
   create-release:
     name: Create GitHub Release
-    if: startsWith(github.ref, 'refs/tags/v') # only runs on vX.Y.Z tags
+    if: startsWith(github.ref, 'refs/tags/v')  # only runs on vX.Y.Z tags
     needs: build-and-push
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -134,20 +134,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # ← required: full history for generate_release_notes
+          fetch-depth: 0  # ← required: full history for generate_release_notes
 
       - name: Create GitHub Release
         # Pin to SHA — never use mutable @v2 tag in production
         uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.1.0
         with:
-          generate_release_notes: true # auto-generates "What's Changed" from commits
-          make_latest: true # marks this as the latest release on GitHub
+          generate_release_notes: true  # auto-generates "What's Changed" from commits
+          make_latest: true             # marks this as the latest release on GitHub
           draft: false
           prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-beta') }}
 ```
 
 **Key decisions explained:**
-
 - `concurrency.cancel-in-progress: true` — if two pushes happen fast, the older run is cancelled to avoid race conditions on GHCR
 - `cache-from/cache-to: type=gha` — uses GitHub Actions cache for Docker layers; skips unchanged layers entirely
 - `fetch-depth: 0` — shallow clone (default) breaks changelog generation; full history is required
@@ -156,13 +155,14 @@ jobs:
 - `make_latest: true` — without this, GitHub may not update the "Latest" badge on the releases page
 
 **Triggering a release:**
-
 ```bash
 git tag -a v1.2.0 -m "Release v1.2.0"
 git push origin v1.2.0
 ```
 
 ---
+
+
 
 ```yaml
 name: CI/CD
@@ -236,7 +236,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
           cache: pip
       - run: pip install -r requirements-dev.txt
       - run: ruff check .
@@ -281,22 +281,22 @@ jobs:
 ## Deploy to AWS ECS (after Docker push)
 
 ```yaml
-deploy-ecs:
-  runs-on: ubuntu-latest
-  needs: docker
-  environment: production
-  steps:
-    - uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
-    - name: Update ECS service
-      run: |
-        aws ecs update-service \
-          --cluster my-cluster \
-          --service my-service \
-          --force-new-deployment
+  deploy-ecs:
+    runs-on: ubuntu-latest
+    needs: docker
+    environment: production
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Update ECS service
+        run: |
+          aws ecs update-service \
+            --cluster my-cluster \
+            --service my-service \
+            --force-new-deployment
 ```
 
 ---
@@ -313,7 +313,7 @@ jobs:
         run: echo "Deploy to staging..."
 
   deploy-production:
-    environment: production # requires manual approval in GitHub settings
+    environment: production   # requires manual approval in GitHub settings
     needs: deploy-staging
     runs-on: ubuntu-latest
     steps:

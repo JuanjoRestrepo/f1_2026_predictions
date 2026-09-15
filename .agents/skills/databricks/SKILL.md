@@ -59,52 +59,52 @@ This skill covers the Databricks-specific implementation layer above those found
 
 ### Data Engineering
 
-| Situation | Guidance |
-|---|---|
-| Ingest from Salesforce, SAP, Workday, Stripe (100+ sources) | Lakeflow Connect |
-| Ingest incrementally from S3/ADLS/GCS files | Auto Loader (`cloudFiles`) |
-| Build Medallion ETL pipeline with data quality | Lakeflow Spark Declarative Pipelines |
-| CDC / SCD Type 1 or 2 from operational DB | `dlt.apply_changes()` (AUTO CDC API) |
-| Build a pipeline visually without writing Python | Lakeflow Designer |
-| Orchestrate multi-step workflows (ETL → ML → report) | Lakeflow Jobs |
-| Parse unstructured documents at scale (PDFs, contracts) | Document Intelligence (`ai_parse_document`) |
-| Govern data access, lineage, and cross-workspace sharing | Unity Catalog |
-| Deploy pipelines and jobs with CI/CD | Databricks Asset Bundles (DABs) |
-| Compact files and enable data skipping | OPTIMIZE + liquid clustering (preferred on DBR 13.2+) |
-| Vectorized CPU-bound SQL | Enable Photon on cluster or SQL Warehouse |
-| Reduce cluster cold-start | Instance pools |
+| Situation                                                   | Guidance                                              |
+| ----------------------------------------------------------- | ----------------------------------------------------- |
+| Ingest from Salesforce, SAP, Workday, Stripe (100+ sources) | Lakeflow Connect                                      |
+| Ingest incrementally from S3/ADLS/GCS files                 | Auto Loader (`cloudFiles`)                            |
+| Build Medallion ETL pipeline with data quality              | Lakeflow Spark Declarative Pipelines                  |
+| CDC / SCD Type 1 or 2 from operational DB                   | `dlt.apply_changes()` (AUTO CDC API)                  |
+| Build a pipeline visually without writing Python            | Lakeflow Designer                                     |
+| Orchestrate multi-step workflows (ETL → ML → report)        | Lakeflow Jobs                                         |
+| Parse unstructured documents at scale (PDFs, contracts)     | Document Intelligence (`ai_parse_document`)           |
+| Govern data access, lineage, and cross-workspace sharing    | Unity Catalog                                         |
+| Deploy pipelines and jobs with CI/CD                        | Databricks Asset Bundles (DABs)                       |
+| Compact files and enable data skipping                      | OPTIMIZE + liquid clustering (preferred on DBR 13.2+) |
+| Vectorized CPU-bound SQL                                    | Enable Photon on cluster or SQL Warehouse             |
+| Reduce cluster cold-start                                   | Instance pools                                        |
 
 ### ML and AI
 
-| Situation | Guidance |
-|---|---|
-| Track ML experiments, benchmark GBMs | MLflow 3 (`mlflow.autolog()`) |
-| Promote model to production | MLflow model registry with `@champion` alias |
-| Deploy real-time ML inference endpoint | Mosaic AI Model Serving |
-| Serve features to training and inference | Databricks Feature Store (any UC table with PK) |
-| Build a domain-specific agent, auto-optimized | AgentBricks |
-| Build RAG over enterprise unstructured data | AgentBricks Knowledge Assistant |
-| Monitor agent quality in production | Agent quality loop: Capture → Judge → Align → Optimize |
-| Calibrate LLM judge to your domain | MemAlign (~20 SME labels) |
-| Auto-improve agent prompt from judge scores | GEPA |
+| Situation                                     | Guidance                                               |
+| --------------------------------------------- | ------------------------------------------------------ |
+| Track ML experiments, benchmark GBMs          | MLflow 3 (`mlflow.autolog()`)                          |
+| Promote model to production                   | MLflow model registry with `@champion` alias           |
+| Deploy real-time ML inference endpoint        | Mosaic AI Model Serving                                |
+| Serve features to training and inference      | Databricks Feature Store (any UC table with PK)        |
+| Build a domain-specific agent, auto-optimized | AgentBricks                                            |
+| Build RAG over enterprise unstructured data   | AgentBricks Knowledge Assistant                        |
+| Monitor agent quality in production           | Agent quality loop: Capture → Judge → Align → Optimize |
+| Calibrate LLM judge to your domain            | MemAlign (~20 SME labels)                              |
+| Auto-improve agent prompt from judge scores   | GEPA                                                   |
 
 ### Agentic Platform and Governance
 
-| Situation | Guidance |
-|---|---|
-| Govern AI spend across all models and tools | Unity AI Gateway Budgets + Smart Routing |
-| Control what an agent can *do* (not just access) | Contextual Service Policies |
-| Detect PII in prompts/responses | Unity AI Gateway guardrails |
-| Audit all AI activity with SQL-queryable logs | Unity AI Gateway → UC audit tables |
-| Route requests to optimal model by task/cost | Smart Routing (Unity AI Gateway) |
-| Compose multiple coding agents (Claude Code + Codex) | Omnigent (meta-harness) |
-| Provide business users with natural language data access | Genie ONE |
-| Ground agents in company-specific business semantics | Genie Ontology + UC Metrics + Business Glossary |
-| Build a data app without writing code | Genie App Builder |
-| Background autonomous monitoring of Lakehouse health | Genie ZeroOps |
-| Run OLTP and OLAP on the same data copy | Lakebase + LTAP |
-| Store agent session memory (conversation history) | Lakebase (agent memory services) |
-| Share data across organizations without copying | Delta Sharing |
+| Situation                                                | Guidance                                        |
+| -------------------------------------------------------- | ----------------------------------------------- |
+| Govern AI spend across all models and tools              | Unity AI Gateway Budgets + Smart Routing        |
+| Control what an agent can _do_ (not just access)         | Contextual Service Policies                     |
+| Detect PII in prompts/responses                          | Unity AI Gateway guardrails                     |
+| Audit all AI activity with SQL-queryable logs            | Unity AI Gateway → UC audit tables              |
+| Route requests to optimal model by task/cost             | Smart Routing (Unity AI Gateway)                |
+| Compose multiple coding agents (Claude Code + Codex)     | Omnigent (meta-harness)                         |
+| Provide business users with natural language data access | Genie ONE                                       |
+| Ground agents in company-specific business semantics     | Genie Ontology + UC Metrics + Business Glossary |
+| Build a data app without writing code                    | Genie App Builder                               |
+| Background autonomous monitoring of Lakehouse health     | Genie ZeroOps                                   |
+| Run OLTP and OLAP on the same data copy                  | Lakebase + LTAP                                 |
+| Store agent session memory (conversation history)        | Lakebase (agent memory services)                |
+| Share data across organizations without copying          | Delta Sharing                                   |
 
 ---
 
@@ -135,21 +135,21 @@ Layer 1: OPEN INFRASTRUCTURE
 
 ## Terminology Reference (Current as of DAIS 2026)
 
-| Old name | Current name | Notes |
-|---|---|---|
-| Delta Live Tables (DLT) | Lakeflow Spark Declarative Pipelines | `import dlt` and all decorators unchanged |
-| Databricks Workflows | Lakeflow Jobs | DABs YAML keys unchanged |
-| (new) | Lakeflow Connect | Managed ingestion, 100+ connectors |
-| (new) | Lakeflow Designer | No-code pipeline builder, outputs Python |
-| Databricks Asset Bundles | Databricks Asset Bundles (DABs) | Name unchanged |
-| MLflow (any version) | MLflow 3 | Redesigned for GenAI; use `mlflow[databricks]>=3.1` |
-| Staging/Production stage transitions | `@champion` / `@challenger` aliases | Stage transitions deprecated in UC model registry |
-| Feature Store (separate API) | UC table with PRIMARY KEY = Feature Store table | Simplified in DBR 14.x+ |
-| (new) | Unity AI Gateway | Runtime governance for AI; GA August 2026 |
-| (new) | Genie Ontology | Self-improving semantic context layer |
-| (new) | Genie ONE | Agentic coworker; GA DAIS 2026 |
-| (new) | Omnigent | Open-source meta-harness (Apache 2.0) |
-| (new) | Lakebase | Serverless Postgres + LTAP |
+| Old name                             | Current name                                    | Notes                                               |
+| ------------------------------------ | ----------------------------------------------- | --------------------------------------------------- |
+| Delta Live Tables (DLT)              | Lakeflow Spark Declarative Pipelines            | `import dlt` and all decorators unchanged           |
+| Databricks Workflows                 | Lakeflow Jobs                                   | DABs YAML keys unchanged                            |
+| (new)                                | Lakeflow Connect                                | Managed ingestion, 100+ connectors                  |
+| (new)                                | Lakeflow Designer                               | No-code pipeline builder, outputs Python            |
+| Databricks Asset Bundles             | Databricks Asset Bundles (DABs)                 | Name unchanged                                      |
+| MLflow (any version)                 | MLflow 3                                        | Redesigned for GenAI; use `mlflow[databricks]>=3.1` |
+| Staging/Production stage transitions | `@champion` / `@challenger` aliases             | Stage transitions deprecated in UC model registry   |
+| Feature Store (separate API)         | UC table with PRIMARY KEY = Feature Store table | Simplified in DBR 14.x+                             |
+| (new)                                | Unity AI Gateway                                | Runtime governance for AI; GA August 2026           |
+| (new)                                | Genie Ontology                                  | Self-improving semantic context layer               |
+| (new)                                | Genie ONE                                       | Agentic coworker; GA DAIS 2026                      |
+| (new)                                | Omnigent                                        | Open-source meta-harness (Apache 2.0)               |
+| (new)                                | Lakebase                                        | Serverless Postgres + LTAP                          |
 
 ---
 
@@ -245,40 +245,41 @@ monitoring), MLflow 3 integration, Genie MCP access points.
 
 ## Cross-Skill Boundaries
 
-| Topic | Where to look |
-|---|---|
-| Medallion Architecture — Bronze/Silver/Gold design | `data-science-expert/references/data_engineering_advanced.md` §1 |
-| Spark internals — DAG, shuffles, AQE, memory model | `data-science-expert/references/data_engineering_advanced.md` §3 |
-| Delta Lake fundamentals — ACID, time travel, MERGE | `data-science-expert/references/data_formats.md` |
-| dbt project structure, models, snapshots, Semantic Layer | `data-science-expert/references/analytics_engineering.md` |
-| Kafka / Event Hubs / streaming architecture decisions | `data-science-expert/references/data_engineering_advanced.md` §10 |
-| Python standards — type hints, Ruff/mypy, pyproject.toml | `data-science-expert` SKILL.md §Python Code Standards |
-| API-level integrations — OAuth2, retries, circuit breakers | `api-engineering` SKILL.md |
-| GBM benchmark (XGBoost/LightGBM/CatBoost) | `data-science-expert/references/gradient_boosting_benchmark.md` |
+| Topic                                                      | Where to look                                                     |
+| ---------------------------------------------------------- | ----------------------------------------------------------------- |
+| Medallion Architecture — Bronze/Silver/Gold design         | `data-science-expert/references/data_engineering_advanced.md` §1  |
+| Spark internals — DAG, shuffles, AQE, memory model         | `data-science-expert/references/data_engineering_advanced.md` §3  |
+| Delta Lake fundamentals — ACID, time travel, MERGE         | `data-science-expert/references/data_formats.md`                  |
+| dbt project structure, models, snapshots, Semantic Layer   | `data-science-expert/references/analytics_engineering.md`         |
+| Kafka / Event Hubs / streaming architecture decisions      | `data-science-expert/references/data_engineering_advanced.md` §10 |
+| Python standards — type hints, Ruff/mypy, pyproject.toml   | `data-science-expert` SKILL.md §Python Code Standards             |
+| API-level integrations — OAuth2, retries, circuit breakers | `api-engineering` SKILL.md                                        |
+| GBM benchmark (XGBoost/LightGBM/CatBoost)                  | `data-science-expert/references/gradient_boosting_benchmark.md`   |
 
 ---
 
 ## Naming Conventions
 
-| Element | Convention | Example |
-|---|---|---|
-| Unity Catalog catalog | `{env}_{domain}` | `prod_sales`, `dev_marketing` |
-| Unity Catalog schema | `{layer}_{subject}` | `bronze_orders`, `gold_revenue` |
-| Delta tables | `snake_case` | `silver_customer_events` |
-| DLT pipeline functions | `snake_case` (no prefix clash with `@dlt.table`) | `silver_orders`, `gold_daily_revenue` |
-| MLflow experiment | `/Shared/{team}/{project}` | `/Shared/churn-model/gbm-benchmark` |
-| MLflow registered model | `{catalog}.{schema}.{model_name}` | `prod_sales.ml.churn_classifier` |
-| Job / pipeline names | `[{ENV}] {Name}` | `[PROD] Orders Medallion` |
-| Bundle target | `dev`, `staging`, `prod` (lowercase) | — |
-| Cluster policy | `{team}_{workload}` | `de_job_cluster`, `ml_interactive` |
-| Unity AI Gateway endpoint | `{team}-ai-gateway` | `data-engineering-ai-gateway` |
-| Agent / model in registry | `{catalog}.agents.{name}` | `prod_finance.agents.invoice_extractor` |
+| Element                   | Convention                                       | Example                                 |
+| ------------------------- | ------------------------------------------------ | --------------------------------------- |
+| Unity Catalog catalog     | `{env}_{domain}`                                 | `prod_sales`, `dev_marketing`           |
+| Unity Catalog schema      | `{layer}_{subject}`                              | `bronze_orders`, `gold_revenue`         |
+| Delta tables              | `snake_case`                                     | `silver_customer_events`                |
+| DLT pipeline functions    | `snake_case` (no prefix clash with `@dlt.table`) | `silver_orders`, `gold_daily_revenue`   |
+| MLflow experiment         | `/Shared/{team}/{project}`                       | `/Shared/churn-model/gbm-benchmark`     |
+| MLflow registered model   | `{catalog}.{schema}.{model_name}`                | `prod_sales.ml.churn_classifier`        |
+| Job / pipeline names      | `[{ENV}] {Name}`                                 | `[PROD] Orders Medallion`               |
+| Bundle target             | `dev`, `staging`, `prod` (lowercase)             | —                                       |
+| Cluster policy            | `{team}_{workload}`                              | `de_job_cluster`, `ml_interactive`      |
+| Unity AI Gateway endpoint | `{team}-ai-gateway`                              | `data-engineering-ai-gateway`           |
+| Agent / model in registry | `{catalog}.agents.{name}`                        | `prod_finance.agents.invoice_extractor` |
 
 ---
 
 ## Reference Files
 
 **Data Engineering**
+
 - `references/cluster-compute.md` — Cluster types, Photon, instance pools, autoscaling, spot, policies, init scripts
 - `references/lakeflow.md` — Lakeflow GA: Connect, Declarative Pipelines, Jobs, Designer; terminology migration
 - `references/delta-live-tables.md` — DLT/Lakeflow pipeline API, expectations, CDC/SCD, pipeline modes, event monitoring
@@ -287,13 +288,10 @@ monitoring), MLflow 3 integration, Genie MCP access points.
 - `references/auto-loader.md` — cloudFiles, schema evolution, file notification mode, rescued data, checkpointing
 - `references/cicd-dabs.md` — bundle.yml, targets, GitHub Actions, Databricks Connect v2, deployment workflow
 - `references/performance-optimization.md` — OPTIMIZE, liquid clustering, Z-Ordering, VACUUM, Photon, Delta cache
-
-**ML Lifecycle**
+  **ML Lifecycle**
 - `references/mlflow-feature-store.md` — MLflow 3, model registry (aliases), Mosaic AI serving, Feature Store, quality loop
-
-**Analytics**
+  **Analytics**
 - `references/databricks-sql.md` — Warehouse types, Lakeview, BI connectors, AI functions (ai_parse_document), optimization
-
-**Agentic AI**
+  **Agentic AI**
 - `references/agentic-platform.md` — Unity AI Gateway, Model vs Harness, budgets, smart routing, contextual policies, Omnigent, Lakebase
 - `references/genie-ontology.md` — Genie Ontology, Genie suite (ONE/Agents/Code/App Builder/ZeroOps/AI/BI), AgentBricks, quality loop detail

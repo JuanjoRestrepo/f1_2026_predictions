@@ -58,7 +58,6 @@ CMD ["python", "app.py"]                 # layer 7
 ```
 
 **What changes in practice:**
-
 - Edit `app.py` → only layers 6–7 rebuild. Layers 1–5 are fully cached. Fast.
 - Edit `requirements.txt` → layers 4–7 rebuild. Layers 1–3 cached. Acceptable.
 - Change base image → all layers rebuild. Rare.
@@ -154,6 +153,8 @@ cross-runner caching.
 
 ---
 
+
+
 ```dockerfile
 # syntax=docker/dockerfile:1
 FROM node:20-alpine AS base
@@ -209,7 +210,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 ## docker-compose.yml (Full Stack: Next.js + Postgres + Redis)
 
 ```yaml
-version: '3.9'
+version: "3.9"
 
 services:
   app:
@@ -217,7 +218,7 @@ services:
       context: .
       target: runner
     ports:
-      - '3000:3000'
+      - "3000:3000"
     environment:
       DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db:5432/mydb
       REDIS_URL: redis://redis:6379
@@ -237,7 +238,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: mydb
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -286,11 +287,11 @@ spec:
                 name: my-app-secrets
           resources:
             requests:
-              cpu: '100m'
-              memory: '128Mi'
+              cpu: "100m"
+              memory: "128Mi"
             limits:
-              cpu: '500m'
-              memory: '512Mi'
+              cpu: "500m"
+              memory: "512Mi"
           readinessProbe:
             httpGet:
               path: /health

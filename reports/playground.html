@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>F1 2026 Circuit & Model Intelligence Playground</title>
+  <style>
+    :root {
+      --bg-dark: #0b0e14;
+      --bg-card: #161b22;
+      --bg-card-hover: #1c2128;
+      --border: #30363d;
+      --accent-red: #e10600;
+      --accent-cyan: #27f4d2;
+      --accent-gold: #ffb800;
+      --text-main: #f0f6fc;
+      --text-muted: #8b949e;
+      --font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      font-size: 14px;
+      line-height: 1.5;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    header {
+      background: rgba(22, 27, 34, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      background: var(--accent-red);
+      border-radius: 6px;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 16px;
+      color: white;
+      box-shadow: 0 0 15px rgba(225, 6, 0, 0.4);
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .preset-bar {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-preset {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-preset:hover, .btn-preset.active {
+      background: var(--accent-red);
+      border-color: var(--accent-red);
+      color: white;
+      box-shadow: 0 0 10px rgba(225, 6, 0, 0.3);
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+      padding: 24px;
+      flex: 1;
+      max-width: 1800px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .panel-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .control-group {
+      margin-bottom: 16px;
+    }
+
+    .control-group:last-child { margin-bottom: 0; }
+
+    .label-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+
+    .val-badge {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-cyan);
+      background: rgba(39, 244, 210, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent-red);
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(225, 6, 0, 0.6);
+      transition: transform 0.1s ease;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    .panel-preview {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .podium-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .podium-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .podium-card.p1 {
+      border-color: var(--accent-gold);
+      background: linear-gradient(180deg, rgba(255, 184, 0, 0.08) 0%, var(--bg-card) 100%);
+    }
+
+    .podium-rank {
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .podium-card.p1 .podium-rank { color: var(--accent-gold); }
+
+    .driver-abbr {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+
+    .team-name {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .win-prob {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--accent-cyan);
+      font-family: var(--font-mono);
+    }
+
+    .table-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 12px 16px;
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      font-size: 13px;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg-card-hover); }
+
+    .prompt-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      margin-top: auto;
+    }
+
+    .prompt-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .btn-copy {
+      background: var(--accent-cyan);
+      color: #000;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-copy:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .prompt-text {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      padding: 12px;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #7ee787;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="brand-logo">F1</div>
+      <div class="brand-title">2026 Prediction & Circuit Intelligence Playground</div>
+    </div>
+    <div class="preset-bar">
+      <button class="btn-preset active" onclick="applyPreset('madrid')">Madrid GP (New Street)</button>
+      <button class="btn-preset" onclick="applyPreset('monaco')">Monaco High Downforce</button>
+      <button class="btn-preset" onclick="applyPreset('monza')">Monza High Speed</button>
+      <button class="btn-preset" onclick="applyPreset('wet')">Wet Race Chaos</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel-controls">
+      <div class="card">
+        <div class="card-title">Circuit Characteristics</div>
+        <div class="control-group">
+          <div class="label-row">
+            <span>Streetness Index</span>
+            <span class="val-badge" id="val-streetness">0.80</span>
+          </div>
+          <input type="range" id="slider-streetness" min="0" max="1" step="0.05" value="0.80" oninput="updateAll()">
+        </div>
+        <div class="control-group">
+          <div class="label-row">
+            <span>Speed Bias</span>
+            <span class="val-badge" id="val-speed">0.70</span>
+          </div>
+          <input type="range" id="slider-speed" min="0" max="1" step="0.05" value="0.70" oninput="updateAll()">
+        </div>
+        <div class="control-group">
+          <div class="label-row">
+            <span>Overtaking Ease</span>
+            <span class="val-badge" id="val-overtaking">0.40</span>
+          </div>
+          <input type="range" id="slider-overtaking" min="0" max="1" step="0.05" value="0.40" oninput="updateAll()">
+        </div>
+        <div class="control-group">
+          <div class="label-row">
+            <span>Tyre Degradation Stress</span>
+            <span class="val-badge" id="val-tyre">0.85</span>
+          </div>
+          <input type="range" id="slider-tyre" min="0" max="1" step="0.05" value="0.85" oninput="updateAll()">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Model Feature Weights</div>
+        <div class="control-group">
+          <div class="label-row">
+            <span>FP2 Clean Air Pace</span>
+            <span class="val-badge" id="val-fp2">40%</span>
+          </div>
+          <input type="range" id="slider-fp2" min="0" max="100" step="5" value="40" oninput="updateAll()">
+        </div>
+        <div class="control-group">
+          <div class="label-row">
+            <span>Qualifying Gap</span>
+            <span class="val-badge" id="val-quali">35%</span>
+          </div>
+          <input type="range" id="slider-quali" min="0" max="100" step="5" value="35" oninput="updateAll()">
+        </div>
+        <div class="control-group">
+          <div class="label-row">
+            <span>EWMA Form (Recent Recency)</span>
+            <span class="val-badge" id="val-ewma">25%</span>
+          </div>
+          <input type="range" id="slider-ewma" min="0" max="100" step="5" value="25" oninput="updateAll()">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Environment & Weather</div>
+        <div class="control-group">
+          <div class="label-row">
+            <span>Rain Probability</span>
+            <span class="val-badge" id="val-rain">15%</span>
+          </div>
+          <input type="range" id="slider-rain" min="0" max="100" step="5" value="15" oninput="updateAll()">
+        </div>
+      </div>
+    </section>
+
+    <section class="panel-preview">
+      <div class="podium-grid">
+        <div class="podium-card p2">
+          <div class="podium-rank">P2</div>
+          <div class="driver-abbr" id="p2-driver">VER</div>
+          <div class="team-name" id="p2-team">Red Bull Racing</div>
+          <div class="win-prob" id="p2-prob">28.4%</div>
+        </div>
+        <div class="podium-card p1">
+          <div class="podium-rank">P1 🏆</div>
+          <div class="driver-abbr" id="p1-driver">RUS</div>
+          <div class="team-name" id="p1-team">Mercedes</div>
+          <div class="win-prob" id="p1-prob">42.1%</div>
+        </div>
+        <div class="podium-card p3">
+          <div class="podium-rank">P3</div>
+          <div class="driver-abbr" id="p3-driver">ANT</div>
+          <div class="team-name" id="p3-team">Mercedes</div>
+          <div class="win-prob" id="p3-prob">14.8%</div>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Pos</th>
+              <th>Driver</th>
+              <th>Team</th>
+              <th>Simulated Race Pace</th>
+              <th>Clean Air Delta</th>
+              <th>Win Prob</th>
+            </tr>
+          </thead>
+          <tbody id="hierarchy-rows">
+            <!-- Dynamic rows -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="prompt-box">
+        <div class="prompt-header">
+          <div class="card-title" style="margin: 0;">Generated Simulation Command & Prompt</div>
+          <button class="btn-copy" onclick="copyPrompt()">Copy Prompt</button>
+        </div>
+        <div class="prompt-text" id="prompt-output">uv run python scripts/simulate_race.py --round 14 --event "Spanish Grand Prix"</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const DRIVERS = [
+      { abbr: "RUS", team: "Mercedes", basePace: 81.0, fp2Prior: 0.00, qualiBonus: 0.0 },
+      { abbr: "VER", team: "Red Bull Racing", basePace: 81.12, fp2Prior: 0.13, qualiBonus: 0.05 },
+      { abbr: "ANT", team: "Mercedes", basePace: 81.45, fp2Prior: 0.55, qualiBonus: 0.10 },
+      { abbr: "HAM", team: "Ferrari", basePace: 81.65, fp2Prior: 0.90, qualiBonus: 0.12 },
+      { abbr: "LEC", team: "Ferrari", basePace: 81.68, fp2Prior: 0.90, qualiBonus: 0.08 },
+      { abbr: "OCO", team: "Haas", basePace: 81.75, fp2Prior: 0.92, qualiBonus: 0.20 },
+      { abbr: "PIA", team: "McLaren", basePace: 82.20, fp2Prior: 1.51, qualiBonus: 0.15 },
+      { abbr: "NOR", team: "McLaren", basePace: 82.25, fp2Prior: 1.51, qualiBonus: 0.18 },
+      { abbr: "GAS", team: "Alpine", basePace: 82.35, fp2Prior: 1.60, qualiBonus: 0.25 },
+      { abbr: "ALO", team: "Aston Martin", basePace: 84.10, fp2Prior: 4.33, qualiBonus: 0.30 }
+    ];
+
+    const PRESETS = {
+      madrid: { streetness: 0.80, speed: 0.70, overtaking: 0.40, tyre: 0.85, fp2: 40, quali: 35, ewma: 25, rain: 15 },
+      monaco: { streetness: 1.00, speed: 0.20, overtaking: 0.05, tyre: 0.40, fp2: 25, quali: 60, ewma: 15, rain: 20 },
+      monza: { streetness: 0.10, speed: 0.95, overtaking: 0.80, tyre: 0.60, fp2: 50, quali: 30, ewma: 20, rain: 10 },
+      wet: { streetness: 0.80, speed: 0.60, overtaking: 0.50, tyre: 0.90, fp2: 20, quali: 30, ewma: 50, rain: 85 }
+    };
+
+    function applyPreset(key) {
+      document.querySelectorAll('.btn-preset').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      const p = PRESETS[key];
+      document.getElementById('slider-streetness').value = p.streetness;
+      document.getElementById('slider-speed').value = p.speed;
+      document.getElementById('slider-overtaking').value = p.overtaking;
+      document.getElementById('slider-tyre').value = p.tyre;
+      document.getElementById('slider-fp2').value = p.fp2;
+      document.getElementById('slider-quali').value = p.quali;
+      document.getElementById('slider-ewma').value = p.ewma;
+      document.getElementById('slider-rain').value = p.rain;
+      updateAll();
+    }
+
+    function updateAll() {
+      const streetness = parseFloat(document.getElementById('slider-streetness').value);
+      const speed = parseFloat(document.getElementById('slider-speed').value);
+      const overtaking = parseFloat(document.getElementById('slider-overtaking').value);
+      const tyre = parseFloat(document.getElementById('slider-tyre').value);
+      const fp2W = parseFloat(document.getElementById('slider-fp2').value) / 100;
+      const qualiW = parseFloat(document.getElementById('slider-quali').value) / 100;
+      const ewmaW = parseFloat(document.getElementById('slider-ewma').value) / 100;
+      const rain = parseInt(document.getElementById('slider-rain').value);
+
+      document.getElementById('val-streetness').textContent = streetness.toFixed(2);
+      document.getElementById('val-speed').textContent = speed.toFixed(2);
+      document.getElementById('val-overtaking').textContent = overtaking.toFixed(2);
+      document.getElementById('val-tyre').textContent = tyre.toFixed(2);
+      document.getElementById('val-fp2').textContent = (fp2W * 100).toFixed(0) + '%';
+      document.getElementById('val-quali').textContent = (qualiW * 100).toFixed(0) + '%';
+      document.getElementById('val-ewma').textContent = (ewmaW * 100).toFixed(0) + '%';
+      document.getElementById('val-rain').textContent = rain + '%';
+
+      // Compute driver simulated paces
+      const evaluated = DRIVERS.map(d => {
+        let pace = d.basePace;
+        pace += d.fp2Prior * fp2W;
+        pace += d.qualiBonus * qualiW * (1.0 - overtaking);
+        if (rain > 50) {
+          if (d.abbr === "VER" || d.abbr === "HAM") pace -= 0.3; // Rain specialists
+        }
+        return { ...d, simPace: pace };
+      }).sort((a, b) => a.simPace - b.simPace);
+
+      // Win probability calculation (Softmax over inverse pace)
+      const minPace = evaluated[0].simPace;
+      const expScores = evaluated.map(d => Math.exp(-3.0 * (d.simPace - minPace)));
+      const sumExp = expScores.reduce((a, b) => a + b, 0);
+
+      evaluated.forEach((d, i) => {
+        d.prob = ((expScores[i] / sumExp) * 100).toFixed(1);
+      });
+
+      // Update Podium UI
+      document.getElementById('p1-driver').textContent = evaluated[0].abbr;
+      document.getElementById('p1-team').textContent = evaluated[0].team;
+      document.getElementById('p1-prob').textContent = evaluated[0].prob + '%';
+
+      document.getElementById('p2-driver').textContent = evaluated[1].abbr;
+      document.getElementById('p2-team').textContent = evaluated[1].team;
+      document.getElementById('p2-prob').textContent = evaluated[1].prob + '%';
+
+      document.getElementById('p3-driver').textContent = evaluated[2].abbr;
+      document.getElementById('p3-team').textContent = evaluated[2].team;
+      document.getElementById('p3-prob').textContent = evaluated[2].prob + '%';
+
+      // Update Table UI
+      const tbody = document.getElementById('hierarchy-rows');
+      tbody.innerHTML = evaluated.map((d, i) => `
+        <tr>
+          <td><strong>P${i + 1}</strong></td>
+          <td><strong>${d.abbr}</strong></td>
+          <td>${d.team}</td>
+          <td>${d.simPace.toFixed(3)}s</td>
+          <td>+${d.fp2Prior.toFixed(2)}s</td>
+          <td style="color: var(--accent-cyan); font-weight: 700;">${d.prob}%</td>
+        </tr>
+      `).join('');
+
+      // Update Prompt
+      const weatherArg = rain > 50 ? ' --weather wet' : '';
+      document.getElementById('prompt-output').textContent = 
+        `uv run python scripts/simulate_race.py --round 14 --event "Spanish Grand Prix"${weatherArg}\n` +
+        `# Config: streetness=${streetness}, overtaking_ease=${overtaking}, tyre_stress=${tyre}, FP2_weight=${(fp2W*100)}%`;
+    }
+
+    function copyPrompt() {
+      const text = document.getElementById('prompt-output').textContent;
+      navigator.clipboard.writeText(text);
+      const btn = document.querySelector('.btn-copy');
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = 'Copy Prompt'; }, 2000);
+    }
+
+    // Init
+    updateAll();
+  </script>
+</body>
+</html>

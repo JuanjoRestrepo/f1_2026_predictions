@@ -86,6 +86,10 @@ class CircuitConfig(BaseModel):
     )
     drs_zones: int = Field(ge=0, description="Number of DRS zones")
     circuit_type: str = Field(description="'street', 'permanent', or 'hybrid'")
+    streetness: float = Field(default=0.30, ge=0.0, le=1.0, description="Street circuit index 0.0-1.0")
+    speed_bias: float = Field(default=0.50, ge=0.0, le=1.0, description="Speed bias index 0.0-1.0")
+    overtaking_ease: float = Field(default=0.50, ge=0.0, le=1.0, description="Overtaking ease index 0.0-1.0")
+    tyre_stress: float = Field(default=0.50, ge=0.0, le=1.0, description="Tyre stress index 0.0-1.0")
 
     @field_validator("tyre_wear_type")
     @classmethod

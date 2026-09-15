@@ -1,7 +1,6 @@
 # EDA Templates Reference
 
 ## Table of Contents
-
 0. [Environment Setup (uv)](#environment)
 1. [Visualization Strategy Guide — Plot Selection](#viz-strategy)
 2. [Tabular / Flat File EDA](#tabular)
@@ -49,20 +48,17 @@ The box plot is a non-parametric summary based on order statistics. It makes no
 assumption about the underlying distribution shape.
 
 Components:
-
 - Median (Q2): the center line inside the box
 - Interquartile range (IQR): the box spans Q1 to Q3, containing the middle 50% of data
 - Whiskers: extend to Q1 - 1.5*IQR and Q3 + 1.5*IQR (Tukey fences)
 - Outliers: individual points beyond the whisker fences
 
 Strengths:
-
 - Robust outlier detection using a principled, formula-based rule
 - Fast, unambiguous comparison of medians and spread across many groups
 - Compact — scales cleanly to 10, 20, or 50 side-by-side groups
 
 Limitations:
-
 - Completely hides distributional shape — a bimodal distribution and a uniform
   distribution with identical quartiles are indistinguishable in a box plot
 - Misrepresents sample size — a box with n=15 looks identical to one with n=15,000
@@ -74,14 +70,12 @@ on both sides. Width at any point on the y-axis represents the density of observ
 at that value.
 
 Strengths:
-
 - Reveals full distributional shape: skewness, multimodality (multiple peaks), heavy tails
 - The KDE is a mathematically smoothed representation of the histogram — it exposes
   structure that quartile summaries suppress
 - Effective for detecting bimodal distributions, which are invisible in box plots
 
 Limitations:
-
 - KDE requires bandwidth selection — a poorly chosen bandwidth over-smooths or
   under-smooths the distribution, potentially creating phantom peaks or hiding real ones
 - Misleading at small sample sizes (n < 30) — the KDE implies smooth density where
@@ -94,20 +88,20 @@ The best practice in professional EDA is the hybrid: render the violin plot for
 distributional shape, and overlay a thin box plot inside it for the summary statistics.
 This eliminates the trade-off entirely.
 
-> Wilke (2019) in _Fundamentals of Data Visualization_ (O'Reilly) explicitly recommends
+> Wilke (2019) in *Fundamentals of Data Visualization* (O'Reilly) explicitly recommends
 > the hybrid as the preferred approach for continuous distributions, noting that the
 > combination conveys more information than either plot alone without adding visual clutter.
 
 #### Decision Table
 
-| Objective                                             | Recommended Plot                             |
-| ----------------------------------------------------- | -------------------------------------------- |
-| Detect outliers, compare medians across many groups   | Box plot                                     |
-| Understand distributional shape, detect multimodality | Violin plot                                  |
-| Complete EDA — shape + summary statistics             | Hybrid (violin + inner box plot)             |
-| Small sample size (n < 30)                            | Box plot only — KDE is unreliable at small n |
-| Publication with space constraints                    | Box plot                                     |
-| Interactive EDA for data exploration                  | Violin plot or hybrid                        |
+| Objective | Recommended Plot |
+|---|---|
+| Detect outliers, compare medians across many groups | Box plot |
+| Understand distributional shape, detect multimodality | Violin plot |
+| Complete EDA — shape + summary statistics | Hybrid (violin + inner box plot) |
+| Small sample size (n < 30) | Box plot only — KDE is unreliable at small n |
+| Publication with space constraints | Box plot |
+| Interactive EDA for data exploration | Violin plot or hybrid |
 
 #### Implementation
 
@@ -244,28 +238,28 @@ def plot_distribution_comparison(
 
 Apply this table when choosing any EDA visualization — not just for distributions:
 
-| Data structure                   | Analysis goal          | Recommended plot                                                                |
-| -------------------------------- | ---------------------- | ------------------------------------------------------------------------------- |
-| One continuous variable          | Distribution shape     | Histogram + KDE (small n); violin (large n)                                     |
-| One continuous variable          | Outlier detection      | Box plot                                                                        |
-| One continuous variable          | Full picture           | Hybrid violin                                                                   |
-| One continuous + one categorical | Group comparison       | Box plot (many groups) / Hybrid violin (few groups)                             |
-| Two continuous variables         | Relationship           | Scatter plot + regression line                                                  |
-| Two continuous variables         | Density at scale       | Hex bin or 2D KDE (when n > 10k and scatter overplotting occurs)                |
-| Many continuous variables        | Pairwise relationships | `seaborn.pairplot()`                                                            |
-| Many continuous variables        | Correlation structure  | Heatmap (Pearson or Spearman)                                                   |
-| One categorical variable         | Frequency              | Horizontal bar chart, ordered by value (never pie chart in analytical contexts) |
-| Time series                      | Trend + seasonality    | Line chart; decomposition plot                                                  |
-| High-dimensional data            | Structure / clusters   | PCA scatter (2D projection)                                                     |
+| Data structure | Analysis goal | Recommended plot |
+|---|---|---|
+| One continuous variable | Distribution shape | Histogram + KDE (small n); violin (large n) |
+| One continuous variable | Outlier detection | Box plot |
+| One continuous variable | Full picture | Hybrid violin |
+| One continuous + one categorical | Group comparison | Box plot (many groups) / Hybrid violin (few groups) |
+| Two continuous variables | Relationship | Scatter plot + regression line |
+| Two continuous variables | Density at scale | Hex bin or 2D KDE (when n > 10k and scatter overplotting occurs) |
+| Many continuous variables | Pairwise relationships | `seaborn.pairplot()` |
+| Many continuous variables | Correlation structure | Heatmap (Pearson or Spearman) |
+| One categorical variable | Frequency | Horizontal bar chart, ordered by value (never pie chart in analytical contexts) |
+| Time series | Trend + seasonality | Line chart; decomposition plot |
+| High-dimensional data | Structure / clusters | PCA scatter (2D projection) |
 
 ### Visualization Integrity Rules — Anti-patterns and Corrections
 
 The credibility of a data analysis depends on the accuracy of its visual communication.
 Each rule below addresses a documented cognitive bias or perceptual limitation.
 
-> **Reference**: Cairo, A. (2016). _The Truthful Art: Data, Charts, and Maps for Communication_.
-> New Riders Press. Wilke, C. O. (2019). _Fundamentals of Data Visualization_. O'Reilly.
-> Tufte, E. R. (2001). _The Visual Display of Quantitative Information_ (2nd ed.). Graphics Press.
+> **Reference**: Cairo, A. (2016). *The Truthful Art: Data, Charts, and Maps for Communication*.
+> New Riders Press. Wilke, C. O. (2019). *Fundamentals of Data Visualization*. O'Reilly.
+> Tufte, E. R. (2001). *The Visual Display of Quantitative Information* (2nd ed.). Graphics Press.
 
 **Rule 1 — Categorical comparison: use ordered horizontal bar charts, not pie charts.**
 The human visual system compares lengths along a common baseline with high precision.
@@ -322,16 +316,16 @@ the explicit goal is showing part-to-whole composition across categories.
 
 #### Anti-pattern Quick Reference
 
-| Anti-pattern                                  | Correct alternative              | Reason                                          |
-| --------------------------------------------- | -------------------------------- | ----------------------------------------------- |
-| Pie chart with > 4 categories                 | Horizontal bar chart, ordered    | Length comparison is more accurate than angle   |
-| Bar chart for time series trends              | Line chart                       | Bars fragment continuity; lines show flow       |
-| Mean reported alone                           | Mean + std dev + histogram       | Mean conceals distributional shape              |
-| Y-axis not starting at zero (bar chart)       | Y-axis from 0                    | Truncation exaggerates magnitude differences    |
-| Scatter plot with no trend line               | Scatter + OLS line + r/R²        | Prevents subjective pattern attribution         |
-| 3D chart                                      | 2D flat equivalent               | 3D perspective introduces perceptual distortion |
-| Sequential color scale on correlation heatmap | Divergent scale (blue–white–red) | Sequential scale hides polarity                 |
-| 100% stacked bars for magnitude comparison    | Grouped bar chart                | Floating baselines prevent accurate comparison  |
+| Anti-pattern | Correct alternative | Reason |
+|---|---|---|
+| Pie chart with > 4 categories | Horizontal bar chart, ordered | Length comparison is more accurate than angle |
+| Bar chart for time series trends | Line chart | Bars fragment continuity; lines show flow |
+| Mean reported alone | Mean + std dev + histogram | Mean conceals distributional shape |
+| Y-axis not starting at zero (bar chart) | Y-axis from 0 | Truncation exaggerates magnitude differences |
+| Scatter plot with no trend line | Scatter + OLS line + r/R² | Prevents subjective pattern attribution |
+| 3D chart | 2D flat equivalent | 3D perspective introduces perceptual distortion |
+| Sequential color scale on correlation heatmap | Divergent scale (blue–white–red) | Sequential scale hides polarity |
+| 100% stacked bars for magnitude comparison | Grouped bar chart | Floating baselines prevent accurate comparison |
 
 ---
 
@@ -668,18 +662,18 @@ realization of a stochastic process {Y_t, t ∈ T}.
 **Why time series violates standard ML assumptions:**
 Most classical statistical models and ML algorithms assume observations are
 Independent and Identically Distributed (IID). Time series data breaks this
-assumption entirely: each observation Y*t is statistically dependent on its
-past values Y*{t-1}, Y*{t-2}, ..., Y*{t-k}. Ignoring this dependence in a
+assumption entirely: each observation Y_t is statistically dependent on its
+past values Y_{t-1}, Y_{t-2}, ..., Y_{t-k}. Ignoring this dependence in a
 standard regression model causes underestimated standard errors, producing
 artificially narrow confidence intervals and invalid significance tests.
 
 **Three statistical properties that must be assessed in every time series EDA:**
 
-| Property                       | Definition                                                     | Consequence if Ignored                                              |
-| ------------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Autocorrelation                | Correlation of Y*t with its own lagged values Y*{t-k}          | Standard regression errors are underestimated; p-values are invalid |
-| Stationarity                   | Mean and variance of Y_t are constant over time                | Models fit spurious relationships; forecasts are unreliable         |
-| Conditional Heteroskedasticity | Variance of Y_t depends on past values (volatility clustering) | Risk is underquantified; model confidence intervals are wrong       |
+| Property | Definition | Consequence if Ignored |
+|---|---|---|
+| Autocorrelation | Correlation of Y_t with its own lagged values Y_{t-k} | Standard regression errors are underestimated; p-values are invalid |
+| Stationarity | Mean and variance of Y_t are constant over time | Models fit spurious relationships; forecasts are unreliable |
+| Conditional Heteroskedasticity | Variance of Y_t depends on past values (volatility clustering) | Risk is underquantified; model confidence intervals are wrong |
 
 **On stationarity in depth:** A non-stationary series has a time-varying mean,
 variance, or both. Fitting a model to a non-stationary series risks discovering
@@ -693,7 +687,6 @@ ARIMA, VAR, and most classical forecasting models.
     Y_t = T_t + S_t + R_t
 
 Where:
-
 - T_t — Trend: the underlying long-term movement in the mean level
 - S_t — Seasonality: periodic, repeating fluctuations (e.g., weekly, monthly, annual)
 - R_t — Residual (noise): what remains after removing trend and seasonality
@@ -707,12 +700,12 @@ grows proportionally with the trend level (common in economic and sales data).
 
 **Business domains where time series is the primary analytical tool:**
 
-| Domain                | Application                                                       | Key Challenge                                                  |
-| --------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------- |
-| Supply Chain / Retail | Demand forecasting, inventory optimization                        | Seasonality, promotional events, intermittent demand           |
-| Energy / Smart Grids  | Load forecasting, renewable integration                           | High-frequency data, weather dependency, real-time constraints |
-| Fintech / Trading     | Regime detection, algorithmic execution, risk modeling            | Non-stationarity, volatility clustering, market microstructure |
-| Healthcare            | ECG/EEG signal analysis, patient monitoring, disease surveillance | Non-stationarity, irregular sampling, noise                    |
+| Domain | Application | Key Challenge |
+|---|---|---|
+| Supply Chain / Retail | Demand forecasting, inventory optimization | Seasonality, promotional events, intermittent demand |
+| Energy / Smart Grids | Load forecasting, renewable integration | High-frequency data, weather dependency, real-time constraints |
+| Fintech / Trading | Regime detection, algorithmic execution, risk modeling | Non-stationarity, volatility clustering, market microstructure |
+| Healthcare | ECG/EEG signal analysis, patient monitoring, disease surveillance | Non-stationarity, irregular sampling, noise |
 
 ### Implementation
 
@@ -921,13 +914,15 @@ def fit_arch_garch(series: pd.Series, p: int = 1, q: int = 1) -> object:
 
 ### References
 
-- Hyndman, R. J., & Athanasopoulos, G. (2021). _Forecasting: Principles and Practice_ (3rd ed.). OTexts. [Available free at otexts.com/fpp3]
-- Box, G. E. P., Jenkins, G. M., & Reinsel, G. C. (2015). _Time Series Analysis: Forecasting and Control_. Wiley.
-- Hamilton, J. D. (1994). _Time Series Analysis_. Princeton University Press.
-- Taylor, S. J., & Letham, B. (2018). Forecasting at Scale. _The American Statistician_, 72(1), 37–45. [Facebook Prophet]
-- Brockwell, P. J., & Davis, R. A. (2016). _Introduction to Time Series and Forecasting_. Springer.
-- Engle, R. F. (1982). Autoregressive Conditional Heteroskedasticity with Estimates of the Variance of United Kingdom Inflation. _Econometrica_, 50(4), 987–1007. [Original ARCH paper]
-- Bollerslev, T. (1986). Generalized Autoregressive Conditional Heteroskedasticity. _Journal of Econometrics_, 31(3), 307–327. [Original GARCH paper]
+- Hyndman, R. J., & Athanasopoulos, G. (2021). *Forecasting: Principles and Practice* (3rd ed.). OTexts. [Available free at otexts.com/fpp3]
+- Box, G. E. P., Jenkins, G. M., & Reinsel, G. C. (2015). *Time Series Analysis: Forecasting and Control*. Wiley.
+- Hamilton, J. D. (1994). *Time Series Analysis*. Princeton University Press.
+- Taylor, S. J., & Letham, B. (2018). Forecasting at Scale. *The American Statistician*, 72(1), 37–45. [Facebook Prophet]
+- Brockwell, P. J., & Davis, R. A. (2016). *Introduction to Time Series and Forecasting*. Springer.
+- Engle, R. F. (1982). Autoregressive Conditional Heteroskedasticity with Estimates of the Variance of United Kingdom Inflation. *Econometrica*, 50(4), 987–1007. [Original ARCH paper]
+- Bollerslev, T. (1986). Generalized Autoregressive Conditional Heteroskedasticity. *Journal of Econometrics*, 31(3), 307–327. [Original GARCH paper]
+
+
 
 ---
 
