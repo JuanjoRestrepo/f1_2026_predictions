@@ -33,10 +33,33 @@ class StackingPaceRegressor(BasePaceRegressor):
 
     def _build_estimator(self, random_state: int) -> object:
         """Construct the StackingRegressor with BayesianRidge meta-model."""
-        base_estimators = [
+        from sklearn.ensemble import ExtraTreesRegressor
+
+        base_estimators: list[tuple[str, object]] = [
             ("xgb", xgb.XGBRegressor(**self._xgb_params)),
             ("lgb", LGBMRegressor(**self._lgb_params)),
         ]
+
+        try:
+            import importlib
+
+            catboost_mod = importlib.import_module("catboost")
+            cat_cls = getattr(catboost_mod, "CatBoostRegressor")
+            base_estimators.append(
+                ("cat", cat_cls(verbose=0, random_state=random_state))
+            )
+        except Exception:
+            base_estimators.append(
+                (
+                    "et",
+                    ExtraTreesRegressor(
+                        n_estimators=100,
+                        max_depth=6,
+                        random_state=random_state,
+                    ),
+                )
+            )
+
 
         return StackingRegressor(
             estimators=base_estimators,
@@ -45,6 +68,7 @@ class StackingPaceRegressor(BasePaceRegressor):
             n_jobs=-1,
             passthrough=False,
         )
+
 
     def _fit_model(
         self,

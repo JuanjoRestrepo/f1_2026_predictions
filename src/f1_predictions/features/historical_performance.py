@@ -11,6 +11,8 @@ Rationale:
     the current race).
 """
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
@@ -186,3 +188,71 @@ def add_ewma_form_features(
     )
 
     return result
+
+
+def compute_dynamic_form_priors(
+    summaries_dir: Path | str | None = None,
+    alpha: float = 0.45,
+) -> dict[str, tuple[float, float]]:
+    """Compute dynamic form-based priors from actual race JSON summaries.
+
+    Args:
+        summaries_dir: Path to directory containing actual_results_round_*.json files.
+        alpha: EWMA smoothing factor.
+
+    Returns:
+        Dictionary mapping driver abbreviation to (prior_delta_s, confidence).
+    """
+    import json
+
+    target_dir: Path
+    if summaries_dir is None:
+        repo_root = Path(__file__).resolve().parents[3]
+        target_dir = repo_root / "reports" / "2026" / "summaries"
+    else:
+        target_dir = Path(summaries_dir)
+
+    if not target_dir.exists():
+        return {}
+
+    driver_positions: dict[str, list[float]] = {}
+    total_rounds = 0
+
+    # Scan for round summary files
+    for filepath in sorted(target_dir.glob("actual_results_round_*.json")):
+        try:
+            with filepath.open(encoding="utf-8") as fh:
+                data = json.load(fh)
+            results = data.get("results", [])
+            if not results:
+                continue
+            total_rounds += 1
+            for item in results:
+                drv = str(item.get("driver", item.get("Abbreviation", "")))
+                pos = float(item.get("position", item.get("Position", 20)))
+                if drv:
+                    driver_positions.setdefault(drv, []).append(pos)
+        except Exception as err:
+            logger.warning("Failed to parse %s: %s", filepath, err)
+
+    if not driver_positions:
+        return {}
+
+    ewma_map: dict[str, float] = {
+        drv: ewma(positions, default=15.0, alpha=alpha)
+        for drv, positions in driver_positions.items()
+    }
+
+    best_ewma = min(ewma_map.values()) if ewma_map else 1.0
+    priors: dict[str, tuple[float, float]] = {}
+
+    for drv, val in ewma_map.items():
+        # Scale position delta to time delta (~0.25s per position step)
+        delta_s = round(float((val - best_ewma) * 0.25), 2)
+        r_count = len(driver_positions[drv])
+        confidence = round(
+            float(np.clip(r_count / max(total_rounds, 1), 0.35, 0.95)), 2
+        )
+        priors[drv] = (max(0.0, delta_s), confidence)
+
+    return priors

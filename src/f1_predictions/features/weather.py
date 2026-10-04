@@ -78,9 +78,44 @@ def add_weather_features(
     if not laps["Rainfall"].isna().all():
         laps["Rainfall"] = laps["Rainfall"].astype(bool)
 
+    laps = add_wet_race_pace_penalty(laps)
+
     logger.debug(
         "Added weather features to %d laps (Rainfall=%s).",
         len(laps),
         laps["Rainfall"].iloc[0] if not laps.empty else "N/A",
     )
     return laps
+
+
+def add_wet_race_pace_penalty(laps: pd.DataFrame) -> pd.DataFrame:
+    """Compute rain intensity index and wet-surface pace penalty seconds.
+
+    Args:
+        laps: Laps DataFrame containing Rainfall and TrackTemp.
+
+    Returns:
+        DataFrame enriched with rain_intensity_index and wet_pace_penalty_s.
+    """
+    result = laps.copy()
+
+    rainfall = (
+        result["Rainfall"].fillna(False).astype(bool)
+        if "Rainfall" in result.columns
+        else pd.Series(False, index=result.index)
+    )
+    track_temp = (
+        result["TrackTemp"].fillna(30.0)
+        if "TrackTemp" in result.columns
+        else pd.Series(30.0, index=result.index)
+    )
+
+    # Wet surface penalty is higher when track temp is low & rainfall is active
+    is_wet = rainfall.astype(float)
+    temp_factor = np.clip((40.0 - track_temp) / 20.0, 0.5, 1.5)
+
+    result["rain_intensity_index"] = (is_wet * temp_factor).astype("float32")
+    # Base wet surface penalty delta: +12.5s for full wet condition
+    result["wet_pace_penalty_s"] = (is_wet * 12.5 * temp_factor).astype("float32")
+
+    return result

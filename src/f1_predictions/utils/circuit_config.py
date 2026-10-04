@@ -219,3 +219,61 @@ def list_configured_circuits() -> list[str]:
     """
     data = _load_yaml()
     return sorted(data.get("circuits", {}).keys())
+
+
+def compute_circuit_similarity(
+    target_circuit: str, top_n: int = 3
+) -> list[tuple[str, float]]:
+    """Find the top_n most structurally similar circuits for transfer learning.
+
+    Computes normalized Euclidean similarity across key layout dimensions:
+    (streetness, speed_bias, overtaking_ease, tyre_stress, overtake_difficulty).
+
+    Args:
+        target_circuit: Name of the circuit to find matches for.
+        top_n: Number of top matching circuits to return.
+
+    Returns:
+        List of tuples (circuit_name, similarity) where similarity is 0.0-1.0.
+
+    """
+    import numpy as np
+
+    target_cfg = get_circuit_config(target_circuit)
+    data = _load_yaml()
+    circuits = data.get("circuits", {})
+
+    target_vec = np.array(
+        [
+            target_cfg.streetness,
+            target_cfg.speed_bias,
+            target_cfg.overtaking_ease,
+            target_cfg.tyre_stress,
+            target_cfg.overtake_difficulty,
+            target_cfg.safety_car_probability,
+        ],
+        dtype=float,
+    )
+
+    matches: list[tuple[str, float]] = []
+    for c_name in circuits:
+        if c_name.lower() == target_circuit.lower():
+            continue
+        c_cfg = get_circuit_config(c_name)
+        c_vec = np.array(
+            [
+                c_cfg.streetness,
+                c_cfg.speed_bias,
+                c_cfg.overtaking_ease,
+                c_cfg.tyre_stress,
+                c_cfg.overtake_difficulty,
+                c_cfg.safety_car_probability,
+            ],
+            dtype=float,
+        )
+        dist = float(np.linalg.norm(target_vec - c_vec))
+        sim = float(1.0 / (1.0 + dist))
+        matches.append((c_name, round(sim, 3)))
+
+    matches.sort(key=lambda x: x[1], reverse=True)
+    return matches[:top_n]
