@@ -301,7 +301,7 @@ def add_published_prior(summary: pd.DataFrame) -> pd.DataFrame:
             model_delta = float(w_obs * obs_delta + (1.0 - w_obs) * prior_delta)
             model_conf = float(max(obs_conf, prior_confidence))
 
-            row = dict(item)
+            row: dict[str, Any] = {str(k): v for k, v in item.items()}
             row["driver"] = driver
             row["published_prior_delta_s"] = prior_delta
             row["published_prior_confidence"] = prior_confidence
