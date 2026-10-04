@@ -1,6 +1,28 @@
 # F1 2026 Predictions - Release Notes
 
+## [v6.3.0] - 2026-10-04
+### Madrid GP External Integration, Dynamic Priors & GitHub Security (`gh-secure`)
+
+#### 🇪🇸 Madrid GP & FastF1 Standalone Prediction Pipeline
+- **`scripts/madrid_prediction_external.py`**: Completed, syntax-error-free executable implementation of Madrid GP predictions integrating FastF1 ETL, clean-air lap filtering, Bayesian shrinkage, and Stacking ML inference (`XGBRegressor` + `Ridge`).
+- **Telemetry Data Ingestion**: FastF1 ingestion across Rounds 1–13 (286 driver-race instances) cached to `data/fastf1_2026_pre_madrid.csv`.
+
+#### 📊 Dynamic Priors & Circuit Transfer Learning
+- **Dynamic Form Priors (`compute_dynamic_form_priors()`)**: Replaced static pre-season assumptions with auto-updating EWMA driver form deltas computed dynamically from actual race summaries (`reports/2026/summaries/actual_results_round_*.json`).
+- **Circuit Similarity Engine (`compute_circuit_similarity()`)**: Added normalized multi-dimensional layout similarity index (`streetness`, `speed_bias`, `overtaking_ease`, `tyre_stress`, `overtake_difficulty`, `safety_car_probability`) for transfer learning on new/semi-street venues.
+- **Wet-Race Penalty (`add_wet_race_pace_penalty()`)**: Engineered `rain_intensity_index` and `wet_pace_penalty_s` for mixed/wet condition modeling (relocated Round 16 Sepang GP).
+- **Ensemble Stacking Refinement**: Added `ExtraTreesRegressor` (and optional `CatBoostRegressor` dynamic loading) as 3rd base learner in `StackingPaceRegressor`.
+- **Rounds 15 & 16 Actual Results**: Created `actual_results_round_15.json` (Baku: RUS winner) and `actual_results_round_16.json` (Sepang: VER winner wet-dry race), with `HAD` (Hadjar) driver support.
+
+#### 🔒 GitHub Security Lab Governance (`gh-secure`)
+- **`SECURITY.md`**: Added Private Vulnerability Reporting policy and security advisory instructions.
+- **`dependabot.yml`**: Enabled weekly automated dependency scanning for Python (`pip`/`uv`) and GitHub Actions.
+- **`codeql.yml`**: Added CodeQL static security analysis workflow for python and actions code scanning.
+
+---
+
 ## [v6.2.1] - 2026-08-23
+
 ### Dutch GP (Round 12) Pre-Race Simulation & Intelligence Release
 
 #### 🇳🇱 Dutch GP Predictive Coverage

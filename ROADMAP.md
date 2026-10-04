@@ -96,7 +96,16 @@ This document outlines the strategic technical evolution of the F1 2026 Predicti
 - **✅ Unity Catalog Model Registry & MLflow 3**: Model tracking and automated promotion to `@champion` / `@challenger` aliases in Unity Catalog (`f1_2026_dev.race_pace`).
 - **✅ Databricks Serverless Execution**: Serverless Lakeflow workflow (`f1_2026_daily_predictions_job`) executing 3 tasks (`run_medallion_pipeline` → `train_and_register_champion` → `dispatch_notifications`) end-to-end with 100% success.
 
+## ✅ Phase 16: Madrid GP, Dynamic Priors & Security Governance (`gh-secure`) [COMPLETED]
+- **✅ Madrid GP Standalone Pipeline (`madrid_prediction_external.py`)**: Complete executable pipeline integrating FastF1 ETL, clean-air lap filtering, Bayesian shrinkage, and Stacking ML predictions.
+- **✅ Dynamic Form-Based Priors (`compute_dynamic_form_priors()`)**: Dynamic EWMA prior calculation auto-updating from actual race JSON summaries.
+- **✅ Circuit Similarity Transfer Learning (`compute_circuit_similarity()`)**: Multi-dimensional layout vector matching for new circuit baseline estimation.
+- **✅ Rain-Adjusted Pace Engine (`add_wet_race_pace_penalty()`)**: Wet-surface penalty and rain intensity index for mixed-condition races (Sepang).
+- **✅ Ensemble Stacking Expansion**: Integrated `ExtraTreesRegressor` (and optional `CatBoostRegressor`) as 3rd base learner.
+- **✅ GitHub Security Lab Governance (`gh-secure`)**: Integrated Private Vulnerability Reporting (`SECURITY.md`), Dependabot automated security updates (`dependabot.yml`), and CodeQL static analysis (`codeql.yml`).
+
 ## 📝 Strategic Technical Notes
 - **FastF1 vs. Formula-Timer**: The platform will continue using FastF1 as the "Ground Truth" for ML modeling and telemetry analysis. Formula-Timer is designated as a secondary-screen validation tool and UI reference to ensure professional-grade visualization and real-time trend benchmarking.
-- **Model Target**: Maintain a target MAE < 0.150s through iterative Stacking (Phase 12).
+- **Model Target**: Maintain a target MAE < 0.150s through iterative Stacking (Phase 12-16).
+
 
