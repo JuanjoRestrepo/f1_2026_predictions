@@ -10,7 +10,7 @@ The system operates as an autonomous, event-driven pipeline that ingests telemet
 flowchart TD
     subgraph Data Layer [1. Data Ingestion & Telemetry Transport]
         FastF1[FastF1 / Ergast API] --> |Raw Telemetry & Timing| Ingest[Ingestion Engine]
-        Weather[Open-Meteo API] --> |Ambient & Track Weather| Ingest
+        Weather[Open-Meteo & External API] --> |Ambient & Wet Track Weather| Ingest
     end
 
     subgraph Databricks [2. Databricks Lakehouse & Delta Medallion]
@@ -19,27 +19,29 @@ flowchart TD
         Silver --> Gold[(Gold: driver_features_gold)]
     end
 
-    subgraph ML Pipeline [3. Machine Learning & Uncertainty Suite]
-        Gold --> Train[XGBoost & LightGBM Quantile Regressors]
+    subgraph ML Pipeline [3. Machine Learning & Stacking Suite]
+        Gold --> Train[XGBoost + LightGBM + ExtraTrees Stacking]
+        Train --> Dynamic[Dynamic Form EWMA Priors & Circuit Similarity]
         Train --> SHAP[SHAP Tree Explainability]
         Train --> UC[Unity Catalog Model Registry @champion]
     end
 
-    subgraph Orchestration [4. Orchestration & Race-Weekend Gate]
+    subgraph Orchestration [4. Orchestration & Pre-Race Gate]
         Gate{is_race_window_active?}
         Gate --> |Race Weekend FRI-MON| Workflow[Databricks Lakeflow & GitHub Actions]
         Gate --> |Non-Race Day| Skip[Skip Execution / Conserve Compute]
     end
 
-    subgraph LLM & Delivery [5. AI Briefings & Dashboard]
+    subgraph Delivery & Security [5. Briefings, Dashboard & Security]
         Workflow --> Gemini[Google Gemini API]
-        Gemini --> Summaries[reports/2026/summaries/]
-        Summaries --> Git[GitHub Repository]
-        Git --> Vercel[Next.js SSG/ISR Dashboard]
+        Gemini --> Briefings[Gmail SMTP & Discord Webhook Dispatch]
+        Workflow --> Dashboard[Next.js 15 F1 TV Dashboard]
+        Workflow --> Security[gh-secure: CodeQL + Dependabot + PVR]
     end
 ```
 
 ---
+
 
 ## 1. Telemetry Ingestion & Data Engineering Pipeline
 
