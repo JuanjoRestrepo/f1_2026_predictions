@@ -301,7 +301,7 @@ circuits:
     overtaking_ease: 0.65
     tyre_stress: 0.55
 
-  # ── Round 16: Bahrain ──────────────────────────────────────────────────────
+  # ── Round 16: Bahrain / Malaysia (Sepang) ──────────────────────────────────
   "Bahrain Grand Prix":
     base_lap_time_s: 91.6
     total_laps: 57
@@ -317,6 +317,38 @@ circuits:
     speed_bias: 0.60
     overtaking_ease: 0.75
     tyre_stress: 0.70
+
+  "Malaysia Grand Prix":
+    base_lap_time_s: 94.0
+    total_laps: 56
+    overtake_difficulty: 0.30
+    tyre_wear_type: thermal
+    safety_car_probability: 0.40
+    pit_loss_time_s: 21.0
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "MEDIUM", "HARD"]
+    drs_zones: 2
+    circuit_type: permanent
+    streetness: 0.05
+    speed_bias: 0.70
+    overtaking_ease: 0.70
+    tyre_stress: 0.75
+
+  "Malaysian Grand Prix":
+    base_lap_time_s: 94.0
+    total_laps: 56
+    overtake_difficulty: 0.30
+    tyre_wear_type: thermal
+    safety_car_probability: 0.40
+    pit_loss_time_s: 21.0
+    typical_strategy: ["MEDIUM", "HARD"]
+    alt_strategy: ["SOFT", "MEDIUM", "HARD"]
+    drs_zones: 2
+    circuit_type: permanent
+    streetness: 0.05
+    speed_bias: 0.70
+    overtaking_ease: 0.70
+    tyre_stress: 0.75
 
   # ── Round 17: Singapore ────────────────────────────────────────────────────
   "Singapore Grand Prix":

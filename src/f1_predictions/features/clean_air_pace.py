@@ -25,29 +25,31 @@ class FastF1Session(Protocol):
 REFERENCE_LAP_SECONDS: float = 101.0
 
 # Published priors for Madrid GP / new circuit baseline (Compound/fuel adjusted)
+# Updated for 2026 season form (Antonelli WDC leader, Hadjar at Red Bull)
 MADRID_PUBLISHED_PRIOR: dict[str, tuple[float, float]] = {
     "RUS": (0.00, 1.00),
-    "VER": (0.13, 1.00),
-    "ANT": (0.55, 1.00),
-    "HAM": (0.90, 0.80),
-    "LEC": (0.90, 0.80),
-    "OCO": (0.92, 1.00),
+    "VER": (0.10, 0.95),
+    "ANT": (0.20, 0.95),
+    "NOR": (0.35, 0.85),
+    "PIA": (0.40, 0.85),
+    "HAD": (0.45, 0.75),
+    "HAM": (0.50, 0.85),
+    "LEC": (0.50, 0.85),
+    "LAW": (0.65, 0.60),
+    "OCO": (0.92, 0.80),
     "BEA": (0.92, 0.55),
-    "PIA": (1.51, 1.00),
-    "NOR": (1.51, 0.35),
-    "GAS": (1.60, 0.70),
-    "COL": (1.60, 0.55),
-    "HUL": (2.20, 0.60),
-    "BOR": (2.20, 0.60),
-    "ALB": (2.58, 0.60),
-    "SAI": (2.58, 0.60),
-    "LAW": (0.45, 0.35),
-    "LIN": (1.25, 0.25),
-    "TSU": (1.25, 0.25),
-    "PER": (4.00, 0.55),
-    "BOT": (4.00, 0.55),
-    "ALO": (4.33, 0.55),
-    "STR": (4.33, 0.25),
+    "GAS": (1.20, 0.70),
+    "LIN": (1.25, 0.40),
+    "TSU": (1.25, 0.40),
+    "COL": (1.40, 0.55),
+    "HUL": (1.80, 0.60),
+    "BOR": (1.80, 0.60),
+    "ALB": (2.10, 0.60),
+    "SAI": (2.10, 0.60),
+    "PER": (3.50, 0.55),
+    "BOT": (3.50, 0.55),
+    "ALO": (3.80, 0.55),
+    "STR": (3.80, 0.40),
 }
 
 
@@ -261,3 +263,56 @@ def summarize_clean_air(
         df_res["model_clean_air_delta_s"] = df_res["model_clean_air_delta_s"] - ref_val
 
     return df_res
+
+
+def add_published_prior(summary: pd.DataFrame) -> pd.DataFrame:
+    """Shrink noisy timing estimates toward fuel/compound-adjusted reporting."""
+    observed = summary.set_index("driver").to_dict("index") if not summary.empty else {}
+    rows: list[dict[str, Any]] = []
+    for driver, (prior_delta, prior_confidence) in MADRID_PUBLISHED_PRIOR.items():
+        item = observed.get(driver)
+        if item is None:
+            rows.append(
+                {
+                    "driver": driver,
+                    "compound": "NO REPRESENTATIVE RUN",
+                    "clean_air_pace_s": np.nan,
+                    "clean_laps": 0,
+                    "candidate_laps": 0,
+                    "traffic_rejected_laps": 0,
+                    "clean_air_spread_s": np.nan,
+                    "median_ahead_margin_s": np.nan,
+                    "timing_confidence": 0.0,
+                    "raw_clean_air_delta_s": np.nan,
+                    "published_prior_delta_s": prior_delta,
+                    "published_prior_confidence": prior_confidence,
+                    "model_clean_air_delta_s": prior_delta,
+                    "model_clean_air_confidence": prior_confidence,
+                }
+            )
+            continue
+        else:
+            obs_delta = item.get("raw_clean_air_delta_s", prior_delta)
+            if pd.isna(obs_delta):
+                obs_delta = prior_delta
+            obs_conf = float(item.get("timing_confidence", 0.0))
+            denom = obs_conf + prior_confidence + 1e-5
+            w_obs = obs_conf / denom
+            model_delta = float(w_obs * obs_delta + (1.0 - w_obs) * prior_delta)
+            model_conf = float(max(obs_conf, prior_confidence))
+
+            row = dict(item)
+            row["driver"] = driver
+            row["published_prior_delta_s"] = prior_delta
+            row["published_prior_confidence"] = prior_confidence
+            row["model_clean_air_delta_s"] = model_delta
+            row["model_clean_air_confidence"] = model_conf
+            rows.append(row)
+
+    df_out = pd.DataFrame(rows)
+    if not df_out.empty and "model_clean_air_delta_s" in df_out.columns:
+        valid = df_out["model_clean_air_delta_s"].dropna()
+        if not valid.empty:
+            ref = float(valid.min())
+            df_out["model_clean_air_delta_s"] = df_out["model_clean_air_delta_s"] - ref
+    return df_out

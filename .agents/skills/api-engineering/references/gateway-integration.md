@@ -121,7 +121,6 @@ domain:
 ```
 
 **CloudEvents HTTP delivery headers (binary content mode — preferred):**
-
 ```http
 POST /webhook HTTP/1.1
 ce-specversion: 1.0
@@ -135,7 +134,6 @@ Content-Type: application/json
 ```
 
 **Event type naming convention:**
-
 ```
 <reverse-domain>.<noun>.<past-tense-verb>
 com.example.order.created
@@ -152,17 +150,16 @@ Never trust an incoming webhook payload without verifying it came from the claim
 import crypto from "crypto";
 
 function verifyWebhookSignature(
-  rawBody: string, // MUST be raw bytes — parse after verification, not before
+  rawBody: string,             // MUST be raw bytes — parse after verification, not before
   signatureHeader: string,
   webhookSecret: string,
 ): boolean {
   const expectedSig = crypto
-    .createHmac('sha256', webhookSecret)
+    .createHmac("sha256", webhookSecret)
     .update(rawBody)
-    .digest('hex');
+    .digest("hex");
 
-  return crypto.timingSafeEqual(
-    // timing-safe — prevents timing oracle attacks
+  return crypto.timingSafeEqual(   // timing-safe — prevents timing oracle attacks
     Buffer.from(signatureHeader),
     Buffer.from(expectedSig),
   );
@@ -174,27 +171,24 @@ app.post(
   "/webhooks/partner",
   express.raw({ type: "application/json" }),
   (req, res) => {
-    const signature = req.headers['x-partner-signature'] as string;
-    const rawBody = req.body.toString('utf8');
+    const signature = req.headers["x-partner-signature"] as string;
+    const rawBody = req.body.toString("utf8");
 
-    if (
-      !verifyWebhookSignature(rawBody, signature, process.env.WEBHOOK_SECRET!)
-    ) {
-      return res.status(401).json({ error: 'Invalid signature' });
+    if (!verifyWebhookSignature(rawBody, signature, process.env.WEBHOOK_SECRET!)) {
+      return res.status(401).json({ error: "Invalid signature" });
     }
 
     // Timestamp validation — reject stale payloads (prevents replay attacks)
-    const timestamp = Number(req.headers['x-partner-timestamp']);
-    if (Math.abs(Date.now() / 1000 - timestamp) > 300) {
-      // 5-minute window
-      return res.status(400).json({ error: 'Timestamp too old' });
+    const timestamp = Number(req.headers["x-partner-timestamp"]);
+    if (Math.abs(Date.now() / 1000 - timestamp) > 300) {  // 5-minute window
+      return res.status(400).json({ error: "Timestamp too old" });
     }
 
     const event = JSON.parse(rawBody);
     // Acknowledge FAST — process asynchronously to prevent timeout retries
     queue.enqueue(event);
     res.status(200).send();
-  },
+  }
 );
 ```
 
@@ -234,16 +228,16 @@ async function processWebhookEvent(event: CloudEvent): Promise<void> {
   const lockKey = `webhook:lock:${event.id}`;
 
   // SET NX (set if not exists) with TTL — atomic check-and-set
-  const acquired = await redis.set(lockKey, '1', { NX: true, EX: 86400 }); // 24h
+  const acquired = await redis.set(lockKey, "1", { NX: true, EX: 86400 }); // 24h
   if (!acquired) {
-    logger.info('Duplicate webhook event — skipping', { eventId: event.id });
+    logger.info("Duplicate webhook event — skipping", { eventId: event.id });
     return;
   }
 
   try {
     await handleEvent(event);
   } catch (err) {
-    await redis.del(lockKey); // release lock on failure so the event can be retried
+    await redis.del(lockKey);  // release lock on failure so the event can be retried
     throw err;
   }
 }
@@ -259,11 +253,11 @@ timing, network routes, or parallel delivery. Two defensive strategies:
 async function handleOrderEvent(event: CloudEvent): Promise<void> {
   const existing = await db.orderEvent.findFirst({
     where: { orderId: event.data.orderId },
-    orderBy: { occurredAt: 'desc' },
+    orderBy: { occurredAt: "desc" },
   });
 
   if (existing && new Date(event.time) <= existing.occurredAt) {
-    logger.warn('Out-of-order event — ignoring', { eventId: event.id });
+    logger.warn("Out-of-order event — ignoring", { eventId: event.id });
     return;
   }
   await applyEvent(event);
@@ -280,16 +274,14 @@ flood arbitrary URLs. The CNCF HTTP Webhook specification defines a standard han
 
 ```typescript
 // Before delivering events to a newly registered webhook URL, send a validation challenge
-async function validateWebhookRegistration(
-  webhookUrl: string,
-): Promise<boolean> {
-  const challenge = crypto.randomBytes(32).toString('base64url');
+async function validateWebhookRegistration(webhookUrl: string): Promise<boolean> {
+  const challenge = crypto.randomBytes(32).toString("base64url");
 
   const response = await fetch(webhookUrl, {
-    method: 'OPTIONS',
+    method: "OPTIONS",
     headers: {
-      'WebHook-Request-Callback': `${process.env.API_BASE}/webhooks/validate?challenge=${challenge}`,
-      'WebHook-Request-Rate': '120', // max events per minute we'll send
+      "WebHook-Request-Callback": `${process.env.API_BASE}/webhooks/validate?challenge=${challenge}`,
+      "WebHook-Request-Rate": "120",  // max events per minute we'll send
     },
   });
 
@@ -319,7 +311,7 @@ async function emitEvent(event: CloudEvent, db: Transaction): Promise<void> {
       eventId: event.id,
       type: event.type,
       payload: event,
-      status: 'PENDING',
+      status: "PENDING",
       attempts: 0,
       nextAttemptAt: new Date(),
     },
@@ -329,47 +321,34 @@ async function emitEvent(event: CloudEvent, db: Transaction): Promise<void> {
 
 async function deliverWebhook(outboxEntry: WebhookOutbox): Promise<void> {
   const response = await fetch(outboxEntry.targetUrl, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'x-signature-sha256': sign(
-        outboxEntry.payload,
-        outboxEntry.signingSecret,
-      ),
-      'x-timestamp': String(Math.floor(Date.now() / 1000)),
+      "Content-Type": "application/json",
+      "x-signature-sha256": sign(outboxEntry.payload, outboxEntry.signingSecret),
+      "x-timestamp": String(Math.floor(Date.now() / 1000)),
     },
     body: JSON.stringify(outboxEntry.payload),
-    signal: AbortSignal.timeout(10_000), // 10s timeout — enforce strictly
+    signal: AbortSignal.timeout(10_000),  // 10s timeout — enforce strictly
   });
 
   if (response.ok) {
-    await db.webhookOutbox.update({
-      where: { id: outboxEntry.id },
-      data: { status: 'DELIVERED' },
-    });
+    await db.webhookOutbox.update({ where: { id: outboxEntry.id }, data: { status: "DELIVERED" } });
   } else if (response.status < 500) {
     // 4xx — client error; mark as permanently failed, notify the endpoint owner
-    await db.webhookOutbox.update({
-      where: { id: outboxEntry.id },
-      data: { status: 'CLIENT_ERROR' },
-    });
+    await db.webhookOutbox.update({ where: { id: outboxEntry.id }, data: { status: "CLIENT_ERROR" } });
   } else {
     // 5xx — retry with backoff
     const nextAttempt = new Date(Date.now() + backoffMs(outboxEntry.attempts));
-    await db.webhookOutbox.update({
-      where: { id: outboxEntry.id },
-      data: {
-        attempts: { increment: 1 },
-        nextAttemptAt: nextAttempt,
-        status: outboxEntry.attempts >= 10 ? 'EXHAUSTED' : 'PENDING',
-      },
-    });
+    await db.webhookOutbox.update({ where: { id: outboxEntry.id }, data: {
+      attempts: { increment: 1 },
+      nextAttemptAt: nextAttempt,
+      status: outboxEntry.attempts >= 10 ? "EXHAUSTED" : "PENDING",
+    }});
   }
 }
 ```
 
 **Managed webhook delivery (strongly recommended over building from scratch):**
-
 - **Svix** (open-source core, hosted option) — the production-grade open-source webhook
   delivery infrastructure used by many SaaS companies; handles retries, signing, delivery
   logs, dashboard, and consumer management
@@ -384,6 +363,8 @@ async function deliverWebhook(outboxEntry: WebhookOutbox): Promise<void> {
   financial operations or audit trails, pair webhooks with periodic reconciliation jobs that
   fetch the authoritative state from the provider's API, rather than relying solely on
   webhook delivery
+
+
 
 ---
 

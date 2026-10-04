@@ -1,5 +1,5 @@
 ---
-name: api-engineering
+name: "api-engineering"
 description: >
   Expert-level API design, integration, and resilience engineering skill, language- and
   domain-agnostic. Use whenever the user is designing, consuming, versioning, securing, or
@@ -46,23 +46,25 @@ unhandled failure mode can silently corrupt data or duplicate transactions.
 
 ## Quick Decision Guide
 
-| Situation                                                                                    | Guidance                                                                    |
-| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| Public API for many unknown consumers, simple resource CRUD                                  | REST                                                                        |
-| Multiple clients need different, evolving views of the same data (mobile vs web)             | GraphQL                                                                     |
-| Enterprise/legacy integration requiring formal contracts (banking, insurance, government)    | SOAP may still be mandated — see when-not-to-avoid note                     |
-| Publishing an API other teams/partners will consume                                          | API-First: write the OpenAPI spec before code                               |
-| Breaking change needed on a live API                                                         | Version it — never break existing consumers silently                        |
-| Calling a third-party API on behalf of your app (not a user)                                 | OAuth2 Client Credentials grant                                             |
-| A user authorizes your app to act for them on another service                                | OAuth2 Authorization Code + PKCE (OAuth 2.1 baseline)                       |
-| Your API/integration is called by outside consumers at volume                                | Rate limiting — protect yourself                                            |
-| You call external APIs that may be rate-limited or flaky                                     | Retry with exponential backoff + jitter, always bounded                     |
-| A downstream dependency is failing repeatedly                                                | Circuit breaker — stop hammering a dead service                             |
-| Any POST/PATCH that creates or charges something, especially after a retry                   | Idempotency key — mandatory, not optional                                   |
-| You need bidirectional, real-time, low-latency communication (chat, live dashboards, gaming) | WebSockets (RFC 6455)                                                       |
-| Server needs to push updates to client only (notifications, live logs, feeds)                | Server-Sent Events (SSE) — simpler than WebSockets for one-directional push |
-| You need many services to react to one event, decoupled                                      | Webhook or pub/sub, not synchronous polling                                 |
-| You don't control the other system and it has no webhook support                             | Polling with backoff, as a last resort                                      |
+| Situation | Guidance |
+|---|---|
+| Public API for many unknown consumers, simple resource CRUD | REST |
+| Multiple clients need different, evolving views of the same data (mobile vs web) | GraphQL |
+| Enterprise/legacy integration requiring formal contracts (banking, insurance, government) | SOAP may still be mandated — see when-not-to-avoid note |
+| Publishing an API other teams/partners will consume | API-First: write the OpenAPI spec before code |
+| Breaking change needed on a live API | Version it — never break existing consumers silently |
+| Calling a third-party API on behalf of your app (not a user) | OAuth2 Client Credentials grant |
+| A user authorizes your app to act for them on another service | OAuth2 Authorization Code + PKCE (OAuth 2.1 baseline) |
+| Your API/integration is called by outside consumers at volume | Rate limiting — protect yourself |
+| You call external APIs that may be rate-limited or flaky | Retry with exponential backoff + jitter, always bounded |
+| A downstream dependency is failing repeatedly | Circuit breaker — stop hammering a dead service |
+| Any POST/PATCH that creates or charges something, especially after a retry | Idempotency key — mandatory, not optional |
+| An API operation takes >200ms (email, image resize, PDF, ML inference) | Move it out of the request cycle — workers + job queue (BullMQ / Celery) |
+| Caller needs the result immediately | Keep it synchronous — async workers don't help here |
+| You need bidirectional, real-time, low-latency communication (chat, live dashboards, gaming) | WebSockets (RFC 6455) |
+| Server needs to push updates to client only (notifications, live logs, feeds) | Server-Sent Events (SSE) — simpler than WebSockets for one-directional push |
+| You need many services to react to one event, decoupled | Webhook or pub/sub, not synchronous polling |
+| You don't control the other system and it has no webhook support | Polling with backoff, as a last resort |
 
 ---
 
@@ -136,7 +138,35 @@ handling as both provider and consumer.
 
 ---
 
-## 5. WebSockets — Full-Duplex Real-Time Communication
+## 5. Workers & Job Queues — Async Processing
+
+Any API operation that takes more than ~200ms — sending email, resizing images, calling
+third-party services, generating PDFs, running ML inference, processing webhooks — should
+not execute synchronously inside the request-response cycle. Move it to a background worker
+via a job queue: the API enqueues the job (~0.5ms Redis write) and returns HTTP 202
+immediately; workers process at their own rate in separate processes.
+
+**Critical properties this architecture provides:**
+- **API latency is constant** regardless of processing time
+- **Workers scale independently** — add instances when queue depth grows
+- **Failure isolation** — a crashed worker doesn't crash the API
+- **Traffic spike absorption** — burst of requests enqueues jobs; workers drain at steady pace
+
+**BullMQ** (Node.js, TypeScript) and **Celery** (Python) are the production standards.
+Both use Redis as the backing store. Workers must be **idempotent** — a retried job
+must not send two emails or charge twice. See `resilience-patterns.md` for idempotency key patterns.
+
+→ See `references/workers-queues.md` for the bottleneck problem with benchmarks, BullMQ 5.71
+full setup (Queue, Worker, delayed jobs, cron via `upsertJobScheduler`, FlowProducer DAG,
+DLQ pattern, Redis memory TTLs, critical production mistakes), Celery 5.6 full setup
+(broker vs backend distinction, `task_acks_late`, `worker_prefetch_multiplier=1`, priority
+queues, gevent vs prefork pools, Flower monitoring), worker scaling (docker-compose replicas,
+Kubernetes HPA on queue depth), orchestration vs choreography at the worker level,
+Temporal/Step Functions for complex multi-step workflows, and when NOT to use workers.
+
+---
+
+## 6. WebSockets — Full-Duplex Real-Time Communication
 
 WebSocket (IETF RFC 6455, December 2011) establishes a persistent, full-duplex TCP connection
 between client and server — either side can send messages at any time without a prior request.
@@ -159,7 +189,7 @@ exponential backoff reconnection, horizontal scaling patterns, close codes, and 
 
 ---
 
-## 6. API Gateway & Integration Patterns
+## 7. API Gateway & Integration Patterns
 
 An **API Gateway** centralizes cross-cutting concerns (auth, rate limiting, routing, request
 transformation) in front of one or more backend services — but it is infrastructure, not a
@@ -205,6 +235,11 @@ directly relevant to RPA integrations with systems that only support one or the 
   JWT validation for API consumers, service-to-service credential storage
 - `references/resilience-patterns.md` — exponential backoff + jitter, circuit breaker state
   machine, idempotency keys, rate limiting as provider and consumer
+- `references/workers-queues.md` — async processing outside the request cycle: bottleneck
+  problem, BullMQ 5.71 (Queue, Worker, delayed/cron jobs, FlowProducer DAG, DLQ, Redis TTLs,
+  OpenTelemetry), Celery 5.6 (broker vs backend, acks_late, priority queues, gevent/prefork),
+  worker scaling (docker-compose, Kubernetes HPA), orchestration vs choreography at worker
+  level, Temporal/Step Functions for complex workflows, when NOT to use workers
 - `references/websockets.md` — RFC 6455 handshake mechanics, ws and Socket.IO (Node.js) and
   FastAPI (Python) implementations, browser auth patterns, OWASP WebSocket Security Cheat Sheet
   (CSWSH, input validation, CVE-2024-37890), heartbeat/ping-pong, reconnection with backoff,

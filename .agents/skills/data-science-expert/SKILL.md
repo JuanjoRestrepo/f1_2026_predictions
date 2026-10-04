@@ -1,14 +1,6 @@
 ---
-name: data-science-expert
-description: >
-  Full-spectrum data science, analytics, and engineering skill. Activate this skill whenever
-  the user mentions data, datasets, CSV/Excel files, databases, SQL, APIs, machine learning,
-  AI, deep learning, statistics, mathematics, calculus, EDA, feature engineering, ETL pipelines,
-  data cleaning, model evaluation, software development, or any project involving quantitative
-  analysis or data-driven decision making. This skill should trigger even for casual or
-  exploratory mentions of data topics — e.g., "I have a dataset", "can you help me build a model",
-  "let's explore this data", "I need a pipeline", "help me clean this", "run some stats on this".
-  When in doubt, use this skill.
+name: "data-science-expert"
+description: "Full-spectrum data science, analytics, and engineering skill. Activate this skill whenever the user mentions data, datasets, CSV/Excel files, databases, SQL, APIs, machine learning, AI, deep learning, statistics, mathematics, calculus, EDA, feature engineering, ETL pipelines, data cleaning, model evaluation, software development, or any project involving quantitative analysis or data-driven decision making. This skill should trigger even for casual or exploratory mentions of data topics — e.g., \"I have a dataset\", \"can you help me build a model\", \"let's explore this data\", \"I need a pipeline\", \"help me clean this\", \"run some stats on this\". When in doubt, use this skill.\n"
 ---
 
 # Data Science Expert Skill
@@ -49,6 +41,8 @@ Apply the full depth of this skill to every relevant interaction.
 | **Geometric & Topological ML** | GNNs (GCN/GAT/GraphSAGE/GIN), TDA (persistent homology, Takens embedding), data shape analysis, spectral graph theory |
 | **ML Mathematical Foundations** | Loss functions, gradient descent, regularization (L1/L2), activations (ReLU/GELU/softmax), backpropagation, attention, KL divergence, MLE/MAP, PCA derivation |
 | **MLOps & AI Systems** | MLOps lifecycle, experiment tracking (MLflow), Harness AI (CI/CD for ML), model deployment patterns (canary, blue-green, shadow), drift detection, AI agents (ReAct, AutoGen, LangGraph), MCP protocol, Edge/IoT ML |
+| **ML Systems Design** | Iterative production ML design (Huyen 2022), business-to-ML objective mapping, training data sampling and labeling, weak supervision, class imbalance, feature leakage detection, batch vs. online vs. streaming prediction, distribution shifts (covariate/label/concept), continual learning, test-in-production, slice-based evaluation and fairness |
+| **Cloud ML Platforms** | Azure Machine Learning (workspaces, pipelines, online endpoints, Azure DevOps CI/CD), AWS SageMaker (training jobs, spot instances, Model Monitor), Google Vertex AI (custom training, BigQuery ML), cloud storage patterns (ADLS/S3/GCS), cloud ML security (Managed Identity, Key Vault, IAM), cost management |
 
 ---
 
@@ -289,7 +283,7 @@ recommendations (Bronze/Silver/Gold), and Python read/write code for all seven f
 - **Large-scale**: `Apache Spark` (PySpark) for distributed processing on Databricks or self-managed clusters
 - **Streaming**: `Apache Kafka` / `Azure Event Hubs` → `Spark Structured Streaming` or `Apache Flink`
 - **Lakehouse**: `Delta Lake` or `Apache Iceberg` on object storage (S3 / GCS / ADLS)
-- **Cloud**: AWS (S3, Glue, Redshift, Lake Formation), GCP (BigQuery, Dataflow, Dataplex), Azure (Data Factory, Synapse, Event Hubs, Unity Catalog)
+- **Cloud**: Azure ML (primary — AML Pipelines, Online Endpoints, Azure DevOps integration), AWS SageMaker (Training Jobs, Model Monitor, spot instances), GCP Vertex AI (Custom Training, BigQuery ML). See `references/cloud_ml_platforms.md` for full platform reference, architecture diagrams, code patterns, IAM/security, and cost management.
 - **CDC**: `Debezium` (log-based CDC from PostgreSQL, MySQL, MongoDB) → Kafka → Delta Lake via MERGE
 - **Data Contracts**: YAML-defined schemas, quality SLOs, and versioning enforced at producer layer
 - **Data Observability**: `Great Expectations` or `dbt tests` for quality; `OpenLineage` for lineage; Monte Carlo / Atlan for full observability
@@ -649,5 +643,8 @@ For deeper guidance on specific subdomains, consult:
 - `references/analytics_engineering.md` — Analytics Engineering discipline, dbt (project structure, materializations, incremental models, snapshots, Semantic Layer/MetricFlow), Dimensional Modeling (Kimball 4-step process), Fact tables (transaction/snapshot/accumulating), Dimension tables, SCDs (Types 0–6), Star vs. Snowflake Schema, Data Catalogs, Business Metrics Governance
 - `references/ml_math_foundations.md` — Mathematical foundations: linear/logistic regression derivations, loss functions (MSE, cross-entropy, hinge), gradient descent and Adam optimizer, L1/L2/Elastic Net regularization, activation functions (ReLU, GELU, softmax), backpropagation chain rule, attention mechanism (Transformer), entropy and KL divergence, distance metrics (Euclidean, cosine, Mahalanobis), MLE/MAP, PCA derivation, Python implementations
 - `references/mlops_and_ai_agents.md` — MLOps lifecycle and maturity levels, MLflow experiment tracking and model registry, Harness AI (CI/CD for ML), AI Agents theory (ReAct, Reflexion, planning, memory, tool use), multi-agent systems (AutoGen, LangGraph), Model Context Protocol (MCP) with custom server implementation, model deployment patterns (canary, blue-green, shadow, A/B), drift detection (Evidently AI), Edge/IoT ML with ESP32 + MCP bridge
+- `references/ml_systems_design.md` — Production ML systems design (Huyen 2022): iterative design framework, business-to-ML objective mapping, sampling strategies (reservoir sampling), labeling and weak supervision (Snorkel), class imbalance (SMOTE, focal loss, threshold tuning), feature leakage taxonomy, batch vs. online vs. streaming prediction, feature stores, distribution shift taxonomy with PSI implementation, continual learning (stateless vs. stateful), test-in-production patterns (shadow, canary, A/B, bandit), slice-based evaluation, fairness metrics and impossibility theorem, ML systems checklist
+
+- `references/cloud_ml_platforms.md` — Cloud ML platforms: Azure Machine Learning (workspace hierarchy, AML Pipelines, Online Endpoints, Azure DevOps CI/CD YAML, managed identity, Key Vault), AWS SageMaker (Training Jobs, spot instances, real-time endpoints, Model Monitor), Google Vertex AI (Custom Training, Vertex Pipelines, BigQuery ML SQL patterns), cloud storage for ML (ADLS Gen2/S3/GCS Polars integration), cloud ML security (DefaultAzureCredential, IAM roles, RBAC), cost management (scale-to-zero compute, spot instances, lifecycle policies), multi-cloud MLflow portability
 
 Load the relevant reference file when the task falls primarily within that subdomain.

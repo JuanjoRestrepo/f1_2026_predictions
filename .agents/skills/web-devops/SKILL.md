@@ -1,14 +1,6 @@
 ---
-name: web-devops
-description: >
-  Expert-level web development and DevOps skill. Use whenever the user mentions: scaffolding a
-  web project (React, Next.js, Vue/Nuxt, Express, FastAPI, Django, MERN, PERN, T3 Stack); T3
-  tools (tRPC, Prisma, Drizzle, NextAuth, Zod, Tailwind); Dockerfiles or Kubernetes configs;
-  GitHub Actions or CI/CD pipelines; deploying to Vercel, Netlify, AWS, GCP, or Azure; or
-  applying best practices (testing, security, observability, code quality). Trigger on vague
-  requests too: "help me deploy this", "dockerize my app", "set up CI", "scaffold a project",
-  "create a T3 app", "set up tRPC", "configure NextAuth", "review my pipeline". When in doubt,
-  use this skill — it covers the full SDLC from project creation to production.
+name: "web-devops"
+description: "Expert-level web development and DevOps skill. Use whenever the user mentions: scaffolding a web project (React, Next.js, Vue/Nuxt, Express, FastAPI, Django, MERN, PERN, T3 Stack); T3 tools (tRPC, Prisma, Drizzle, NextAuth, Zod, Tailwind); Dockerfiles or Kubernetes configs; GitHub Actions or CI/CD pipelines; deploying to Vercel, Netlify, AWS, GCP, or Azure; or applying best practices (testing, security, observability, code quality). Trigger on vague requests too: \"help me deploy this\", \"dockerize my app\", \"set up CI\", \"scaffold a project\", \"create a T3 app\", \"set up tRPC\", \"configure NextAuth\", \"review my pipeline\". When in doubt, use this skill — it covers the full SDLC from project creation to production.\n"
 ---
 
 # Web Development & DevOps Skill
@@ -122,7 +114,15 @@ The T3 Stack is an opinionated, type-safe full-stack framework. Understand its c
 - Run as non-root user
 - Set `ENV NODE_ENV=production` or equivalent
 
-→ See `references/docker-kubernetes.md` for layer caching mental model, anti-patterns, BuildKit cache mounts, and the full optimization checklist.
+**Docker Compose secrets (always use over environment variables for credentials):**
+- Secrets are mounted as read-only files at `/run/secrets/<name>` inside the container — never exposed via `docker inspect`, never in image layers, granted per-service not globally
+- Three sources: `file:` (host file, local dev), `environment:` (host env var, CI/CD pipelines), `external: true` (Docker Swarm)
+- The `_FILE` suffix convention (`POSTGRES_PASSWORD_FILE`, `MYSQL_ROOT_PASSWORD_FILE`) is used by official Docker images and reads the secret automatically
+- Application code reads from `/run/secrets/<name>` at startup with an env var fallback for local dev without Docker
+- Build secrets: use `--mount=type=secret` in Dockerfile + `build.secrets:` in compose.yaml — credential available during `RUN` but never written to any image layer
+- Never use `-e SECRET=value` or `.env` with `env_file:` for production credentials — both are visible in `docker inspect`
+
+→ See `references/docker-kubernetes.md` for the full layer caching mental model, anti-patterns, BuildKit cache mounts, Docker Compose secrets (all three sources, full production example with per-service access control, TypeScript/Python reading patterns, file permission config, build secrets, security comparison table, and checklist).
 
 **docker-compose:**
 - Define services, volumes, and networks explicitly

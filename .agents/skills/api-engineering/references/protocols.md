@@ -1,10 +1,10 @@
 # API Protocols — REST, GraphQL, SOAP
 
-**Sources:** Roy Fielding, _Architectural Styles and the Design of Network-based Software
-Architectures_ (doctoral dissertation, UC Irvine, 2000); GraphQL Foundation / graphql.org
+**Sources:** Roy Fielding, *Architectural Styles and the Design of Network-based Software
+Architectures* (doctoral dissertation, UC Irvine, 2000); GraphQL Foundation / graphql.org
 specification (Linux Foundation project since 2018); W3C SOAP Version 1.2 Specification;
-Leonard Richardson's Maturity Model (Martin Fowler, 2010); IETF RFC 9457 _Problem Details for
-HTTP APIs_ (July 2023, obsoletes RFC 7807 — M. Nottingham/Akamai); RFC 8288 (Web Linking,
+Leonard Richardson's Maturity Model (Martin Fowler, 2010); IETF RFC 9457 *Problem Details for
+HTTP APIs* (July 2023, obsoletes RFC 7807 — M. Nottingham/Akamai); RFC 8288 (Web Linking,
 for pagination Link headers); Relay Cursor Connections Specification (GraphQL Foundation);
 Google API Design Guide; Microsoft REST API Guidelines; Stripe API Reference (pagination and
 error format reference implementations).
@@ -48,13 +48,13 @@ justifies its cost outside specific hypermedia-driven domains.
 
 ### 1.2 HTTP Verb Semantics (the part most APIs get subtly wrong)
 
-| Method   | Idempotent?                                                       | Safe? | Correct use                                       |
-| -------- | ----------------------------------------------------------------- | ----- | ------------------------------------------------- |
-| `GET`    | Yes                                                               | Yes   | Retrieve — never causes side effects              |
-| `POST`   | **No**                                                            | No    | Create a resource, or a non-idempotent action     |
-| `PUT`    | Yes                                                               | No    | Replace a resource entirely (full representation) |
-| `PATCH`  | **No** (by spec, though implementations often make it idempotent) | No    | Partial update                                    |
-| `DELETE` | Yes                                                               | No    | Remove — calling twice has the same end state     |
+| Method | Idempotent? | Safe? | Correct use |
+|---|---|---|---|
+| `GET` | Yes | Yes | Retrieve — never causes side effects |
+| `POST` | **No** | No | Create a resource, or a non-idempotent action |
+| `PUT` | Yes | No | Replace a resource entirely (full representation) |
+| `PATCH` | **No** (by spec, though implementations often make it idempotent) | No | Partial update |
+| `DELETE` | Yes | No | Remove — calling twice has the same end state |
 
 **"Idempotent"** means calling N times has the same effect as calling once. `DELETE` has a
 side effect but is idempotent because deleting an already-deleted resource still results in
@@ -70,7 +70,6 @@ side effect but is idempotent because deleting an already-deleted resource still
 ```
 
 **Correct resource naming:**
-
 ```
 ✅ GET    /users              — list
 ✅ GET    /users/123          — retrieve one
@@ -88,32 +87,30 @@ Plural nouns, no verbs in the path, nesting reflects genuine ownership.
 Status code selection is one of the most-violated REST practices. The wrong status code forces
 clients to parse bodies to understand what happened.
 
-| Code  | Name                  | When to use                                                                        |
-| ----- | --------------------- | ---------------------------------------------------------------------------------- |
-| `200` | OK                    | Successful GET, PUT, PATCH; also DELETE when the response includes a body          |
-| `201` | Created               | Successful POST that created a resource; include `Location: /resources/123` header |
-| `202` | Accepted              | Request queued for async processing — not yet complete                             |
-| `204` | No Content            | Successful DELETE, or PUT/PATCH with no body to return                             |
-| `301` | Moved Permanently     | Resource URL changed permanently — update your bookmarks                           |
-| `304` | Not Modified          | Conditional GET matched ETag/Last-Modified — body omitted (use cached copy)        |
-| `400` | Bad Request           | Malformed request syntax, invalid JSON, missing required fields                    |
-| `401` | Unauthorized          | Not authenticated — credentials missing or invalid                                 |
-| `403` | Forbidden             | Authenticated, but not authorized for this resource                                |
-| `404` | Not Found             | Resource does not exist                                                            |
-| `409` | Conflict              | State conflict — e.g., duplicate unique key, concurrent modification               |
-| `410` | Gone                  | Resource permanently deleted — stronger signal than 404                            |
-| `422` | Unprocessable Entity  | Syntactically valid request, but semantically wrong (validation failure)           |
-| `429` | Too Many Requests     | Rate limit exceeded; include `Retry-After` header                                  |
-| `500` | Internal Server Error | Unexpected server-side error — never expose stack traces                           |
-| `503` | Service Unavailable   | Temporarily unavailable (maintenance, overload); include `Retry-After`             |
+| Code | Name | When to use |
+|---|---|---|
+| `200` | OK | Successful GET, PUT, PATCH; also DELETE when the response includes a body |
+| `201` | Created | Successful POST that created a resource; include `Location: /resources/123` header |
+| `202` | Accepted | Request queued for async processing — not yet complete |
+| `204` | No Content | Successful DELETE, or PUT/PATCH with no body to return |
+| `301` | Moved Permanently | Resource URL changed permanently — update your bookmarks |
+| `304` | Not Modified | Conditional GET matched ETag/Last-Modified — body omitted (use cached copy) |
+| `400` | Bad Request | Malformed request syntax, invalid JSON, missing required fields |
+| `401` | Unauthorized | Not authenticated — credentials missing or invalid |
+| `403` | Forbidden | Authenticated, but not authorized for this resource |
+| `404` | Not Found | Resource does not exist |
+| `409` | Conflict | State conflict — e.g., duplicate unique key, concurrent modification |
+| `410` | Gone | Resource permanently deleted — stronger signal than 404 |
+| `422` | Unprocessable Entity | Syntactically valid request, but semantically wrong (validation failure) |
+| `429` | Too Many Requests | Rate limit exceeded; include `Retry-After` header |
+| `500` | Internal Server Error | Unexpected server-side error — never expose stack traces |
+| `503` | Service Unavailable | Temporarily unavailable (maintenance, overload); include `Retry-After` |
 
 **The 401 vs 403 distinction** is consistently confused:
-
 - `401` = "Who are you? Prove your identity first."
 - `403` = "I know who you are, but you can't access this."
 
 **The 400 vs 422 distinction** per RFC 9110:
-
 - `400` = the request is syntactically malformed (unparseable JSON, missing required field
   entirely) — the server couldn't even understand the intent
 - `422` = the request is syntactically valid but the semantic content is wrong (email
@@ -145,7 +142,6 @@ Content-Type: application/problem+json
 ```
 
 **The five standard members:**
-
 - `type` — a URI identifying the problem type (dereferenceable to documentation, or abstract)
 - `title` — a short, human-readable summary of the type (same for all instances of this type)
 - `status` — the HTTP status code (should match the actual response code)
@@ -170,17 +166,15 @@ function problemDetail(
 
 // Express error handler using RFC 9457
 app.use((err: AppError, req: Request, res: Response, _next: NextFunction) => {
-  res
-    .status(err.statusCode)
-    .json(
-      problemDetail(
-        err.statusCode,
-        `https://api.example.com/problems/${err.code}`,
-        err.title,
-        err.detail,
-        err.extensions,
-      ),
-    );
+  res.status(err.statusCode).json(
+    problemDetail(
+      err.statusCode,
+      `https://api.example.com/problems/${err.code}`,
+      err.title,
+      err.detail,
+      err.extensions,
+    ),
+  );
 });
 ```
 
@@ -236,7 +230,6 @@ SELECT * FROM users ORDER BY created_at DESC LIMIT 10 OFFSET 30;
 ```
 
 Problems:
-
 - **Performance degrades exponentially** at large offsets — the DB scans and discards all
   offset rows on every request. `OFFSET 1000000` reads a million rows to return ten.
 - **Data drift** — if a record is inserted on page 1 while a client is on page 3, all
@@ -268,9 +261,9 @@ async function getOrdersPage(
   startingAfter?: string,
 ): Promise<CursorPage<Order>> {
   const orders = await db.order.findMany({
-    take: limit + 1, // fetch one extra to detect has_more
+    take: limit + 1,   // fetch one extra to detect has_more
     where: startingAfter ? { id: { gt: startingAfter } } : undefined,
-    orderBy: { id: 'asc' },
+    orderBy: { id: "asc" },
   });
 
   const hasMore = orders.length > limit;
@@ -310,7 +303,6 @@ async def list_orders(
 ```
 
 **Pagination Link header (RFC 8288 — GitHub's approach):**
-
 ```http
 GET /users?per_page=30&page=2
 
@@ -324,13 +316,13 @@ Link headers can paginate without hardcoding URL construction logic.
 
 **When to use which:**
 
-| Scenario                                    | Recommendation                                         |
-| ------------------------------------------- | ------------------------------------------------------ |
-| New API, medium-to-large dataset            | Cursor-based (opaque token, Stripe-style)              |
-| Small dataset, rarely exceeds 1000 rows     | Offset is fine — simplicity wins                       |
-| Need "jump to page N" UX                    | Offset is the only option — cursor can't random-access |
-| Real-time or frequently-updated collections | Cursor mandatory — offset causes drift                 |
-| GraphQL API                                 | Relay Cursor Connections Spec — see Section 2.5        |
+| Scenario | Recommendation |
+|---|---|
+| New API, medium-to-large dataset | Cursor-based (opaque token, Stripe-style) |
+| Small dataset, rarely exceeds 1000 rows | Offset is fine — simplicity wins |
+| Need "jump to page N" UX | Offset is the only option — cursor can't random-access |
+| Real-time or frequently-updated collections | Cursor mandatory — offset causes drift |
+| GraphQL API | Relay Cursor Connections Spec — see Section 2.5 |
 
 ### 1.6 HTTP Caching (a Core REST Constraint — frequently ignored)
 
@@ -340,7 +332,6 @@ bypass HTTP caching mechanisms miss a significant scalability lever.
 **Two caching mechanisms:**
 
 **`ETag` (Entity Tag) — content-based validation:**
-
 ```http
 GET /orders/123 HTTP/1.1
 
@@ -356,7 +347,6 @@ HTTP/1.1 304 Not Modified   ← no body; client uses cached copy
 ```
 
 **`Last-Modified` — time-based validation:**
-
 ```http
 HTTP/1.1 200 OK
 Last-Modified: Mon, 19 May 2026 10:00:00 GMT
@@ -370,27 +360,27 @@ HTTP/1.1 304 Not Modified
 
 **`Cache-Control` directives:**
 
-| Directive         | Meaning                                                                                |
-| ----------------- | -------------------------------------------------------------------------------------- |
-| `max-age=N`       | Cache is fresh for N seconds                                                           |
-| `no-cache`        | Must revalidate with server before using cached copy (ETag/Last-Modified still useful) |
-| `no-store`        | Never cache — for sensitive, personalized data                                         |
-| `private`         | Browser may cache, shared caches (CDN, proxy) must not                                 |
-| `public`          | Shared caches may cache                                                                |
-| `must-revalidate` | Expired cache must revalidate — don't serve stale content                              |
+| Directive | Meaning |
+|---|---|
+| `max-age=N` | Cache is fresh for N seconds |
+| `no-cache` | Must revalidate with server before using cached copy (ETag/Last-Modified still useful) |
+| `no-store` | Never cache — for sensitive, personalized data |
+| `private` | Browser may cache, shared caches (CDN, proxy) must not |
+| `public` | Shared caches may cache |
+| `must-revalidate` | Expired cache must revalidate — don't serve stale content |
 
 ```typescript
 // Express — setting cache headers
-router.get('/products/:id', async (req, res) => {
+router.get("/products/:id", async (req, res) => {
   const product = await productService.findById(req.params.id);
-  const etag = `"${product.updatedAt.getTime()}"`; // or a content hash
+  const etag = `"${product.updatedAt.getTime()}"`;  // or a content hash
 
-  if (req.headers['if-none-match'] === etag) {
-    return res.status(304).send(); // client's cached copy is still valid
+  if (req.headers["if-none-match"] === etag) {
+    return res.status(304).send();  // client's cached copy is still valid
   }
 
-  res.setHeader('ETag', etag);
-  res.setHeader('Cache-Control', 'private, max-age=60');
+  res.setHeader("ETag", etag);
+  res.setHeader("Cache-Control", "private, max-age=60");
   res.json(product);
 });
 ```
@@ -521,24 +511,16 @@ type UserError {
 
 ```typescript
 // Apollo Server 4 implementation
-import { ApolloServer } from '@apollo/server';
-import { startStandaloneServer } from '@apollo/server/standalone';
-import DataLoader from 'dataloader';
+import { ApolloServer } from "@apollo/server";
+import { startStandaloneServer } from "@apollo/server/standalone";
+import DataLoader from "dataloader";
 
 const resolvers = {
   Query: {
-    user: async (
-      _parent: unknown,
-      { id }: { id: string },
-      context: Context,
-    ) => {
-      return context.loaders.user.load(id); // DataLoader-batched
+    user: async (_parent: unknown, { id }: { id: string }, context: Context) => {
+      return context.loaders.user.load(id);  // DataLoader-batched
     },
-    users: async (
-      _parent: unknown,
-      { limit, after }: Args,
-      context: Context,
-    ) => {
+    users: async (_parent: unknown, { limit, after }: Args, context: Context) => {
       return userService.listPaginated({ limit, after });
     },
   },
@@ -547,20 +529,12 @@ const resolvers = {
     // Field resolver — runs ONLY if the client requested the `orders` field
     // Without DataLoader: 1 user list + N order queries = N+1 problem
     orders: async (user: User, { limit, after }: Args, context: Context) => {
-      return context.loaders.ordersByUser.load({
-        userId: user.id,
-        limit,
-        after,
-      });
+      return context.loaders.ordersByUser.load({ userId: user.id, limit, after });
     },
   },
 
   Mutation: {
-    createOrder: async (
-      _parent: unknown,
-      { input }: { input: CreateOrderInput },
-      context: Context,
-    ) => {
+    createOrder: async (_parent: unknown, { input }: { input: CreateOrderInput }, context: Context) => {
       try {
         const order = await orderService.create(input);
         return { order, errors: [] };
@@ -569,7 +543,7 @@ const resolvers = {
           // Mutation errors go in the payload, not as GraphQL errors — client can handle gracefully
           return { order: null, errors: err.fieldErrors };
         }
-        throw err; // unexpected errors become GraphQL errors → HTTP 200 with errors array
+        throw err;  // unexpected errors become GraphQL errors → HTTP 200 with errors array
       }
     },
   },
@@ -582,17 +556,11 @@ function createLoaders() {
       const users = await db.user.findMany({ where: { id: { in: [...ids] } } });
       return ids.map((id) => users.find((u) => u.id === id) ?? null);
     }),
-    ordersByUser: new DataLoader(
-      async (keys: readonly { userId: string; limit: number }[]) => {
-        const userIds = [...new Set(keys.map((k) => k.userId))];
-        const orders = await db.order.findMany({
-          where: { userId: { in: userIds } },
-        });
-        return keys.map((k) =>
-          orders.filter((o) => o.userId === k.userId).slice(0, k.limit),
-        );
-      },
-    ),
+    ordersByUser: new DataLoader(async (keys: readonly { userId: string; limit: number }[]) => {
+      const userIds = [...new Set(keys.map((k) => k.userId))];
+      const orders = await db.order.findMany({ where: { userId: { in: userIds } } });
+      return keys.map((k) => orders.filter((o) => o.userId === k.userId).slice(0, k.limit));
+    }),
   };
 }
 ```
@@ -615,11 +583,11 @@ subscription {
 
 ```typescript
 // Apollo Server 4 with graphql-ws for subscription transport
-import { createServer } from 'http';
-import { WebSocketServer } from 'ws';
-import { useServer } from 'graphql-ws/lib/use/ws';
-import { makeExecutableSchema } from '@graphql-tools/schema';
-import { PubSub } from 'graphql-subscriptions';
+import { createServer } from "http";
+import { WebSocketServer } from "ws";
+import { useServer } from "graphql-ws/lib/use/ws";
+import { makeExecutableSchema } from "@graphql-tools/schema";
+import { PubSub } from "graphql-subscriptions";
 
 const pubsub = new PubSub();
 
@@ -628,7 +596,7 @@ const resolvers = {
     orderStatusChanged: {
       subscribe: (_parent, { orderId }, context) => {
         // Authorization for subscriptions — same discipline as mutations
-        if (!context.user) throw new Error('Unauthorized');
+        if (!context.user) throw new Error("Unauthorized");
         return pubsub.asyncIterableIterator(`ORDER_STATUS_CHANGED:${orderId}`);
       },
       resolve: (payload) => payload.order,
@@ -638,7 +606,7 @@ const resolvers = {
 
 const schema = makeExecutableSchema({ typeDefs, resolvers });
 const httpServer = createServer(app);
-const wsServer = new WebSocketServer({ server: httpServer, path: '/graphql' });
+const wsServer = new WebSocketServer({ server: httpServer, path: "/graphql" });
 
 useServer(
   {
@@ -674,11 +642,7 @@ spec defines `edges`, `node`, `cursor`, and `pageInfo` with `hasNextPage`/`endCu
 query {
   users(first: 20, after: "cursor-from-previous-response") {
     edges {
-      node {
-        id
-        name
-        email
-      }
+      node { id name email }
       cursor
     }
     pageInfo {
@@ -699,22 +663,20 @@ known cost); a GraphQL API has an infinite query surface (a client can construct
 arbitrarily deep, arbitrarily expensive query in a single request).
 
 **Depth limiting — prevent deeply nested queries:**
-
 ```typescript
-import depthLimit from 'graphql-depth-limit'; // npm: graphql-depth-limit
+import depthLimit from "graphql-depth-limit";  // npm: graphql-depth-limit
 
 const server = new ApolloServer({
   schema,
   validationRules: [
-    depthLimit(7), // reject queries nested deeper than 7 levels
+    depthLimit(7),  // reject queries nested deeper than 7 levels
   ],
 });
 ```
 
 **Complexity limiting — assign cost to fields, reject over-budget queries:**
-
 ```typescript
-import { createComplexityLimitRule } from 'graphql-validation-complexity';
+import { createComplexityLimitRule } from "graphql-validation-complexity";
 
 const server = new ApolloServer({
   schema,
@@ -737,8 +699,8 @@ acts as an implicit allowlist — only registered queries can execute.
 
 ```typescript
 // Apollo Server with persisted queries (Automatic Persisted Queries — APQ)
-import { ApolloServerPluginCacheControl } from '@apollo/server/plugin/cacheControl';
-import { KeyValueCache } from '@apollo/utils.keyvaluecache';
+import { ApolloServerPluginCacheControl } from "@apollo/server/plugin/cacheControl";
+import { KeyValueCache } from "@apollo/utils.keyvaluecache";
 
 // Client sends: { "extensions": { "persistedQuery": { "version": 1, "sha256Hash": "abc..." } } }
 // If the server doesn't have it: 404 → client sends the full query → server caches it by hash
@@ -807,8 +769,8 @@ response = client.service.GetUser(UserId=123)
 ```
 
 ```typescript
-import * as soap from 'soap';
-const client = await soap.createClientAsync('https://example.com/service?wsdl');
+import * as soap from "soap";
+const client = await soap.createClientAsync("https://example.com/service?wsdl");
 const [result] = await client.GetUserAsync({ UserId: 123 });
 ```
 
@@ -816,39 +778,39 @@ const [result] = await client.GetUserAsync({ UserId: 123 });
 
 - Building a new API with no legacy constraint — REST or GraphQL will always be simpler to
   build, document, test, and onboard new developers to
-- No requirement for WS-\* features (formal distributed transactions, WS-Security)
+- No requirement for WS-* features (formal distributed transactions, WS-Security)
 - Consuming clients are primarily web/mobile — SOAP's XML verbosity is a poor fit
 
 ---
 
 ## 4. REST vs GraphQL — Direct Comparison
 
-| Criterion              | REST                                             | GraphQL                                                   |
-| ---------------------- | ------------------------------------------------ | --------------------------------------------------------- |
-| **Data fetching**      | Fixed shape per endpoint (over/under-fetch risk) | Client-specified shape (no over/under-fetch)              |
-| **Multiple resources** | Multiple round trips                             | Single round trip (one query, multiple types)             |
-| **HTTP caching**       | Native — GET is cacheable at CDN/proxy level     | Requires persisted queries + GET transport                |
-| **Learning curve**     | Low — standard HTTP semantics                    | Moderate — SDL, resolvers, DataLoader, N+1                |
-| **Type safety**        | Via OpenAPI code generation                      | Native — schema is the source of truth                    |
-| **File uploads**       | Native multipart                                 | Requires extension or separate endpoint                   |
-| **Rate limiting**      | Per-endpoint (predictable cost)                  | Per-query complexity (variable cost)                      |
-| **Real-time**          | Polling / SSE / WebSocket separately             | Subscriptions over WebSocket/SSE built-in                 |
-| **Tooling maturity**   | Excellent — 25+ years of HTTP tooling            | Good — growing ecosystem                                  |
-| **Error handling**     | HTTP status codes + RFC 9457 Problem Details     | HTTP 200 always; errors in response body                  |
-| **Browser caching**    | Native (ETag, Cache-Control, 304)                | Application-layer only                                    |
-| **Public API**         | Easier to rate-limit and document                | Harder to rate-limit; needs complexity limits             |
-| **Best for**           | Simple resources, public APIs, CDN-heavy         | Many clients, heterogeneous views, internal platform APIs |
+| Criterion | REST | GraphQL |
+|---|---|---|
+| **Data fetching** | Fixed shape per endpoint (over/under-fetch risk) | Client-specified shape (no over/under-fetch) |
+| **Multiple resources** | Multiple round trips | Single round trip (one query, multiple types) |
+| **HTTP caching** | Native — GET is cacheable at CDN/proxy level | Requires persisted queries + GET transport |
+| **Learning curve** | Low — standard HTTP semantics | Moderate — SDL, resolvers, DataLoader, N+1 |
+| **Type safety** | Via OpenAPI code generation | Native — schema is the source of truth |
+| **File uploads** | Native multipart | Requires extension or separate endpoint |
+| **Rate limiting** | Per-endpoint (predictable cost) | Per-query complexity (variable cost) |
+| **Real-time** | Polling / SSE / WebSocket separately | Subscriptions over WebSocket/SSE built-in |
+| **Tooling maturity** | Excellent — 25+ years of HTTP tooling | Good — growing ecosystem |
+| **Error handling** | HTTP status codes + RFC 9457 Problem Details | HTTP 200 always; errors in response body |
+| **Browser caching** | Native (ETag, Cache-Control, 304) | Application-layer only |
+| **Public API** | Easier to rate-limit and document | Harder to rate-limit; needs complexity limits |
+| **Best for** | Simple resources, public APIs, CDN-heavy | Many clients, heterogeneous views, internal platform APIs |
 
 ### Real-World Protocol Choices at Scale
 
-| Company                | Choice                                | Why                                                                                                                                                    |
-| ---------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Stripe**             | REST                                  | Public API with thousands of integrators; predictable per-endpoint rate limiting; cursor pagination; strong cacheability                               |
-| **GitHub**             | REST (v3) + GraphQL (v4)              | Both maintained; REST for simple integrations, GraphQL for complex data (pull request + review + CI + labels in one query)                             |
-| **Shopify**            | GraphQL primary                       | Multiple heterogeneous clients (mobile, web, storefront, admin); one graph serves all                                                                  |
-| **Twitter / X**        | REST                                  | Went back to REST for v2 after v1's inconsistencies — simpler to rate-limit and scale                                                                  |
+| Company | Choice | Why |
+|---|---|---|
+| **Stripe** | REST | Public API with thousands of integrators; predictable per-endpoint rate limiting; cursor pagination; strong cacheability |
+| **GitHub** | REST (v3) + GraphQL (v4) | Both maintained; REST for simple integrations, GraphQL for complex data (pull request + review + CI + labels in one query) |
+| **Shopify** | GraphQL primary | Multiple heterogeneous clients (mobile, web, storefront, admin); one graph serves all |
+| **Twitter / X** | REST | Went back to REST for v2 after v1's inconsistencies — simpler to rate-limit and scale |
 | **Amazon Prime Video** | Consolidated microservices → monolith | The switching-away-from-microservices case study that went viral; nothing to do with REST vs GraphQL, but frequently cited in architecture discussions |
-| **Facebook**           | GraphQL (inventor)                    | Multiple clients (mobile/web/VR) with radically different data needs; the problem GraphQL was built to solve                                           |
+| **Facebook** | GraphQL (inventor) | Multiple clients (mobile/web/VR) with radically different data needs; the problem GraphQL was built to solve |
 
 **The most important factor in the REST vs GraphQL decision:** how many heterogeneous clients
 need different views of your data. One client → REST is almost certainly correct. Multiple

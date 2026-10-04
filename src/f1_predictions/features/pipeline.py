@@ -195,6 +195,9 @@ def run_feature_pipeline(
 
     history_results = pd.concat(history_dfs, ignore_index=True) if history_dfs else None
     df = add_historical_points(df, history_results)
+    from f1_predictions.features.historical_performance import add_ewma_form_features
+
+    df = add_ewma_form_features(df, history_results)
 
     # ── Step 6: Grid position ─────────────────────────────────────────────
     # GridPosition is on results, not laps. Apply only if column is present.
@@ -209,24 +212,24 @@ def run_feature_pipeline(
             "(join results before feature pipeline if needed). Skipping."
         )
 
-    # ── Step 6b: Circuit overtake difficulty ──────────────────────────────
-    # Adds a scalar numeric feature (0.0-1.0) encoding how strongly qualifying
-    # grid position determines finishing order on this specific circuit.
-    # Monaco (0.95) amplifies grid_position_gap in the XGBoost split rules;
-    # Bahrain (0.25) down-weights it. This is the correct architectural fix
-    # for circuits not in the OHE training vocabulary (handle_unknown="ignore"
-    # maps them to all-zeros, losing circuit identity entirely).
+    # ── Step 6b: Circuit metadata features ──────────────────────────────
     event_name = key.event_name if hasattr(key, "event_name") else ""
     circuit_cfg = get_circuit_config(event_name)
     df["circuit_overtake_difficulty"] = circuit_cfg.overtake_difficulty
     df["circuit_safety_car_prob"] = circuit_cfg.safety_car_probability
     df["circuit_is_street"] = float(circuit_cfg.is_street_circuit)
+    df["streetness"] = circuit_cfg.streetness
+    df["speed_bias"] = circuit_cfg.speed_bias
+    df["overtaking_ease"] = circuit_cfg.overtaking_ease
+    df["tyre_stress"] = circuit_cfg.tyre_stress
     logger.info(
         "Circuit features added: overtake_difficulty=%.2f, safety_car_prob=%.2f, "
-        "is_street=%d for '%s'",
+        "is_street=%d, streetness=%.2f, speed_bias=%.2f for '%s'",
         circuit_cfg.overtake_difficulty,
         circuit_cfg.safety_car_probability,
         int(circuit_cfg.is_street_circuit),
+        circuit_cfg.streetness,
+        circuit_cfg.speed_bias,
         event_name,
     )
 
