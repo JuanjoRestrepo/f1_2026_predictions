@@ -185,7 +185,6 @@ The engine features durable, long-running workflows powered by **Trigger.dev v3*
 └── tests/                   # Pytest suite (>80% coverage)
 ```
 
-
 ---
 
 ## 🚀 Execution Workflow
