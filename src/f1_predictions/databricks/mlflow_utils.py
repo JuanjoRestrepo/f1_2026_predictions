@@ -33,18 +33,21 @@ def track_experiment(
     params: dict[str, Any],
     metrics: dict[str, float],
     run_name: str | None = None,
+    model: object | None = None,
+    registered_model_name: str | None = None,
 ) -> dict[str, Any]:
     """Track an ML experiment with parameters and evaluation metrics via MLflow 3.
 
     Uses mlflow.set_experiment() + mlflow.log_params() + mlflow.log_metrics().
-    Falls back to a summary dict when called outside a Databricks environment
-    (e.g. in unit tests) to avoid requiring a live MLflow tracking server.
+    Optionally logs and registers the model artifact in Unity Catalog.
 
     Args:
         experiment_name: MLflow experiment path (e.g. /Shared/f1_2026/pace).
         params: Dictionary of hyperparameter keys and values.
         metrics: Evaluation metrics dict (e.g. {"rmse": 0.42, "mae": 0.31}).
         run_name: Optional descriptive run name shown in the MLflow UI.
+        model: Optional trained model object to log.
+        registered_model_name: Fully qualified UC model path for auto-registration.
 
     Returns:
         Summary payload dictionary containing run metadata.
@@ -54,7 +57,23 @@ def track_experiment(
         with mlflow.start_run(run_name=run_name or "f1_pace_run") as run:
             mlflow.log_params(params)
             mlflow.log_metrics(metrics)
+            if model is not None:
+                try:
+                    if registered_model_name:
+                        mlflow.sklearn.log_model(
+                            model,
+                            artifact_path="model",
+                            registered_model_name=registered_model_name,
+                        )
+                    else:
+                        mlflow.sklearn.log_model(model, artifact_path="model")
+                except Exception as model_err:
+                    logger.warning(
+                        "Failed to log sklearn model artifact: %s",
+                        model_err,
+                    )
             run_id = run.info.run_id
+
         logger.info(
             "Tracked MLflow run '%s' in experiment '%s' (run_id=%s)",
             run_name,

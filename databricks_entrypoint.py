@@ -195,12 +195,15 @@ def run_train(season: int) -> None:
     model.fit(X, y)
     logger.info("Model trained — CV RMSE: %.4f (±%.4f)", rmse, mae)
 
-    # ── Step 3: Track to MLflow ──────────────────────────────────────────────
+    # ── Step 3: Track to MLflow & Register Model in Unity Catalog ────────────
+    uc_model_name = f"{CATALOG}.{SCHEMA}.{MODEL_NAME}"
     summary = track_experiment(
         experiment_name=EXPERIMENT_NAME,
         params={str(k): str(v) for k, v in params.items()},
         metrics={"rmse": rmse, "cv_std": mae},
         run_name=f"xgb_pace_{season}",
+        model=model,
+        registered_model_name=uc_model_name,
     )
     logger.info("MLflow run tracked: %s", summary.get("run_id"))
 
