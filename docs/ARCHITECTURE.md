@@ -155,14 +155,18 @@ The project enforces strict code quality and test coverage across the entire sta
 # Execute unit & integration test suite (279 tests across ML, cleaning, pipeline & AI)
 uv run pytest
 
-# Execute strict MyPy type check (0 issues across 59 source files)
+# Execute strict MyPy type check (0 issues across source files)
 uv run mypy --strict src
 
 # Execute Ruff code linter
 uv run ruff check .
 
-# Execute TypeScript type checker
-cd dashboard && npx tsc --noEmit
+# Execute TypeScript type checker via pnpm (Zero-npm policy)
+pnpm --filter dashboard exec tsc --noEmit
+
+# Execute Next.js production build via pnpm
+pnpm --filter dashboard run build
 ```
 
-All 279 Python pytest modules pass with 100% line/branch coverage compliance and 0 type errors.
+All 279 Python pytest modules pass with 100% line/branch coverage compliance, 0 type errors, and pnpm workspace verification.
+
