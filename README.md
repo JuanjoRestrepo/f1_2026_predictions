@@ -33,64 +33,17 @@ Expert-level race reporting powered by configurable **Gemini 3.1 Pro** primary g
 
 ---
 
-## [v6.1.0] - 2026-08-23
+## 🏷️ Latest Release: [v6.3.0] - 2026-10-04
 
-### 🏎️ Race Weekend Auto-Gate & FastF1 Calendar Integration
+### 🇪🇸 Madrid GP External Integration, Databricks UC Champion & Security Governance
+- **Databricks Unity Catalog `@champion` Model**: Production ML models registered directly to `main.race_pace.xgb_race_pace_regressor` tagged with `@champion` alias.
+- **Dynamic Form Priors & Circuit Transfer Learning**: Auto-updating EWMA driver form deltas and layout similarity matrix for new venue predictions.
+- **GitHub Security Lab (`gh-secure`)**: Integrated CodeQL SAST scanning, Dependabot security automation, and PVR security policies.
+- **Automated Briefings**: Live HTML email and Discord card dispatches triggered directly via Databricks Workflows.
 
-- **Feature**: FastF1 Ergast 2026+ official calendar integration (`is_race_window_active()`), restricting execution strictly to active Race Weekends (Fri–Sun) and Post-Race Mondays.
-- **Feature**: DABs workflow schedule update (`f1_2026_race_predictions_job`) with Quartz cron `0 0 6 ? * FRI-MON`.
-- **Fix**: Pinned `@trigger.dev/cli@4.4.6` in `.github/workflows/docker.yml` to resolve CI package version mismatch.
-- **Fix**: Databricks Secrets integration for live Gmail SMTP verdict briefings.
+📋 **Complete Release History & Tag Trace**: For the complete, detailed changelog of all tags from `v1.0.0` to `v6.3.0`, see **[RELEASES.md](RELEASES.md)**.
 
 ---
-
-## [v6.0.0] - 2026-08-23
-
-### ⚡ Databricks Lakehouse & Unity Catalog MLOps
-
-- **Feature**: Databricks Asset Bundles (DABs) infrastructure for zero-touch cloud deployment (`databricks.yml`, `resources/jobs.yml`, `resources/pipelines.yml`).
-- **Feature**: Delta Live Tables (DLT) Medallion Pipeline (`Bronze` → `Silver` → `Gold`) for automated telemetry ingestion, expectation validation, and driver feature aggregation.
-- **Feature**: MLflow 3 & Unity Catalog Model Registry integration with automated promotion to `@champion` / `@challenger` aliases.
-- **Feature**: Serverless Lakeflow Workflow (`f1_2026_daily_predictions_job`) orchestrating DLT updates, XGBoost champion retraining, and multi-channel briefings.
-
-## [v4.4.4] - 2026-05-28
-
-### 🛡️ DevOps & Data Science Alignment
-
-- **Feature**: Strict `pre-commit` framework enforcement (`ruff`, `mypy`, `pytest`).
-- **Fixed**: Resolved 12 NPM vulnerabilities via targeted `package.json` overrides.
-- **Improved**: Perfect synchronization between local validation hooks and GitHub Actions CI pipelines.
-
-## [v4.4.3] - 2026-05-25
-
-### 🎨 Autonomous UI & End-to-End Formatting
-
-- **Feature**: End-to-End Fastest Lap automation dynamically extracting telemetry without hardcoded fallbacks.
-- **Improved**: Integrated KaTeX plugins to perfectly render complex LaTeX SHAP formulas in AI reports.
-- **Fixed**: Eliminated duplicate driver rows in the Predictions table by accurately aggregating multi-lap ML forecasts.
-
-## [v4.2.0] - 2026-05-06
-
-### 🎨 The "High-Fidelity UI" Release
-
-- **Feature**: Systematic readability overhaul across the entire dashboard.
-- **Improved**: Hierarchical typography for section titles and subtitles (16px/14px desktop scale).
-- **Improved**: Increased legibility for tyre stints, metric labels, and search fields.
-- **Improved**: Responsive `prose-base` scaling for AI Race Analysis reports.
-- **Fixed**: Syntax nesting issues in `TyreIntelligence` component and React title tag warnings.
-
-## [v4.1.0] - 2026-05-06
-
-### 🚀 The "Autonomous Autopilot" Release
-
-- **Feature**: Implemented Friday Pre-Race automation. The system now proactively predicts the race hierarchy before the weekend starts.
-- **Feature**: Added `detect_upcoming_race` logic to the core orchestration engine.
-- **Improved**: Hardened `master_pipeline.py` to handle "Prediction Mode" gracefully without actual race data.
-- **Improved**: Unified GitHub Actions workflow for both Friday (Preview) and Monday (Audit) cycles.
-
-## [v4.0.0] - 2026-05-06
-
-### 🏁 Industrialization & Stability Milestone
 
 ## 🌟 Key Features
 
