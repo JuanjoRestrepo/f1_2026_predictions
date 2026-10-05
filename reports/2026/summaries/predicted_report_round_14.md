@@ -1,6 +1,6 @@
 # 🏁 2026 Spanish Grand Prix — AI Pre-Race Intelligence Report
 
-> **Executive Overview**: Our ensemble machine learning model (XGBoost + LightGBM quantile pace regressors) projects **Lando Norris** (McLaren) as the favorite for Round 14, holding a predicted **+0.926s/lap** advantage over **Alexander Albon**.
+> **Executive Overview**: Our ensemble machine learning model (XGBoost + LightGBM quantile pace regressors) projects **Lando Norris** (McLaren) as the favorite for Round 14, holding a predicted **+0.968s/lap** advantage over **Alexander Albon**.
 
 ---
 
@@ -9,26 +9,26 @@
 | Pos | Driver | Team | Projected Gap / Lap |
 |-----|--------|------|--------------------|
 | P1 | **Lando Norris** (`NOR`) | McLaren | `P1 Pace` |
-| P2 | **Alexander Albon** (`ALB`) | Williams | `+0.926s` |
-| P3 | **Gabriel Bortoleto** (`BOR`) | Audi | `+0.997s` |
-| P4 | **Kimi Antonelli** (`ANT`) | Mercedes | `+6.801s` |
-| P5 | **Oscar Piastri** (`PIA`) | McLaren | `+6.878s` |
-| P6 | **George Russell** (`RUS`) | Mercedes | `+7.007s` |
-| P7 | **Charles Leclerc** (`LEC`) | Ferrari | `+7.016s` |
-| P8 | **Max Verstappen** (`VER`) | Red Bull | `+7.316s` |
-| P9 | **Lewis Hamilton** (`HAM`) | Ferrari | `+7.358s` |
-| P10 | **Pierre Gasly** (`GAS`) | Alpine | `+7.655s` |
+| P2 | **Alexander Albon** (`ALB`) | Williams | `+0.968s` |
+| P3 | **Gabriel Bortoleto** (`BOR`) | Audi | `+1.064s` |
+| P4 | **Oscar Piastri** (`PIA`) | McLaren | `+6.931s` |
+| P5 | **Kimi Antonelli** (`ANT`) | Mercedes | `+7.006s` |
+| P6 | **George Russell** (`RUS`) | Mercedes | `+7.230s` |
+| P7 | **Charles Leclerc** (`LEC`) | Ferrari | `+7.238s` |
+| P8 | **Max Verstappen** (`VER`) | Red Bull | `+7.542s` |
+| P9 | **Lewis Hamilton** (`HAM`) | Ferrari | `+7.580s` |
+| P10 | **Pierre Gasly** (`GAS`) | Alpine | `+7.866s` |
 
 ---
 
 ### 🔍 Key Storylines & Strategic Breakdown
 
 #### 1. Victory Contenders: Lando Norris vs. Alexander Albon
-- **Pace Leadership**: **Lando Norris** displays superior medium-compound thermal consistency. The model estimates a `72.593s` baseline lap pace.
-- **Challenger Threat**: **Alexander Albon** (Williams) remains within striking distance (+0.926s). A clean start or undercut during the pit window could swing the lead.
+- **Pace Leadership**: **Lando Norris** displays superior medium-compound thermal consistency. The model estimates a `72.478s` baseline lap pace.
+- **Challenger Threat**: **Alexander Albon** (Williams) remains within striking distance (+0.968s). A clean start or undercut during the pit window could swing the lead.
 
 #### 2. The Podium Fight: Gabriel Bortoleto & Behind
-- **Gabriel Bortoleto** (Audi) holds P3 with a +0.997s margin over P1. Clean air in Stint 1 will be critical to protect against midfield undercuts.
+- **Gabriel Bortoleto** (Audi) holds P3 with a +1.064s margin over P1. Clean air in Stint 1 will be critical to protect against midfield undercuts.
 
 ---
 

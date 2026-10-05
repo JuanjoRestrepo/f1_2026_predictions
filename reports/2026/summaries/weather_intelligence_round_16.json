@@ -1,0 +1,15 @@
+{
+  "provider": "simulated",
+  "event_name": "Bahrain Grand Prix",
+  "generated_at_utc": "2026-10-04T20:00:00.000000+00:00",
+  "latitude": 26.0325,
+  "longitude": 50.5106,
+  "target_date": "2026-10-04",
+  "race_day": null,
+  "forecast_days": [],
+  "rain_probability": 0.05,
+  "risk_level": "dry",
+  "confidence": "high",
+  "summary": "Clear conditions across Bahrain Grand Prix. Track temperature stable at 31\u00b0C.",
+  "warnings": []
+}

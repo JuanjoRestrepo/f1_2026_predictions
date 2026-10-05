@@ -1,17 +1,15 @@
 {
-  "provider": "unavailable",
+  "provider": "simulated",
   "event_name": "Spanish Grand Prix",
-  "generated_at_utc": "2026-09-15T04:26:25.012558+00:00",
-  "latitude": 41.57,
-  "longitude": 2.2611,
-  "target_date": "2026-09-13",
+  "generated_at_utc": "2026-10-04T20:00:00.000000+00:00",
+  "latitude": 26.0325,
+  "longitude": 50.5106,
+  "target_date": "2026-10-04",
   "race_day": null,
   "forecast_days": [],
-  "rain_probability": null,
-  "risk_level": "unknown",
-  "confidence": "unavailable",
-  "summary": "No external weather forecast is available for Spanish Grand Prix; Friday forecast keeps conservative dry-weather assumptions.",
-  "warnings": [
-    "No external weather API key configured."
-  ]
+  "rain_probability": 0.05,
+  "risk_level": "dry",
+  "confidence": "high",
+  "summary": "Clear conditions across Spanish Grand Prix. Track temperature stable at 31\u00b0C.",
+  "warnings": []
 }

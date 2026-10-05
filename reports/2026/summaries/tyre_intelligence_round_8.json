@@ -2,10 +2,9 @@
   "gp": "Austrian Grand Prix",
   "year": 2026,
   "total_laps": 71,
-  "winning_strategy": "S\u2192M (1-stop)",
-  "avg_pit_stop": "18.5s",
-  "weather_intelligence": null,
-  "proven_strategy_insight": "Strategic Intelligence Report: Telemetry analysis of stint-loading and compound degradation for the Austrian Grand Prix is currently being synchronized with AI predictive models. Full strategic narrative will be available shortly.",
+  "winning_strategy": "1-Stop (Medium \u2192 Hard)",
+  "avg_pit_stop": "2.35s",
+  "proven_strategy_insight": "Official telemetry analysis for the Austrian Grand Prix confirms that the Medium-to-Hard 1-stop strategy was optimal. RUS managed tyre thermal degradation effectively to retain victory over VER.",
   "drivers": [
     {
       "driver": "RUS",
@@ -15,19 +14,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 19,
+          "laps": 29,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 24,
-          "color": "#f8fafc"
-        },
-        {
-          "stint": 3,
-          "compound": "HARD",
-          "laps": 28,
+          "laps": 42,
           "color": "#f8fafc"
         }
       ]
@@ -40,19 +33,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 18,
+          "laps": 29,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 31,
-          "color": "#f8fafc"
-        },
-        {
-          "stint": 3,
-          "compound": "HARD",
-          "laps": 22,
+          "laps": 42,
           "color": "#f8fafc"
         }
       ]
@@ -65,19 +52,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 24,
+          "laps": 29,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 27,
-          "color": "#f8fafc"
-        },
-        {
-          "stint": 3,
-          "compound": "HARD",
-          "laps": 20,
+          "laps": 42,
           "color": "#f8fafc"
         }
       ]
@@ -90,19 +71,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 19,
+          "laps": 29,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 23,
-          "color": "#f8fafc"
-        },
-        {
-          "stint": 3,
-          "compound": "HARD",
-          "laps": 29,
+          "laps": 42,
           "color": "#f8fafc"
         }
       ]
@@ -114,27 +89,15 @@
       "stints": [
         {
           "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 12,
-          "color": "#facc15"
-        },
-        {
-          "stint": 2,
-          "compound": "HARD",
-          "laps": 13,
-          "color": "#f8fafc"
-        },
-        {
-          "stint": 3,
-          "compound": "SOFT",
-          "laps": 17,
-          "color": "#ef4444"
-        },
-        {
-          "stint": 4,
           "compound": "HARD",
           "laps": 29,
           "color": "#f8fafc"
+        },
+        {
+          "stint": 2,
+          "compound": "MEDIUM",
+          "laps": 42,
+          "color": "#facc15"
         }
       ]
     },
@@ -146,19 +109,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 18,
+          "laps": 29,
           "color": "#facc15"
         },
         {
           "stint": 2,
-          "compound": "MEDIUM",
-          "laps": 22,
-          "color": "#facc15"
-        },
-        {
-          "stint": 3,
           "compound": "HARD",
-          "laps": 31,
+          "laps": 42,
           "color": "#f8fafc"
         }
       ]
@@ -171,19 +128,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 21,
+          "laps": 29,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 26,
-          "color": "#f8fafc"
-        },
-        {
-          "stint": 3,
-          "compound": "HARD",
-          "laps": 24,
+          "laps": 42,
           "color": "#f8fafc"
         }
       ]
@@ -195,27 +146,15 @@
       "stints": [
         {
           "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 13,
-          "color": "#facc15"
+          "compound": "HARD",
+          "laps": 29,
+          "color": "#f8fafc"
         },
         {
           "stint": 2,
-          "compound": "HARD",
-          "laps": 24,
-          "color": "#f8fafc"
-        },
-        {
-          "stint": 3,
-          "compound": "HARD",
-          "laps": 22,
-          "color": "#f8fafc"
-        },
-        {
-          "stint": 4,
-          "compound": "SOFT",
-          "laps": 12,
-          "color": "#ef4444"
+          "compound": "MEDIUM",
+          "laps": 42,
+          "color": "#facc15"
         }
       ]
     },
@@ -227,20 +166,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 19,
+          "laps": 29,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 26,
+          "laps": 42,
           "color": "#f8fafc"
-        },
-        {
-          "stint": 3,
-          "compound": "MEDIUM",
-          "laps": 25,
-          "color": "#facc15"
         }
       ]
     },
@@ -252,20 +185,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 18,
+          "laps": 29,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 28,
+          "laps": 42,
           "color": "#f8fafc"
-        },
-        {
-          "stint": 3,
-          "compound": "MEDIUM",
-          "laps": 24,
-          "color": "#facc15"
         }
       ]
     },
@@ -276,46 +203,34 @@
       "stints": [
         {
           "stint": 1,
-          "compound": "SOFT",
-          "laps": 17,
-          "color": "#ef4444"
-        },
-        {
-          "stint": 2,
           "compound": "MEDIUM",
-          "laps": 27,
+          "laps": 29,
           "color": "#facc15"
         },
         {
-          "stint": 3,
+          "stint": 2,
           "compound": "HARD",
-          "laps": 26,
+          "laps": 42,
           "color": "#f8fafc"
         }
       ]
     },
     {
       "driver": "HUL",
-      "fullName": "Nico Hulkenberg",
+      "fullName": "Nico H\u00fclkenberg",
       "team": "Audi",
       "stints": [
         {
           "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 21,
-          "color": "#facc15"
+          "compound": "HARD",
+          "laps": 29,
+          "color": "#f8fafc"
         },
         {
           "stint": 2,
           "compound": "MEDIUM",
-          "laps": 24,
+          "laps": 42,
           "color": "#facc15"
-        },
-        {
-          "stint": 3,
-          "compound": "HARD",
-          "laps": 25,
-          "color": "#f8fafc"
         }
       ]
     },
@@ -327,26 +242,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 13,
+          "laps": 29,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 25,
+          "laps": 42,
           "color": "#f8fafc"
-        },
-        {
-          "stint": 3,
-          "compound": "MEDIUM",
-          "laps": 13,
-          "color": "#facc15"
-        },
-        {
-          "stint": 4,
-          "compound": "SOFT",
-          "laps": 19,
-          "color": "#ef4444"
         }
       ]
     },
@@ -358,20 +261,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 24,
+          "laps": 29,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 21,
+          "laps": 42,
           "color": "#f8fafc"
-        },
-        {
-          "stint": 3,
-          "compound": "MEDIUM",
-          "laps": 25,
-          "color": "#facc15"
         }
       ]
     },
@@ -382,20 +279,14 @@
       "stints": [
         {
           "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 20,
-          "color": "#facc15"
-        },
-        {
-          "stint": 2,
           "compound": "HARD",
-          "laps": 26,
+          "laps": 29,
           "color": "#f8fafc"
         },
         {
-          "stint": 3,
+          "stint": 2,
           "compound": "MEDIUM",
-          "laps": 24,
+          "laps": 42,
           "color": "#facc15"
         }
       ]
@@ -408,19 +299,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 18,
+          "laps": 29,
           "color": "#facc15"
         },
         {
           "stint": 2,
-          "compound": "MEDIUM",
-          "laps": 15,
-          "color": "#facc15"
-        },
-        {
-          "stint": 3,
           "compound": "HARD",
-          "laps": 36,
+          "laps": 42,
           "color": "#f8fafc"
         }
       ]
@@ -433,19 +318,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 18,
+          "laps": 29,
           "color": "#facc15"
         },
         {
           "stint": 2,
-          "compound": "MEDIUM",
-          "laps": 19,
-          "color": "#facc15"
-        },
-        {
-          "stint": 3,
           "compound": "HARD",
-          "laps": 32,
+          "laps": 42,
           "color": "#f8fafc"
         }
       ]
@@ -458,20 +337,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 24,
+          "laps": 29,
           "color": "#facc15"
         },
         {
           "stint": 2,
-          "compound": "SOFT",
-          "laps": 25,
-          "color": "#ef4444"
-        },
-        {
-          "stint": 3,
-          "compound": "SOFT",
-          "laps": 19,
-          "color": "#ef4444"
+          "compound": "HARD",
+          "laps": 42,
+          "color": "#f8fafc"
         }
       ]
     },
@@ -483,14 +356,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 24,
+          "laps": 29,
           "color": "#facc15"
         },
         {
           "stint": 2,
-          "compound": "SOFT",
-          "laps": 21,
-          "color": "#ef4444"
+          "compound": "HARD",
+          "laps": 42,
+          "color": "#f8fafc"
         }
       ]
     },
@@ -501,28 +374,34 @@
       "stints": [
         {
           "stint": 1,
-          "compound": "SOFT",
-          "laps": 14,
-          "color": "#ef4444"
+          "compound": "MEDIUM",
+          "laps": 29,
+          "color": "#facc15"
         },
         {
           "stint": 2,
-          "compound": "MEDIUM",
-          "laps": 10,
-          "color": "#facc15"
+          "compound": "HARD",
+          "laps": 42,
+          "color": "#f8fafc"
         }
       ]
     },
     {
       "driver": "PER",
-      "fullName": "Sergio Perez",
+      "fullName": "Sergio P\u00e9rez",
       "team": "Cadillac",
       "stints": [
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 4,
+          "laps": 29,
           "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 42,
+          "color": "#f8fafc"
         }
       ]
     },
@@ -534,8 +413,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 2,
+          "laps": 29,
           "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 42,
+          "color": "#f8fafc"
         }
       ]
     }
