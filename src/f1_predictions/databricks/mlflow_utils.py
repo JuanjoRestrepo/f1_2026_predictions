@@ -53,6 +53,7 @@ def track_experiment(
         Summary payload dictionary containing run metadata.
     """
     try:
+        mlflow.set_registry_uri("databricks-uc")
         mlflow.set_experiment(experiment_name)
         with mlflow.start_run(run_name=run_name or "f1_pace_run") as run:
             mlflow.log_params(params)
@@ -135,6 +136,7 @@ def register_champion_model(
     full_path = f"{uc_model_name}@{alias}"
 
     try:
+        mlflow.set_registry_uri("databricks-uc")
         client = mlflow.MlflowClient()
         # Get the latest version of this model
         versions = client.search_model_versions(f"name='{uc_model_name}'")
