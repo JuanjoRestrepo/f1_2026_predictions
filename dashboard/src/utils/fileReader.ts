@@ -19,35 +19,22 @@ export function getAvailableRaces(year: number): RaceInfo[] {
   if (!fs.existsSync(yearDir)) return [];
 
   const fullCalendar = getFullCalendar(year);
-
-  // Build a set of rounds that have actually been raced (race date <= end of today).
-  // This prevents future-race predicted files from unlocking a card prematurely.
-  const todayEndMs = new Date().setHours(23, 59, 59, 999);
-  const racedRoundNums = new Set(
-    fullCalendar
-      .filter((r) => r.isoDate && new Date(r.isoDate).getTime() <= todayEndMs)
-      .map((r) => r.round)
-  );
-
   const rounds = new Set<number>();
 
   // Pass 1 — summaries/ directory: any file whose name contains round_N.
-  // Guard: only add if the round has actually been raced.
   const summariesDir = path.join(yearDir, "summaries");
   if (fs.existsSync(summariesDir)) {
     fs.readdirSync(summariesDir).forEach((f) => {
       const match = f.match(/round_(\d+)/);
       if (match?.[1]) {
         const roundNum = parseInt(match[1]);
-        if (racedRoundNums.has(roundNum)) rounds.add(roundNum);
+        rounds.add(roundNum);
       }
     });
   }
 
   // Pass 2 — race subdirectories: rounds that have predictions.csv.
-  // Same guard: only if raced.
   fullCalendar.forEach((race) => {
-    if (!racedRoundNums.has(race.round)) return;
     const dirNames = [race.dirName];
     if (race.dirName === "Barcelona_Grand_Prix") dirNames.push("Spanish_Grand_Prix");
     if (race.dirName === "Spanish_Grand_Prix") dirNames.push("Barcelona_Grand_Prix");
