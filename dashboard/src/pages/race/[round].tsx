@@ -1,7 +1,8 @@
 import Head from "next/head";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useState } from "react";
-import { Trophy, Medal, Timer } from "lucide-react";
+import { Trophy, Medal, Timer, ArrowLeft } from "lucide-react";
 import { RaceReport } from "../../components/RaceReport";
 import { PredictionsTable } from "../../components/PredictionsTable";
 import { ViewToggle } from "../../components/ViewToggle";
@@ -155,13 +156,24 @@ export default function RacePage({
       <main className="min-h-screen bg-f1darker text-gray-100 pb-16 font-sans">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 
-          {/* ─── Header with Selector ─── */}
+          {/* ─── Header with Back Button & Selector ─── */}
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-             <div className="flex items-center gap-3">
-                <span className="text-3xl">🏁</span>
-                <h1 className="text-3xl font-extrabold tracking-tight text-white">
-                  F1 2026 Predictive Platform
-                </h1>
+             <div className="flex flex-wrap items-center gap-4">
+                <Link
+                  href="/"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-f1dark hover:bg-gray-800 text-white font-semibold text-sm rounded-lg border border-gray-700/80 transition-all shadow-md group hover:border-f1red/50"
+                  id="back-to-main-page-button"
+                >
+                  <ArrowLeft size={16} className="text-f1red group-hover:-translate-x-1 transition-transform" />
+                  <span>Back to Main Page</span>
+                </Link>
+                <div className="h-6 w-px bg-gray-800 hidden sm:block" />
+                <div className="flex items-center gap-2">
+                   <span className="text-2xl">🏁</span>
+                   <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                     F1 2026 Predictive Platform
+                   </h1>
+                </div>
              </div>
              <RaceSelector currentRound={race.round} availableRaces={availableRaces} fullCalendar={fullCalendar} />
           </div>
