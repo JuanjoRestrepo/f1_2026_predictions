@@ -195,7 +195,6 @@ def run_train(season: int) -> None:
     model.fit(X, y)
     logger.info("Model trained — CV RMSE: %.4f (±%.4f)", rmse, mae)
 
-    # ── Step 3: Track to MLflow & Register Model in Unity Catalog ────────────
     from mlflow.models import infer_signature  # type: ignore[import-untyped]
 
     signature = infer_signature(X, model.predict(X))
