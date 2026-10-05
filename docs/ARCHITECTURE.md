@@ -98,8 +98,8 @@ To prevent unnecessary compute usage and spurious notification alerts:
 ### 3.2 Databricks Lakehouse Workflow (`f1_2026_race_predictions_job`)
 - **Schedule**: Quartz cron `0 0 6 ? * FRI-MON` (runs FRI-MON at 06:00 UTC).
 - **Task 1 (`run_medallion_pipeline`)**: Executes DLT pipeline.
-- **Task 2 (`train_and_register_champion`)**: Fits pace regressors and promotes champion alias (`@champion`) in Unity Catalog.
-- **Task 3 (`dispatch_notifications`)**: Sends HTML email briefings and Discord alerts via SMTP/Webhook.
+- **Task 2 (`train_and_register_champion`)**: Fits pace regressors, infers MLflow model signature (`infer_signature`), sets registry URI to `databricks-uc`, and promotes champion alias (`@champion`) in Unity Catalog schema `main.race_pace.xgb_race_pace_regressor`.
+- **Task 3 (`dispatch_notifications`)**: Reads credentials securely via Databricks Secrets scope `f1_secrets` (`gmail_app_password`), sending HTML email briefings and Discord alerts via SMTP/Webhook.
 
 ### 3.3 GitHub Actions Scheduled Pipeline (`scheduled_sync.yml`)
 - **Friday 18:00 UTC**: Pre-race prediction generation & briefing.
@@ -129,15 +129,21 @@ To prevent unnecessary compute usage and spurious notification alerts:
 
 ---
 
-## 5. Security, Reliability & Failover Guarantees
+## 5. Security, Governance & Reliability
 
-### 5.1 LLM Fallback Chain (`call_ai_with_retry`)
+### 5.1 GitHub Security Lab Governance (`gh-secure`)
+- **`SECURITY.md`**: Public vulnerability reporting policy and security disclosure protocol.
+- **`dependabot.yml`**: Weekly automated dependency security updates for Python (`pip`/`uv`) and GitHub Actions.
+- **`codeql.yml`**: Static security analysis pipeline for Python and GitHub Actions workflow files.
+- **Branch Rulesets**: Active branch protection enforcing pull request reviews and status checks (`Require branches to be up to date before merging`).
+
+### 5.2 LLM Fallback Chain (`call_ai_with_retry`)
 1. **Primary Model**: `gemini-3.1-pro-preview` (high-reasoning narrative generation).
 2. **Automated Fallback**: `gemini-3.5-flash` (triggered on quota exhaustion, 429 rate limits, or API outages).
 3. **Deterministic Fallback**: Local structured template generator ensures valid markdown reports are published even during total upstream API outages.
 
-### 5.2 Build Artifact Tracking (`.gitignore` Exceptions)
-- Targeted git exceptions (`!reports/**/summaries/*.json`, `!reports/**/summaries/*.md`) ensure all 88+ generated telemetry files, lap timelines, tyre intelligence JSONs, and AI reports are tracked in version control and deployed to Vercel.
+### 5.3 Build Artifact Tracking (`.gitignore` Exceptions)
+- Targeted git exceptions (`!reports/**/summaries/*.json`, `!reports/**/summaries/*.md`) ensure all generated telemetry files, lap timelines, tyre intelligence JSONs, and AI reports are tracked in version control and deployed to Vercel.
 
 ---
 
@@ -146,11 +152,17 @@ To prevent unnecessary compute usage and spurious notification alerts:
 The project enforces strict code quality and test coverage across the entire stack:
 
 ```bash
-# Execute unit & integration test suite (66 tests across ML, cleaning, pipeline & AI)
+# Execute unit & integration test suite (279 tests across ML, cleaning, pipeline & AI)
 uv run pytest
+
+# Execute strict MyPy type check (0 issues across 59 source files)
+uv run mypy --strict src
+
+# Execute Ruff code linter
+uv run ruff check .
 
 # Execute TypeScript type checker
 cd dashboard && npx tsc --noEmit
 ```
 
-All 66 Python pytest modules and TypeScript static type checks pass with 0 errors.
+All 279 Python pytest modules pass with 100% line/branch coverage compliance and 0 type errors.

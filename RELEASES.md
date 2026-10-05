@@ -1,11 +1,16 @@
 # F1 2026 Predictions - Release Notes
 
 ## [v6.3.0] - 2026-10-04
-### Madrid GP External Integration, Dynamic Priors & GitHub Security (`gh-secure`)
+### Madrid GP External Integration, Dynamic Priors, Unity Catalog Model Registry & GitHub Security (`gh-secure`)
 
 #### 🇪🇸 Madrid GP & FastF1 Standalone Prediction Pipeline
 - **`scripts/madrid_prediction_external.py`**: Completed, syntax-error-free executable implementation of Madrid GP predictions integrating FastF1 ETL, clean-air lap filtering, Bayesian shrinkage, and Stacking ML inference (`XGBRegressor` + `Ridge`).
 - **Telemetry Data Ingestion**: FastF1 ingestion across Rounds 1–13 (286 driver-race instances) cached to `data/fastf1_2026_pre_madrid.csv`.
+
+#### ⚡ Databricks Unity Catalog Model Registry (`@champion`) & Secrets Scope
+- **Unity Catalog Model Registration**: Verified full model lifecycle in `main.race_pace.xgb_race_pace_regressor` logged with `infer_signature(X, y_pred)` and `mlflow.set_registry_uri("databricks-uc")`. Version 1 successfully tagged with **`@champion`** alias.
+- **Databricks Secrets Integration**: Secret scope `f1_secrets` created with key `gmail_app_password` set via Databricks SDK.
+- **Live Email Verification**: Verified end-to-end briefing dispatch to `restrepojuanjo@gmail.com` with MAE 0.178s accuracy and P1 Antonelli winner prediction.
 
 #### 📊 Dynamic Priors & Circuit Transfer Learning
 - **Dynamic Form Priors (`compute_dynamic_form_priors()`)**: Replaced static pre-season assumptions with auto-updating EWMA driver form deltas computed dynamically from actual race summaries (`reports/2026/summaries/actual_results_round_*.json`).
