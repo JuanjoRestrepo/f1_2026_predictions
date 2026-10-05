@@ -35,6 +35,7 @@ def track_experiment(
     run_name: str | None = None,
     model: object | None = None,
     registered_model_name: str | None = None,
+    signature: object | None = None,
 ) -> dict[str, Any]:
     """Track an ML experiment with parameters and evaluation metrics via MLflow 3.
 
@@ -48,6 +49,7 @@ def track_experiment(
         run_name: Optional descriptive run name shown in the MLflow UI.
         model: Optional trained model object to log.
         registered_model_name: Fully qualified UC model path for auto-registration.
+        signature: Optional MLflow model signature metadata required by Unity Catalog.
 
     Returns:
         Summary payload dictionary containing run metadata.
@@ -60,14 +62,13 @@ def track_experiment(
             mlflow.log_metrics(metrics)
             if model is not None:
                 try:
+                    kwargs: dict[str, Any] = {"artifact_path": "model"}
+                    if signature is not None:
+                        kwargs["signature"] = signature
                     if registered_model_name:
-                        mlflow.sklearn.log_model(
-                            model,
-                            artifact_path="model",
-                            registered_model_name=registered_model_name,
-                        )
-                    else:
-                        mlflow.sklearn.log_model(model, artifact_path="model")
+                        kwargs["registered_model_name"] = registered_model_name
+
+                    mlflow.sklearn.log_model(model, **kwargs)
                 except Exception as model_err:
                     logger.warning(
                         "Failed to log sklearn model artifact: %s",

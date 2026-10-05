@@ -196,6 +196,9 @@ def run_train(season: int) -> None:
     logger.info("Model trained — CV RMSE: %.4f (±%.4f)", rmse, mae)
 
     # ── Step 3: Track to MLflow & Register Model in Unity Catalog ────────────
+    from mlflow.models import infer_signature  # type: ignore[import-untyped]
+
+    signature = infer_signature(X, model.predict(X))
     uc_model_name = f"{CATALOG}.{SCHEMA}.{MODEL_NAME}"
     summary = track_experiment(
         experiment_name=EXPERIMENT_NAME,
@@ -204,6 +207,7 @@ def run_train(season: int) -> None:
         run_name=f"xgb_pace_{season}",
         model=model,
         registered_model_name=uc_model_name,
+        signature=signature,
     )
     logger.info("MLflow run tracked: %s", summary.get("run_id"))
 
