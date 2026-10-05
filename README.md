@@ -221,9 +221,10 @@ uv run scripts/master_pipeline.py --round [ROUND_NUM]
 
 - **ML & Inference**: `FastAPI`, `XGBoost`, `LightGBM`, `Scikit-Learn`, `SHAP`, `Joblib`
 - **AI**: `google-genai` (`gemini-3.1-pro-preview` primary, `gemini-3.5-flash` fallback)
-- **Frontend**: `Next.js 15 (Pages)`, `TypeScript`, `Tailwind CSS`, `Recharts`
-- **DevOps**: `Docker (Buildx)`, `GitHub Actions (Parallel Builds)`, `uv`
-- **Data Source**: `FastF1 API`
+- **Frontend**: `Next.js 15 (Pages)`, `TypeScript`, `Tailwind CSS`, `Recharts`, `pnpm` (Workspace & Package Management)
+- **Security & Governance**: `gh-secure` (GitHub Security Lab: CodeQL SAST, Dependabot, PVR Security Policy, PR Rulesets)
+- **DevOps & Cloud**: `Databricks DLT`, `Unity Catalog`, `Docker (Buildx)`, `GitHub Actions`, `uv`
+- **Data Source**: `FastF1 API` & `Open-Meteo Weather API`
 
 ---
 
