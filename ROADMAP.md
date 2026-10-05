@@ -98,6 +98,7 @@ This document outlines the strategic technical evolution of the F1 2026 Predicti
 
 ## ✅ Phase 16: Madrid GP, Dynamic Priors & Security Governance (`gh-secure`) [COMPLETED]
 - **✅ Madrid GP Standalone Pipeline (`madrid_prediction_external.py`)**: Complete executable pipeline integrating FastF1 ETL, clean-air lap filtering, Bayesian shrinkage, and Stacking ML predictions.
+- **✅ Unity Catalog Model Registry & Secrets (`@champion`)**: Verified model logging with `infer_signature` and `mlflow.set_registry_uri("databricks-uc")` under `main.race_pace.xgb_race_pace_regressor@champion`, using Databricks secret scope `f1_secrets` (`gmail_app_password`).
 - **✅ Dynamic Form-Based Priors (`compute_dynamic_form_priors()`)**: Dynamic EWMA prior calculation auto-updating from actual race JSON summaries.
 - **✅ Circuit Similarity Transfer Learning (`compute_circuit_similarity()`)**: Multi-dimensional layout vector matching for new circuit baseline estimation.
 - **✅ Rain-Adjusted Pace Engine (`add_wet_race_pace_penalty()`)**: Wet-surface penalty and rain intensity index for mixed-condition races (Sepang).
