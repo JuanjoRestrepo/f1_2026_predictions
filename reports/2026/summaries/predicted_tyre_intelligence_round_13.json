@@ -2,26 +2,9 @@
   "gp": "Italian Grand Prix",
   "year": 2026,
   "total_laps": 53,
-  "winning_strategy": "AI Optimal (M\u2192H)",
-  "avg_pit_stop": "21.5s (Est.)",
-  "weather_intelligence": {
-    "provider": "unavailable",
-    "event_name": "Italian Grand Prix",
-    "generated_at_utc": "2026-09-15T04:26:17.650501+00:00",
-    "latitude": 45.6156,
-    "longitude": 9.2811,
-    "target_date": "2026-09-06",
-    "race_day": null,
-    "forecast_days": [],
-    "rain_probability": null,
-    "risk_level": "unknown",
-    "confidence": "unavailable",
-    "summary": "No external weather forecast is available for Italian Grand Prix; Friday forecast keeps conservative dry-weather assumptions.",
-    "warnings": [
-      "No external weather API key configured."
-    ]
-  },
-  "proven_strategy_insight": "Strategic Intelligence Report: Telemetry analysis of stint-loading and compound degradation for the Italian Grand Prix is currently being synchronized with AI predictive models. Full strategic narrative will be available shortly.",
+  "winning_strategy": "AI Optimal 1-Stop (M-H)",
+  "avg_pit_stop": "2.42s (Est.)",
+  "proven_strategy_insight": "Thermal degradation projections for the Italian Grand Prix highlight a primary Medium-to-Hard 1-stop strategy. NOR and BOR are projected to control the opening stint before pitting around Lap 21.",
   "drivers": [
     {
       "driver": "NOR",
@@ -31,13 +14,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 26,
+          "laps": 21,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 27,
+          "laps": 32,
           "color": "#f8fafc"
         }
       ]
@@ -50,13 +33,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 26,
+          "laps": 21,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 27,
+          "laps": 32,
           "color": "#f8fafc"
         }
       ]
@@ -69,13 +52,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 26,
+          "laps": 21,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 27,
+          "laps": 32,
           "color": "#f8fafc"
         }
       ]
@@ -88,13 +71,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 26,
+          "laps": 21,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 27,
+          "laps": 32,
           "color": "#f8fafc"
         }
       ]
@@ -107,13 +90,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 26,
+          "laps": 21,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 27,
+          "laps": 32,
           "color": "#f8fafc"
         }
       ]
@@ -125,15 +108,15 @@
       "stints": [
         {
           "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 26,
-          "color": "#facc15"
+          "compound": "HARD",
+          "laps": 21,
+          "color": "#f8fafc"
         },
         {
           "stint": 2,
-          "compound": "HARD",
-          "laps": 27,
-          "color": "#f8fafc"
+          "compound": "MEDIUM",
+          "laps": 32,
+          "color": "#facc15"
         }
       ]
     },
@@ -145,13 +128,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 26,
+          "laps": 21,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 27,
+          "laps": 32,
           "color": "#f8fafc"
         }
       ]
@@ -159,18 +142,18 @@
     {
       "driver": "VER",
       "fullName": "Max Verstappen",
-      "team": "Red Bull Racing",
+      "team": "Red Bull",
       "stints": [
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 26,
+          "laps": 21,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 27,
+          "laps": 32,
           "color": "#f8fafc"
         }
       ]
@@ -182,15 +165,15 @@
       "stints": [
         {
           "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 26,
-          "color": "#facc15"
+          "compound": "HARD",
+          "laps": 21,
+          "color": "#f8fafc"
         },
         {
           "stint": 2,
-          "compound": "HARD",
-          "laps": 27,
-          "color": "#f8fafc"
+          "compound": "MEDIUM",
+          "laps": 32,
+          "color": "#facc15"
         }
       ]
     },
@@ -202,13 +185,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 26,
+          "laps": 21,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 27,
+          "laps": 32,
           "color": "#f8fafc"
         }
       ]
@@ -216,18 +199,18 @@
     {
       "driver": "OCO",
       "fullName": "Esteban Ocon",
-      "team": "Haas F1 Team",
+      "team": "Haas",
       "stints": [
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 26,
+          "laps": 21,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 27,
+          "laps": 32,
           "color": "#f8fafc"
         }
       ]
@@ -240,13 +223,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 26,
+          "laps": 21,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 27,
+          "laps": 32,
           "color": "#f8fafc"
         }
       ]
@@ -254,19 +237,19 @@
     {
       "driver": "LAW",
       "fullName": "Liam Lawson",
-      "team": "Red Bull Racing",
+      "team": "Racing Bulls",
       "stints": [
         {
           "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 26,
-          "color": "#facc15"
+          "compound": "HARD",
+          "laps": 21,
+          "color": "#f8fafc"
         },
         {
           "stint": 2,
-          "compound": "HARD",
-          "laps": 27,
-          "color": "#f8fafc"
+          "compound": "MEDIUM",
+          "laps": 32,
+          "color": "#facc15"
         }
       ]
     },
@@ -278,13 +261,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 26,
+          "laps": 21,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 27,
+          "laps": 32,
           "color": "#f8fafc"
         }
       ]
@@ -297,70 +280,89 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 26,
+          "laps": 21,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 27,
+          "laps": 32,
           "color": "#f8fafc"
         }
       ]
     },
     {
       "driver": "PER",
-      "fullName": "Sergio Perez",
+      "fullName": "Sergio P\u00e9rez",
       "team": "Cadillac",
       "stints": [
         {
           "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 26,
-          "color": "#facc15"
+          "compound": "HARD",
+          "laps": 21,
+          "color": "#f8fafc"
         },
         {
           "stint": 2,
-          "compound": "HARD",
-          "laps": 27,
-          "color": "#f8fafc"
+          "compound": "MEDIUM",
+          "laps": 32,
+          "color": "#facc15"
         }
       ]
     },
     {
       "driver": "BEA",
       "fullName": "Oliver Bearman",
-      "team": "Haas F1 Team",
+      "team": "Haas",
       "stints": [
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 26,
+          "laps": 21,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 27,
+          "laps": 32,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "HAD",
+      "fullName": "Isack Hadjar",
+      "team": "Red Bull",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 21,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 32,
           "color": "#f8fafc"
         }
       ]
     },
     {
       "driver": "HUL",
-      "fullName": "Nico Hulkenberg",
+      "fullName": "Nico H\u00fclkenberg",
       "team": "Audi",
       "stints": [
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 26,
+          "laps": 21,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 27,
+          "laps": 32,
           "color": "#f8fafc"
         }
       ]
@@ -373,13 +375,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 26,
+          "laps": 21,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 27,
+          "laps": 32,
           "color": "#f8fafc"
         }
       ]
@@ -392,13 +394,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 26,
+          "laps": 21,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 27,
+          "laps": 32,
           "color": "#f8fafc"
         }
       ]
@@ -411,32 +413,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 26,
+          "laps": 21,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 27,
-          "color": "#f8fafc"
-        }
-      ]
-    },
-    {
-      "driver": "TSU",
-      "fullName": "Yuki Tsunoda",
-      "team": "Racing Bulls",
-      "stints": [
-        {
-          "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 26,
-          "color": "#facc15"
-        },
-        {
-          "stint": 2,
-          "compound": "HARD",
-          "laps": 27,
+          "laps": 32,
           "color": "#f8fafc"
         }
       ]

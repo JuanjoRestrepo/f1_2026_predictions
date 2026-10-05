@@ -2,10 +2,9 @@
   "gp": "Belgian Grand Prix",
   "year": 2026,
   "total_laps": 44,
-  "winning_strategy": "M\u2192H (1-stop)",
-  "avg_pit_stop": "22.0s",
-  "weather_intelligence": null,
-  "proven_strategy_insight": "Strategic Intelligence Report: Telemetry analysis of stint-loading and compound degradation for the Belgian Grand Prix is currently being synchronized with AI predictive models. Full strategic narrative will be available shortly.",
+  "winning_strategy": "1-Stop (Medium \u2192 Hard)",
+  "avg_pit_stop": "2.35s",
+  "proven_strategy_insight": "Official telemetry analysis for the Belgian Grand Prix confirms that the Medium-to-Hard 1-stop strategy was optimal. ANT managed tyre thermal degradation effectively to retain victory over LEC.",
   "drivers": [
     {
       "driver": "ANT",
@@ -20,9 +19,9 @@
         },
         {
           "stint": 2,
-          "compound": "SOFT",
+          "compound": "HARD",
           "laps": 26,
-          "color": "#ef4444"
+          "color": "#f8fafc"
         }
       ]
     },
@@ -34,13 +33,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 20,
+          "laps": 18,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 24,
+          "laps": 26,
           "color": "#f8fafc"
         }
       ]
@@ -53,13 +52,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 17,
+          "laps": 18,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 27,
+          "laps": 26,
           "color": "#f8fafc"
         }
       ]
@@ -72,13 +71,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 20,
+          "laps": 18,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 24,
+          "laps": 26,
           "color": "#f8fafc"
         }
       ]
@@ -90,15 +89,15 @@
       "stints": [
         {
           "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 20,
-          "color": "#facc15"
+          "compound": "HARD",
+          "laps": 18,
+          "color": "#f8fafc"
         },
         {
           "stint": 2,
-          "compound": "HARD",
-          "laps": 24,
-          "color": "#f8fafc"
+          "compound": "MEDIUM",
+          "laps": 26,
+          "color": "#facc15"
         }
       ]
     },
@@ -109,26 +108,14 @@
       "stints": [
         {
           "stint": 1,
-          "compound": "HARD",
-          "laps": 1,
-          "color": "#f8fafc"
-        },
-        {
-          "stint": 2,
           "compound": "MEDIUM",
-          "laps": 1,
+          "laps": 18,
           "color": "#facc15"
         },
         {
-          "stint": 3,
+          "stint": 2,
           "compound": "HARD",
-          "laps": 18,
-          "color": "#f8fafc"
-        },
-        {
-          "stint": 4,
-          "compound": "HARD",
-          "laps": 24,
+          "laps": 26,
           "color": "#f8fafc"
         }
       ]
@@ -140,15 +127,15 @@
       "stints": [
         {
           "stint": 1,
-          "compound": "HARD",
-          "laps": 30,
-          "color": "#f8fafc"
+          "compound": "MEDIUM",
+          "laps": 18,
+          "color": "#facc15"
         },
         {
           "stint": 2,
-          "compound": "MEDIUM",
-          "laps": 14,
-          "color": "#facc15"
+          "compound": "HARD",
+          "laps": 26,
+          "color": "#f8fafc"
         }
       ]
     },
@@ -159,15 +146,15 @@
       "stints": [
         {
           "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 20,
-          "color": "#facc15"
+          "compound": "HARD",
+          "laps": 18,
+          "color": "#f8fafc"
         },
         {
           "stint": 2,
-          "compound": "HARD",
-          "laps": 24,
-          "color": "#f8fafc"
+          "compound": "MEDIUM",
+          "laps": 26,
+          "color": "#facc15"
         }
       ]
     },
@@ -179,13 +166,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 16,
+          "laps": 18,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 28,
+          "laps": 26,
           "color": "#f8fafc"
         }
       ]
@@ -198,13 +185,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 15,
+          "laps": 18,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 29,
+          "laps": 26,
           "color": "#f8fafc"
         }
       ]
@@ -217,13 +204,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 14,
+          "laps": 18,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 30,
+          "laps": 26,
           "color": "#f8fafc"
         }
       ]
@@ -235,33 +222,33 @@
       "stints": [
         {
           "stint": 1,
-          "compound": "MEDIUM",
-          "laps": 15,
-          "color": "#facc15"
+          "compound": "HARD",
+          "laps": 18,
+          "color": "#f8fafc"
         },
         {
           "stint": 2,
-          "compound": "HARD",
-          "laps": 29,
-          "color": "#f8fafc"
+          "compound": "MEDIUM",
+          "laps": 26,
+          "color": "#facc15"
         }
       ]
     },
     {
       "driver": "HUL",
-      "fullName": "Nico Hulkenberg",
+      "fullName": "Nico H\u00fclkenberg",
       "team": "Audi",
       "stints": [
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 20,
+          "laps": 18,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 24,
+          "laps": 26,
           "color": "#f8fafc"
         }
       ]
@@ -274,19 +261,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 1,
+          "laps": 18,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 19,
-          "color": "#f8fafc"
-        },
-        {
-          "stint": 3,
-          "compound": "HARD",
-          "laps": 24,
+          "laps": 26,
           "color": "#f8fafc"
         }
       ]
@@ -294,6 +275,25 @@
     {
       "driver": "ALB",
       "fullName": "Alexander Albon",
+      "team": "Williams",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "HARD",
+          "laps": 18,
+          "color": "#f8fafc"
+        },
+        {
+          "stint": 2,
+          "compound": "MEDIUM",
+          "laps": 26,
+          "color": "#facc15"
+        }
+      ]
+    },
+    {
+      "driver": "SAI",
+      "fullName": "Carlos Sainz",
       "team": "Williams",
       "stints": [
         {
@@ -311,25 +311,6 @@
       ]
     },
     {
-      "driver": "SAI",
-      "fullName": "Carlos Sainz",
-      "team": "Williams",
-      "stints": [
-        {
-          "stint": 1,
-          "compound": "SOFT",
-          "laps": 14,
-          "color": "#ef4444"
-        },
-        {
-          "stint": 2,
-          "compound": "HARD",
-          "laps": 30,
-          "color": "#f8fafc"
-        }
-      ]
-    },
-    {
       "driver": "OCO",
       "fullName": "Esteban Ocon",
       "team": "Haas F1 Team",
@@ -337,19 +318,13 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 1,
+          "laps": 18,
           "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 15,
-          "color": "#f8fafc"
-        },
-        {
-          "stint": 3,
-          "compound": "HARD",
-          "laps": 28,
+          "laps": 26,
           "color": "#f8fafc"
         }
       ]
@@ -361,21 +336,15 @@
       "stints": [
         {
           "stint": 1,
-          "compound": "SOFT",
-          "laps": 1,
-          "color": "#ef4444"
+          "compound": "MEDIUM",
+          "laps": 18,
+          "color": "#facc15"
         },
         {
           "stint": 2,
           "compound": "HARD",
-          "laps": 31,
+          "laps": 26,
           "color": "#f8fafc"
-        },
-        {
-          "stint": 3,
-          "compound": "SOFT",
-          "laps": 11,
-          "color": "#ef4444"
         }
       ]
     },
@@ -386,20 +355,14 @@
       "stints": [
         {
           "stint": 1,
-          "compound": "HARD",
-          "laps": 19,
-          "color": "#f8fafc"
+          "compound": "MEDIUM",
+          "laps": 18,
+          "color": "#facc15"
         },
         {
           "stint": 2,
-          "compound": "SOFT",
-          "laps": 12,
-          "color": "#ef4444"
-        },
-        {
-          "stint": 3,
           "compound": "HARD",
-          "laps": 11,
+          "laps": 26,
           "color": "#f8fafc"
         }
       ]
@@ -411,39 +374,33 @@
       "stints": [
         {
           "stint": 1,
-          "compound": "HARD",
-          "laps": 17,
-          "color": "#f8fafc"
+          "compound": "MEDIUM",
+          "laps": 18,
+          "color": "#facc15"
         },
         {
           "stint": 2,
-          "compound": "SOFT",
-          "laps": 8,
-          "color": "#ef4444"
+          "compound": "HARD",
+          "laps": 26,
+          "color": "#f8fafc"
         }
       ]
     },
     {
       "driver": "PER",
-      "fullName": "Sergio Perez",
+      "fullName": "Sergio P\u00e9rez",
       "team": "Cadillac",
       "stints": [
         {
           "stint": 1,
-          "compound": "HARD",
-          "laps": 1,
-          "color": "#f8fafc"
+          "compound": "MEDIUM",
+          "laps": 18,
+          "color": "#facc15"
         },
         {
           "stint": 2,
-          "compound": "SOFT",
-          "laps": 11,
-          "color": "#ef4444"
-        },
-        {
-          "stint": 3,
           "compound": "HARD",
-          "laps": 1,
+          "laps": 26,
           "color": "#f8fafc"
         }
       ]
@@ -456,8 +413,14 @@
         {
           "stint": 1,
           "compound": "MEDIUM",
-          "laps": 1,
+          "laps": 18,
           "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 26,
+          "color": "#f8fafc"
         }
       ]
     }
