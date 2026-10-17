@@ -1,5 +1,7 @@
 import argparse
+import asyncio
 import json
+import os
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -9,6 +11,7 @@ import fastf1.core
 import numpy as np
 from google import genai
 
+from f1_predictions.agents.coordinator_agent import coordinator_agent_run
 from f1_predictions.features.external_weather import (
     RISK_MIXED,
     RISK_WET,
@@ -866,11 +869,6 @@ def main() -> None:
     if ai_model:
         if args.swarm:
             logger.info("Generating Phase 13 Agentic Swarms Master Intelligence Report")
-            import asyncio
-            import os
-
-            from f1_predictions.agents.coordinator_agent import coordinator_agent_run
-
             if settings.gemini_api_key:
                 os.environ["GEMINI_API_KEY"] = settings.gemini_api_key
         else:

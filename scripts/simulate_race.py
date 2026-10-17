@@ -7,11 +7,7 @@ from typing import Any, cast
 import numpy as np
 import pandas as pd
 
-from f1_predictions.features.clean_air_pace import (
-    MADRID_PUBLISHED_PRIOR,
-    candidate_long_run_laps,
-    summarize_clean_air,
-)
+from f1_predictions.features.clean_air_pace import MADRID_PUBLISHED_PRIOR
 from f1_predictions.features.external_weather import (
     WeatherIntelligence,
     simulation_weather_features,

@@ -47,11 +47,10 @@ def extract_quali_features(
     # We want the absolute fastest time set by the driver across the whole session
     # or just use the delta to the pole position.
 
-    # If the session laps object is empty, we must rely on the results table
+    # If the session laps object is empty we fall back to the results table,
+    # which is read below regardless of lap-data availability.
     if session.laps.empty:
         logger.warning("No lap data available. Using results table only.")
-        # Fallback to pure results
-        pass
 
     # Build feature DataFrame
     features = []
