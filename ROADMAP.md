@@ -65,11 +65,13 @@ This document outlines the strategic technical evolution of the F1 2026 Predicti
 
 ---
 
-## ✅ Phase 11: Durable Agentic Orchestration [COMPLETED]
+## ✅ Phase 11: Durable Agentic Orchestration [SUPERSEDED by Phase 17]
 - **Durable Execution**: Migrated orchestration to **Trigger.dev v3** for 100% reliable, long-running race events.
 - **Hybrid MLOps**: Integrated Node.js task management with a production-grade Python predictive engine.
 - **Autonomous Autopilot**: Scheduled Friday forecasting and Monday auditing with automatic race discovery.
 - **Fault-Tolerant Pipelines**: Resilience against network drops and API rate limits via durable retries.
+
+> **Superseded (v6.4.0)**: Trigger.dev has been fully retired — the sources, configuration, CI job and SDK dependencies are gone. Durable execution now lives in the **Databricks Lakeflow job** (`f1_2026_race_predictions_job`), which is the single scheduler for the platform. See Phase 17.
 
 ---
 
@@ -94,7 +96,7 @@ This document outlines the strategic technical evolution of the F1 2026 Predicti
 - **✅ Databricks Asset Bundles (DABs)**: Production declarative bundle infrastructure (`databricks.yml`, `resources/jobs.yml`, `resources/pipelines.yml`) supporting `dev`, `staging`, and `prod` targets.
 - **✅ Delta Live Tables (DLT) Medallion Architecture**: Automated Bronze (raw telemetry) → Silver (cleaned laps with quality expectations) → Gold (driver feature aggregates) streaming pipeline.
 - **✅ Unity Catalog Model Registry & MLflow 3**: Model tracking and automated promotion to `@champion` / `@challenger` aliases in Unity Catalog (`f1_2026_dev.race_pace`).
-- **✅ Databricks Serverless Execution**: Serverless Lakeflow workflow (`f1_2026_daily_predictions_job`) executing 3 tasks (`run_medallion_pipeline` → `train_and_register_champion` → `dispatch_notifications`) end-to-end with 100% success.
+- **✅ Databricks Serverless Execution**: Serverless Lakeflow workflow (`f1_2026_race_predictions_job`) completing end-to-end with 100% success. It has since grown to 5 tasks with a real telemetry ingest (Phase 17).
 
 ## ✅ Phase 16: Madrid GP, Dynamic Priors & Security Governance (`gh-secure`) [COMPLETED]
 - **✅ Madrid GP Standalone Pipeline (`madrid_prediction_external.py`)**: Complete executable pipeline integrating FastF1 ETL, clean-air lap filtering, Bayesian shrinkage, and Stacking ML predictions.
@@ -104,6 +106,15 @@ This document outlines the strategic technical evolution of the F1 2026 Predicti
 - **✅ Rain-Adjusted Pace Engine (`add_wet_race_pace_penalty()`)**: Wet-surface penalty and rain intensity index for mixed-condition races (Sepang).
 - **✅ Ensemble Stacking Expansion**: Integrated `ExtraTreesRegressor` (and optional `CatBoostRegressor`) as 3rd base learner.
 - **✅ GitHub Security Lab Governance (`gh-secure`)**: Integrated Private Vulnerability Reporting (`SECURITY.md`), Dependabot automated security updates (`dependabot.yml`), and CodeQL static analysis (`codeql.yml`).
+
+## ✅ Phase 17: Single-Orchestrator Consolidation & Dashboard Serving [COMPLETED]
+- **✅ Trigger.dev Retired**: Removed the Trigger.dev sources, configuration, CI job and SDK dependencies; the Databricks Lakeflow job is now the single scheduler for the whole platform.
+- **✅ GitHub Actions Race Cron Removed**: `scheduled_sync.yml` is retained purely as a manual `workflow_dispatch` fallback, while `sync_calendar.yml` keeps its calendar cron.
+- **✅ Real Telemetry Loop**: `ingest_race_telemetry` lands completed-round FastF1 laps in the Unity Catalog `raw_telemetry` Volume and `telemetry_bronze` tails it with Auto Loader, closing the cloud self-learning loop (Bronze → Silver → Gold → retrain).
+- **✅ Champion Promotion Gate**: `@champion` is only re-tagged when the candidate beats the incumbent's cross-validated RMSE (`F1_PROMOTION_TOLERANCE` as an escape hatch), preventing silent model regressions.
+- **✅ Dashboard Data Serving**: `export_dashboard_data` publishes `reports/<season>/**` to object storage under `dashboard/<season>/` (manifest written last); the dashboard `prebuild` puller consumes it, with the committed `reports/**` tree as the fallback.
+- **✅ Honest Reporting**: Post-race verdicts emit explicit `preview` / `partial` / `unavailable` statuses instead of unmeasured accuracy claims.
+- **✅ Supply-Chain Hardening**: Every open CodeQL alert cleared, all GitHub Actions moved to Node 24 runtimes, and `CONTRIBUTING.md` added to document the trunk-based branch model.
 
 ## 📝 Strategic Technical Notes
 - **FastF1 vs. Formula-Timer**: The platform will continue using FastF1 as the "Ground Truth" for ML modeling and telemetry analysis. Formula-Timer is designated as a secondary-screen validation tool and UI reference to ensure professional-grade visualization and real-time trend benchmarking.

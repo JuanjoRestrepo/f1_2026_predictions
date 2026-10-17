@@ -930,7 +930,7 @@ wheels = [
 
 [[package]]
 name = "f1-2026-predictions"
-version = "4.4.4"
+version = "6.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "boto3" },

@@ -1,5 +1,38 @@
 # F1 2026 Predictions - Release Notes
 
+## [v6.4.0] - 2026-10-17
+### Single-Orchestrator Consolidation, Databricks → Dashboard Serving & Supply-Chain Hardening
+
+#### ☁️ Databricks → Dashboard Serving Path
+- **`--run-mode export`**: `run_export()` collects the season's `reports/<season>/**` artifacts, discovers the completed rounds, and publishes them to S3-compatible storage under `dashboard/<season>/`, writing `manifest.json` **last** as the completeness signal (`src/f1_predictions/utils/dashboard_publish.py`).
+- **`export_dashboard_data` Lakeflow task**: runs in parallel with `dispatch_notifications` after training, so the dashboard refreshes straight from the lakehouse with no GitHub Actions race cron.
+- **`dashboard/scripts/fetch-dashboard-data.mjs`**: new dashboard `prebuild` puller. Opt-in via `F1_DASHBOARD_DATA_BASE_URL`; it never breaks the build unless `F1_DASHBOARD_DATA_STRICT=1`, and it refuses path traversal. The committed `reports/**` tree remains the fallback.
+- **`get_s3_client()`**: promoted to a public accessor in `cloud_cache.py` and reused by the publisher (`SUPABASE_S3_*` configuration).
+
+#### 🔄 Real Telemetry: FastF1 → Unity Catalog Volume → DLT Bronze
+- **`run_ingest()` / `volume_ingest.py`**: completed-round FastF1 laps are landed in the Unity Catalog `raw_telemetry` Volume through a pure, unit-testable transform.
+- **`telemetry_bronze` Auto Loader**: the medallion pipeline now tails the Volume with Auto Loader instead of sample data, so real laps flow Bronze → Silver → Gold.
+- **Missing lap timing is non-fatal**: when a timing environment cannot supply lap data the round is skipped and post-race verdicts degrade to a positional-only `partial` status instead of fabricating accuracy.
+
+#### 🏆 Champion Promotion Gate
+- **`should_promote()` / `get_champion_metric()`**: `@champion` is only re-tagged when the candidate improves the incumbent's cross-validated RMSE. `F1_PROMOTION_TOLERANCE` provides an escape hatch.
+
+#### 🗓️ Single Scheduler (Trigger.dev Retired)
+- **Trigger.dev decommissioned**: removed the sources, configuration, CI job and SDK dependencies — the Databricks Lakeflow job is now the single scheduler.
+- **GitHub Actions race cron removed**: `scheduled_sync.yml` remains as a manual `workflow_dispatch` fallback while `sync_calendar.yml` keeps its calendar cron.
+- **Job graph**: `ingest_race_telemetry` → `run_medallion_pipeline` → `train_and_register_champion` → (`dispatch_notifications` ∥ `export_dashboard_data`).
+
+#### 🔒 Security & Supply-Chain Hardening
+- **CodeQL clean**: every open alert cleared rather than suppressed — clear-text logging of API keys and coordinates, unused globals/imports, `Protocol` bodies, and a latent `NameError` in `scripts/master_pipeline.py`.
+- **GitHub Actions on Node 24**: `upload-artifact` v4 → v7, `download-artifact` v4 → v8, `setup-buildx-action` v3 → v4, plus the Dependabot batch (`checkout` v7, `setup-python` v7, `cache` v6, `codeql-action` v4, `setup-qemu-action` v4, `login-action` v4, `metadata-action` v6, `build-push-action` v7). `astral-sh/setup-uv` is pinned to `v10.3.0` because upstream no longer publishes floating major tags past `v7`.
+- **`CONTRIBUTING.md`**: documents the trunk-based branch model, the `master` protections, the PR flow, the pre-push checklist, the secrets rule and the action-pinning convention.
+
+#### 🔧 Fixes
+- **Honest verdicts**: post-race accuracy is only reported when it is actually measured; otherwise the report emits explicit `preview` / `partial` / `unavailable` statuses.
+- **Uncertainty bounds**: consolidated into a shared `ensure_uncertainty_bounds` helper so predicted/actual bounds synthesis cannot drift between code paths.
+
+---
+
 ## [v6.3.0] - 2026-10-04
 ### Madrid GP External Integration, Dynamic Priors, Unity Catalog Model Registry & GitHub Security (`gh-secure`)
 

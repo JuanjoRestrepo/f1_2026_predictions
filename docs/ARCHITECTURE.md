@@ -11,10 +11,11 @@ flowchart TD
     subgraph Data Layer [1. Data Ingestion & Telemetry Transport]
         FastF1[FastF1 / Ergast API] --> |Raw Telemetry & Timing| Ingest[Ingestion Engine]
         Weather[Open-Meteo & External API] --> |Ambient & Wet Track Weather| Ingest
+        Ingest --> |Per-round Parquet| Volume[(UC Volume: raw_telemetry)]
     end
 
     subgraph Databricks [2. Databricks Lakehouse & Delta Medallion]
-        Ingest --> Bronze[(Bronze: telemetry_bronze)]
+        Volume --> |Auto Loader cloudFiles| Bronze[(Bronze: telemetry_bronze)]
         Bronze --> Silver[(Silver: laps_silver)]
         Silver --> Gold[(Gold: driver_features_gold)]
     end
@@ -28,14 +29,15 @@ flowchart TD
 
     subgraph Orchestration [4. Orchestration & Pre-Race Gate]
         Gate{is_race_window_active?}
-        Gate --> |Race Weekend FRI-MON| Workflow[Databricks Lakeflow & GitHub Actions]
+        Gate --> |Race Weekend FRI-MON| Workflow[Databricks Lakeflow Job]
         Gate --> |Non-Race Day| Skip[Skip Execution / Conserve Compute]
     end
 
     subgraph Delivery & Security [5. Briefings, Dashboard & Security]
         Workflow --> Gemini[Google Gemini API]
         Gemini --> Briefings[Gmail SMTP & Discord Webhook Dispatch]
-        Workflow --> Dashboard[Next.js 15 F1 TV Dashboard]
+        Workflow --> Publish[Export dashboard bundle]
+        Publish --> Dashboard[Next.js 15 F1 TV Dashboard]
         Workflow --> Security[gh-secure: CodeQL + Dependabot + PVR]
     end
 ```
@@ -49,9 +51,10 @@ flowchart TD
 - **FastF1 Ergast API**: Synchronizes lap times, sector split times (S1, S2, S3), trap speeds, tyre compounds, stint lengths, pit stop durations, and telemetry channels (Throttle, Brake, RPM, Gear, Speed).
 - **Open-Meteo Weather API**: Retrieves air temperature, track surface temperature, humidity, wind vectors, and rainfall indicators for circuit coordinates.
 - **Cloud Cache Layer**: Caches raw FastF1 payloads in a local directory (`fastf1_cache/`) backed up to a Supabase S3 bucket for warm serverless execution.
+- **Unity Catalog `raw_telemetry` Volume**: completed-round FastF1 laps are landed as per-round Parquet under `/Volumes/<catalog>/<schema>/raw_telemetry`, which the Bronze layer tails with Auto Loader (job task 1, see §3.2). This is the real Bronze drop that closes the cloud self-learning loop; when a timing environment cannot supply lap data the round is skipped and post-race verdicts degrade to a positional-only `partial` status rather than inventing accuracy.
 
 ### 1.2 Delta Medallion Architecture (Databricks DLT)
-1. **Bronze Layer (`telemetry_bronze`)**: Raw, append-only ingestion of lap telemetry data preserving original data types.
+1. **Bronze Layer (`telemetry_bronze`)**: Raw, append-only lap telemetry, streamed out of the `raw_telemetry` Volume by Auto Loader (`cloudFiles`) so original data types are preserved.
 2. **Silver Layer (`laps_silver`)**: Cleaned and validated dataset with Delta Live Tables (DLT) quality expectations:
    - `expect_or_drop("valid_laptime", "LapTime_s > 45 AND LapTime_s < 200")`: Removes pit-in/out out-laps and safety car anomalies.
    - `expect_or_fail("valid_driver", "Driver IS NOT NULL")`: Ensures strict entity integrity.
@@ -95,15 +98,19 @@ To prevent unnecessary compute usage and spurious notification alerts:
 - **Behavior**: If executed on a non-race day (e.g. Wednesday of a gap week), the pipeline logs a clean skip notification and terminates gracefully with exit code 0.
 - **Override**: Passing `--force` CLI flag bypasses the gate for manual testing and CI/CD verification.
 
-### 3.2 Databricks Lakehouse Workflow (`f1_2026_race_predictions_job`)
-- **Schedule**: Quartz cron `0 0 6 ? * FRI-MON` (runs FRI-MON at 06:00 UTC).
-- **Task 1 (`run_medallion_pipeline`)**: Executes DLT pipeline.
-- **Task 2 (`train_and_register_champion`)**: Fits pace regressors, infers MLflow model signature (`infer_signature`), sets registry URI to `databricks-uc`, and promotes champion alias (`@champion`) in Unity Catalog schema `main.race_pace.xgb_race_pace_regressor`.
-- **Task 3 (`dispatch_notifications`)**: Reads credentials securely via Databricks Secrets scope `f1_secrets` (`gmail_app_password`), sending HTML email briefings and Discord alerts via SMTP/Webhook.
+### 3.2 Databricks Lakeflow Workflow (`f1_2026_race_predictions_job`)
+The Databricks job is the **single scheduler** — the Trigger.dev orchestration and the GitHub Actions race cron have both been retired. Five tasks execute as one dependency graph:
 
-### 3.3 GitHub Actions Scheduled Pipeline (`scheduled_sync.yml`)
-- **Friday 18:00 UTC**: Pre-race prediction generation & briefing.
-- **Monday 09:00 UTC**: Post-race telemetry audit, actual results processing, and automated git push to `master`.
+- **Schedule**: Quartz cron `0 0 6 ? * FRI-MON` (race weekend + post-race Monday at 06:00 UTC).
+- **Task 1 (`ingest_race_telemetry`)**: pulls the newest completed round from FastF1 and writes per-round Parquet into the Unity Catalog `raw_telemetry` Volume (`--run-mode ingest`).
+- **Task 2 (`run_medallion_pipeline`)**: executes the DLT pipeline over that Volume (Bronze → Silver → Gold).
+- **Task 3 (`train_and_register_champion`)**: fits the pace regressors, infers the MLflow signature (`infer_signature`), sets the registry URI to `databricks-uc`, and re-tags `@champion` in Unity Catalog (`<catalog>.race_pace.xgb_race_pace_regressor`) — **only when the candidate beats the incumbent's cross-validated RMSE**.
+- **Task 4 (`dispatch_notifications`)**: reads credentials from the Databricks Secrets scope `f1_secrets` (`gmail_app_password`) and sends HTML email briefings and Discord alerts via SMTP/webhook.
+- **Task 5 (`export_dashboard_data`)**: runs in parallel with task 4 and publishes the season's `reports/<season>` bundle to object storage for the dashboard (see §4.4).
+
+### 3.3 GitHub Actions: Manual Fallback & Calendar Sync
+- **`scheduled_sync.yml` — manual only.** The Friday/Monday race cron was removed alongside the Databricks consolidation; the workflow is kept as a `workflow_dispatch` fallback for replaying a single run by hand.
+- **`sync_calendar.yml`** keeps its calendar cron so `calendar.json` continues to track the official FastF1/Ergast schedule.
 
 ---
 
@@ -127,6 +134,13 @@ To prevent unnecessary compute usage and spurious notification alerts:
   - **Finishing Order Table (`PredictionsTable.tsx`)**: Sortable classification grid with team color indicators and pace deltas.
   - **AI Race Analysis (`RaceReport.tsx`)**: High-impact markdown rendering of Google Gemini LLM briefings.
 
+### 4.4 Dashboard Data Serving (Databricks → Object Storage → Vercel)
+The dashboard no longer depends on a race-day GitHub Actions cron to refresh its data:
+
+- **Publisher** (`src/f1_predictions/utils/dashboard_publish.py`): `--run-mode export` collects `reports/<season>/**`, discovers the completed rounds, uploads them under `dashboard/<season>/` through the shared `get_s3_client()` accessor, and writes `manifest.json` **last** as the completeness signal.
+- **Consumer** (`dashboard/scripts/fetch-dashboard-data.mjs`): the dashboard `prebuild` step pulls that prefix. It is opt-in via `F1_DASHBOARD_DATA_BASE_URL`, refuses path traversal, and never breaks the build unless `F1_DASHBOARD_DATA_STRICT=1`.
+- **Fallback**: the committed `reports/**` tree remains the source of truth whenever the base URL is unset, so the build works with no cloud configuration at all.
+
 ---
 
 ## 5. Security, Governance & Reliability
@@ -135,7 +149,8 @@ To prevent unnecessary compute usage and spurious notification alerts:
 - **`SECURITY.md`**: Public vulnerability reporting policy and security disclosure protocol.
 - **`dependabot.yml`**: Weekly automated dependency security updates for Python (`pip`/`uv`) and GitHub Actions.
 - **`codeql.yml`**: Static security analysis pipeline for Python and GitHub Actions workflow files.
-- **Branch Rulesets**: Active branch protection enforcing pull request reviews and status checks (`Require branches to be up to date before merging`).
+- **Branch Rulesets**: The `Master Protection & CI Gates` ruleset requires every change to land through a pull request and enforces linear history (merge commits are rejected), while blocking force-pushes and branch deletion. Merging is squash-only and head branches are deleted automatically. There is intentionally **no required approval count and no required status check**, so the "green CI before merge" rule is a convention documented in [`../CONTRIBUTING.md`](../CONTRIBUTING.md) rather than a hard gate.
+- **CodeQL**: Runs the `security-extended,security-and-quality` query suites on every PR and fails the build on new alerts — including the name-based `py/clear-text-logging-sensitive-data` heuristic, which flags variables named like credentials even when only the name is logged.
 
 ### 5.2 LLM Fallback Chain (`call_ai_with_retry`)
 1. **Primary Model**: `gemini-3.1-pro-preview` (high-reasoning narrative generation).
@@ -152,7 +167,7 @@ To prevent unnecessary compute usage and spurious notification alerts:
 The project enforces strict code quality and test coverage across the entire stack:
 
 ```bash
-# Execute unit & integration test suite (279 tests across ML, cleaning, pipeline & AI)
+# Execute unit & integration test suite (331 tests across ML, cleaning, pipeline & AI)
 uv run pytest
 
 # Execute strict MyPy type check (0 issues across source files)
@@ -168,5 +183,5 @@ pnpm --filter dashboard exec tsc --noEmit
 pnpm --filter dashboard run build
 ```
 
-All 279 Python pytest modules pass with 100% line/branch coverage compliance, 0 type errors, and pnpm workspace verification.
+All 331 Python tests pass under an enforced **80% line-coverage gate** (current: 84.2%), with 0 MyPy `--strict` errors, a clean Ruff lint/format check, and pnpm workspace verification.
 

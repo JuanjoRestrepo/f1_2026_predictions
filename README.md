@@ -2,7 +2,7 @@
 
 [![Docker Build and Publish](https://github.com/JuanjoRestrepo/f1_2026_predictions/actions/workflows/docker.yml/badge.svg)](https://github.com/JuanjoRestrepo/f1_2026_predictions/actions/workflows/docker.yml)
 [![Lint and Test](https://github.com/JuanjoRestrepo/f1_2026_predictions/actions/workflows/ci.yml/badge.svg)](https://github.com/JuanjoRestrepo/f1_2026_predictions/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/Coverage-83.6%25-brightgreen.svg)](https://github.com/JuanjoRestrepo/f1_2026_predictions/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/Coverage-84.2%25-brightgreen.svg)](https://github.com/JuanjoRestrepo/f1_2026_predictions/actions/workflows/ci.yml)
 
 A production-grade, end-to-end MLOps platform designed to predict Formula 1 race dynamics for the 2026 regulation era. This system combines state-of-the-art Gradient Boosting (XGBoost/LightGBM) with a high-fidelity interactive dashboard inspired by F1 TV telemetry.
 
@@ -33,15 +33,46 @@ Expert-level race reporting powered by configurable **Gemini 3.1 Pro** primary g
 
 ---
 
-## [v6.2.0] - 2026-10-16
+## [v6.4.0] - 2026-10-17
 
 ### ☁️ Single-Orchestrator Consolidation & Databricks → Dashboard Serving
 
-- **Feature**: `export_dashboard_data` Lakeflow task publishes the season's `reports/<season>` bundle to S3-compatible storage; the dashboard's `prebuild` step pulls it back, keeping the web app live without a GitHub Actions race cron.
+- **Feature**: `export_dashboard_data` Lakeflow task publishes the season's `reports/<season>` bundle to S3-compatible storage; the dashboard's `prebuild` step (`dashboard/scripts/fetch-dashboard-data.mjs`) pulls it back, keeping the web app live without a GitHub Actions race cron.
 - **Feature**: Real FastF1 ingestion (`--run-mode ingest`) lands completed-round laps in the Unity Catalog `raw_telemetry` Volume; `telemetry_bronze` now tails it via Auto Loader instead of sample data.
 - **Feature**: Champion promotion gate — `@champion` is only re-tagged when the candidate beats the incumbent's CV RMSE.
 - **Changed**: Retired the Trigger.dev orchestration (sources, config, CI job, SDK deps) and the GitHub Actions race cron; Databricks Lakeflow is now the single scheduler. The Actions race workflow remains as a manual `workflow_dispatch` fallback.
+- **Security**: Cleared every open CodeQL alert and moved CI onto Node 24 actions (`upload-artifact` v7, `download-artifact` v8, `setup-buildx-action` v4, `setup-uv` v10.3.0, …). Added `CONTRIBUTING.md` documenting the trunk-based branch model.
 - **Fix**: Post-race verdicts no longer fabricate accuracy when lap timing or results are unavailable — they degrade to explicit `preview`/`partial` statuses.
+
+---
+
+## [v6.3.0] - 2026-10-04
+
+### 🇪🇸 Madrid GP, Dynamic Priors & Unity Catalog Model Registry
+
+- **Feature**: Madrid GP standalone prediction pipeline (`scripts/madrid_prediction_external.py`) integrating FastF1 ETL, clean-air lap filtering, Bayesian shrinkage and Stacking ML inference.
+- **Feature**: Dynamic form priors and a circuit-similarity engine replace static pre-season assumptions with EWMA form deltas computed from actual results.
+- **Feature**: Unity Catalog Model Registry lifecycle verified (`main.race_pace.xgb_race_pace_regressor` tagged `@champion`) with Databricks Secrets-backed email dispatch.
+- **Security**: Added `SECURITY.md`, weekly Dependabot scanning and CodeQL analysis (`gh-secure`).
+
+---
+
+## [v6.2.1] - 2026-08-23
+
+### 🇳🇱 Dutch GP (Round 12) Pre-Race Simulation
+
+- **Feature**: LightGBM quantile pace predictions and an AI race report for Round 12, plus predicted lap positions and tyre intelligence artifacts.
+
+---
+
+## [v6.2.0] - 2026-08-23
+
+### 📊 Dashboard Telemetry & AI Intelligence Upgrade
+
+- **Feature**: Restructured pre- and post-race AI reports (executive summary, Top-10 pace hierarchy, podium contenders, pit window, watch points).
+- **Fix**: Aggregated lap-level predictions into one entry per driver, removing duplicate legend labels in the timeline chart.
+- **Fix**: Strict future-race date gating and race-day continuity in the dashboard, with `Barcelona`/`Spanish` GP directory alias resolution.
+- **Fix**: `.gitignore` exceptions keep generated `reports/**/summaries/*.json|md` artifacts tracked for deployment.
 
 ---
 
