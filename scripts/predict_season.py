@@ -305,6 +305,7 @@ def build_driver_standings(
 
     Uses median predicted lap time as the ranking metric — more robust
     than mean to outlier laps (safety car, pit laps, installation laps).
+    Guarantees lower_bound_s and upper_bound_s exist for downstream consumers.
 
     Args:
         predictions_df: Per-lap predictions DataFrame.
@@ -323,9 +324,36 @@ def build_driver_standings(
             std_predicted_s="std",
         )
         .reset_index()
-        .sort_values("median_predicted_s")
-        .reset_index(drop=True)
     )
+
+    p05_col = "predicted_laptime_lgb_p05_s"
+    p95_col = "predicted_laptime_lgb_p95_s"
+    if p05_col in predictions_df.columns and p95_col in predictions_df.columns:
+        quantiles = (
+            predictions_df.groupby(group_cols)
+            .agg({p05_col: "median", p95_col: "median"})
+            .rename(
+                columns={
+                    p05_col: "lower_bound_s",
+                    p95_col: "upper_bound_s",
+                }
+            )
+            .reset_index()
+        )
+        standings = standings.merge(quantiles, on=group_cols, how="left")
+    else:
+        std = standings["std_predicted_s"].fillna(0.0)
+        standings["lower_bound_s"] = standings["median_predicted_s"] - 1.645 * std
+        standings["upper_bound_s"] = standings["median_predicted_s"] + 1.645 * std
+
+    standings["lower_bound_s"] = np.minimum(
+        standings["lower_bound_s"], standings["median_predicted_s"]
+    )
+    standings["upper_bound_s"] = np.maximum(
+        standings["upper_bound_s"], standings["median_predicted_s"]
+    )
+
+    standings = standings.sort_values("median_predicted_s").reset_index(drop=True)
     standings.insert(0, "rank", standings.index + 1)
     return standings
 

@@ -30,6 +30,7 @@ from typing import Protocol, runtime_checkable
 import httpx
 
 from f1_predictions.evaluation.post_race_verdict import RaceVerdict
+from f1_predictions.utils.email_builder import build_plaintext
 from f1_predictions.utils.logging_setup import get_logger
 
 logger = get_logger(__name__)
@@ -133,16 +134,17 @@ class GmailSMTPChannel:
         msg["To"] = self.recipient_email
 
         # Plain-text fallback for email clients that don't render HTML.
-        plain_text = (
-            f"F1 Race Briefing: {payload.verdict.gp_name}\n"
-            f"MAE: {payload.verdict.mae_lap_time_s:.4f}s | "
-            f"Status: {payload.verdict.status.upper()}\n"
-            "Winner Prediction: "
-            f"{'CORRECT' if payload.verdict.winner_correct else 'INCORRECT'}\n"
-            f"Podium Accuracy: {payload.verdict.podium_accuracy_pct:.1f}%"
-        )
-        msg.attach(MIMEText(plain_text, "plain"))
+        # Delegated to the shared builder so preview/partial verdicts never
+        # present placeholder zeroes or NaN as measured accuracy.
+        msg.attach(MIMEText(build_plaintext(payload.verdict), "plain"))
         msg.attach(MIMEText(payload.html_body, "html"))
+
+        if not self.gmail_user or not self.app_password:
+            logger.warning(
+                "Gmail credentials not configured (user or password empty). "
+                "Skipping email dispatch."
+            )
+            return False
 
         context = ssl.create_default_context()
         try:
@@ -169,6 +171,9 @@ class GmailSMTPChannel:
             return False
         except smtplib.SMTPException:
             logger.exception("Gmail SMTP error.")
+            return False
+        except Exception:
+            logger.exception("Unexpected error sending email notification.")
             return False
         else:
             return True

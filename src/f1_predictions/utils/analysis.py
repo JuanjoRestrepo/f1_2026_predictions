@@ -3,6 +3,11 @@
 import numpy as np
 import pandas as pd
 
+# Two-sided z-score for the 5th-95th percentile band of a normal distribution.
+# Used to synthesise prediction-uncertainty bounds when an upstream producer
+# emitted only a point estimate plus a standard deviation.
+_P95_Z: float = 1.645
+
 
 def build_predictions_df(
     metadata: pd.DataFrame,
@@ -55,3 +60,51 @@ def build_driver_standings(df: pd.DataFrame) -> pd.DataFrame:
     standings = standings.sort_values("median_predicted_s").reset_index(drop=True)
     standings.insert(0, "rank", standings.index + 1)
     return standings
+
+
+def ensure_uncertainty_bounds(
+    df: pd.DataFrame,
+    std_col: str = "std_predicted_s",
+    median_col: str = "median_predicted_s",
+    z: float = _P95_Z,
+) -> pd.DataFrame:
+    """Guarantee ``lower_bound_s`` and ``upper_bound_s`` columns exist.
+
+    Downstream consumers (residual analysis, uncertainty plots) require the
+    P05-P95 band. When the upstream standings producer omitted it, the band is
+    synthesised as ``median +/- z * std``.
+
+    The standard-deviation series is built on ``df.index`` (or taken directly
+    from the column, which already shares the index) so the arithmetic aligns
+    by label. A bare ``pd.Series(0.0)`` would align to index ``[0]`` only and
+    silently produce all-NaN bounds for every other row.
+
+    Args:
+        df: Standings DataFrame containing ``median_col``.
+        std_col: Name of the standard-deviation column, if present.
+        median_col: Name of the median-pace column.
+        z: Two-sided z-score for the confidence band (default 1.645 = P05-P95).
+
+    Returns:
+        The same DataFrame with ``lower_bound_s``/``upper_bound_s`` populated.
+
+    Raises:
+        KeyError: If ``median_col`` is absent and no bounds can be derived.
+    """
+    if median_col not in df.columns:
+        msg = f"'{median_col}' is required to synthesise uncertainty bounds."
+        raise KeyError(msg)
+
+    if "lower_bound_s" in df.columns and "upper_bound_s" in df.columns:
+        return df
+
+    if std_col in df.columns:
+        half_width = z * df[std_col].astype(float).fillna(0.0)
+    else:
+        half_width = pd.Series(0.0, index=df.index)
+
+    if "lower_bound_s" not in df.columns:
+        df["lower_bound_s"] = df[median_col] - half_width
+    if "upper_bound_s" not in df.columns:
+        df["upper_bound_s"] = df[median_col] + half_width
+    return df

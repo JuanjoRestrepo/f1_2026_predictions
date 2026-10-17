@@ -83,6 +83,10 @@ resources:
               - "2026"
               - "--run-mode"
               - "train"
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.schema}"
               - "--force"
           retry_on_timeout: true
           max_retries: 1
@@ -101,5 +105,9 @@ resources:
               - "2026"
               - "--run-mode"
               - "notify"
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.schema}"
               - "--force"
 

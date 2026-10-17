@@ -177,13 +177,31 @@ def write_calendar(season: int, events: list[dict[str, str | int]]) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / CALENDAR_FILENAME
 
+    if out_path.exists():
+        try:
+            existing = json.loads(out_path.read_text(encoding="utf-8"))
+            if (
+                isinstance(existing, dict)
+                and existing.get("races") == events
+                and existing.get("season") == season
+            ):
+                logger.info(
+                    "Calendar events for season %d are unchanged; skipping write to preserve idempotency.",
+                    season,
+                )
+                return out_path
+        except Exception as exc:
+            logger.debug("Could not verify existing calendar file: %s", exc)
+
     payload: dict[str, object] = {
         "season": season,
         "generated_at": datetime.now(tz=UTC).isoformat(),
         "source": "fastf1",
         "races": events,
     }
-    out_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    out_path.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
     logger.info("Calendar written to %s", out_path)
     return out_path
 

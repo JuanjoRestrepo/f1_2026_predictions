@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns  # type: ignore[import-untyped]
 
+from f1_predictions.utils.analysis import ensure_uncertainty_bounds
 from f1_predictions.utils.config import get_settings
 from f1_predictions.utils.logging_setup import (
     configure_root_pipeline_logger,
@@ -49,6 +50,10 @@ def generate_visuals(year: int, event_name: str) -> None:
 
     # Dynamic color palette
     colors = sns.color_palette("rocket_r", len(df))
+
+    # Defensive: guarantee the P05-P95 band exists even if an older standings
+    # producer omitted it. Alignment-safe by construction (see the helper).
+    ensure_uncertainty_bounds(df_plot)
 
     # Calculate error lengths
     xerr = [

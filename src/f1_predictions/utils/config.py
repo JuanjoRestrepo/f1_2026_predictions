@@ -44,7 +44,7 @@ Environment variables (see .env.example for full reference):
 import functools
 from pathlib import Path
 
-from pydantic import Field, field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -91,6 +91,7 @@ class Settings(BaseSettings):
     )
     gemini_api_key: str | None = Field(
         default=None,
+        validation_alias=AliasChoices("F1_GEMINI_API_KEY", "GEMINI_API_KEY"),
         description="Google Gemini API Key for the AI Race Summarizer.",
     )
     gemini_model: str = Field(
@@ -187,9 +188,10 @@ class Settings(BaseSettings):
 
     # ── Pipeline parameters ───────────────────────────────────────────────
     target_season: int = Field(
-        default=2025,
+        default=2026,
         ge=2018,  # FastF1 data is reliable from 2018 onward
         le=2030,
+        validation_alias=AliasChoices("F1_TARGET_SEASON", "TARGET_SEASON"),
         description="Active F1 season year for the prediction run.",
     )
     random_seed: int = Field(
