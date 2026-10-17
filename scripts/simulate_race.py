@@ -7,7 +7,6 @@ from typing import Any, cast
 import numpy as np
 import pandas as pd
 
-from f1_predictions.features.clean_air_pace import MADRID_PUBLISHED_PRIOR
 from f1_predictions.features.external_weather import (
     WeatherIntelligence,
     simulation_weather_features,
@@ -27,6 +26,23 @@ from f1_predictions.utils.logging_setup import (
 )
 
 logger = get_logger(__name__)
+
+# Cross-driver quantities that enter the model as pooled season medians, and whose
+# spread therefore carries the window's track mix. Their deviations are replaced
+# with per-circuit deltas in _apply_track_pace_normalization.
+#
+# Sector times are proportional to lap time, so once the field's level is moved onto
+# the target circuit's scale their deviations follow the same ratio. Speeds are not
+# proportional to lap time, so their deviations are left in raw km/h.
+_SECTOR_PACE_FEATURES: tuple[str, ...] = (
+    "Sector1Time_s",
+    "Sector2Time_s",
+    "Sector3Time_s",
+)
+_SPEED_PACE_FEATURES: tuple[str, ...] = ("SpeedI1", "SpeedI2", "SpeedFL", "SpeedST")
+_DEVIATION_NORMALIZED_FEATURES: tuple[str, ...] = (
+    _SECTOR_PACE_FEATURES + _SPEED_PACE_FEATURES
+)
 
 
 def _enrich_with_track_metadata(df: pd.DataFrame) -> pd.DataFrame:
@@ -104,14 +120,16 @@ def _enrich_with_track_metadata(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _driver_track_normalized_deltas(
-    df_current: pd.DataFrame, is_wet_race: bool
+    df_current: pd.DataFrame, is_wet_race: bool, value_column: str = "LapTime_s"
 ) -> pd.Series:
-    """Per-driver pace delta in seconds, weighting every circuit equally.
+    """Per-driver delta in seconds, weighting every circuit equally.
 
-    A driver's median lap time pooled across a season mostly measures *which*
-    circuits they have laps at: the current-season window mixes tracks whose lap
-    times differ by more than ten seconds, so a driver who retired at a short
-    circuit ends up seconds per lap "faster" than a team-mate who did not.
+    A driver's median pooled across a season mostly measures *which* circuits they
+    have laps at: the current-season window mixes tracks whose lap times differ by
+    more than ten seconds, so a driver who retired at a short circuit ends up
+    seconds per lap "faster" than a team-mate who did not. The same applies to any
+    quantity measured per lap, which is why ``value_column`` is a parameter: sector
+    times and speeds are pooled medians with exactly this artefact.
 
     Reference every lap to its own round's median instead, reduce each driver to
     one observation per round, then take the median across rounds. Lap counts at
@@ -120,12 +138,16 @@ def _driver_track_normalized_deltas(
     Args:
         df_current: Current-season laps, one row per lap.
         is_wet_race: Whether to restrict to wet or dry laps.
+        value_column: Column to measure. Defaults to lap time.
 
     Returns:
         Median delta to the round baseline, indexed by driver. Empty when there
         is nothing to measure.
     """
-    laps = df_current.dropna(subset=["LapTime_s"]).copy()
+    if value_column not in df_current.columns:
+        return pd.Series(dtype="float64")
+
+    laps = df_current.dropna(subset=[value_column]).copy()
     if "Rainfall" in laps.columns and not laps["Rainfall"].isna().all():
         matching = laps[laps["Rainfall"] == is_wet_race]
         if not matching.empty:
@@ -134,11 +156,55 @@ def _driver_track_normalized_deltas(
         return pd.Series(dtype="float64")
 
     key = "RoundNumber" if "RoundNumber" in laps.columns else "EventName"
-    laps["_round_median"] = laps.groupby(key)["LapTime_s"].transform("median")
-    laps["_delta"] = laps["LapTime_s"] - laps["_round_median"]
+    laps["_round_median"] = laps.groupby(key)[value_column].transform("median")
+    laps["_delta"] = laps[value_column] - laps["_round_median"]
 
     per_round = laps.groupby(["Driver", key], as_index=False)["_delta"].median()
     return per_round.groupby("Driver")["_delta"].median()
+
+
+# A published field spread is only meaningful if the measured laps support it. Feeding
+# the model pooled sector medians made it publish 1.32x the measured spread; correcting
+# that brought it to 1.00x. Anything above this band means the window's track mix is
+# leaking back into the predictions, which is the failure this check exists to catch.
+MAX_SPREAD_INFLATION: float = 1.25
+
+
+def check_published_dispersion(
+    predicted_spread_s: float, measured_spread_s: float
+) -> float:
+    """Compare the spread about to be published against the spread the laps show.
+
+    The current-season window puts a hard floor under how far apart two drivers can
+    legitimately be, because that spread *is* measured pace. When the model publishes
+    materially more separation than the laps show, something other than pace is driving
+    the fit.
+
+    Args:
+        predicted_spread_s: Fastest-to-slowest spread across the predictions.
+        measured_spread_s: Fastest-to-slowest spread across the measured deltas.
+
+    Returns:
+        The inflation ratio, or ``nan`` when there is nothing to measure against.
+    """
+    if not np.isfinite(measured_spread_s) or measured_spread_s <= 0:
+        logger.warning(
+            "Dispersion check skipped: no lap-measured pace spread for this window."
+        )
+        return float("nan")
+
+    ratio = float(predicted_spread_s / measured_spread_s)
+    message = "Published field spread %.3fs vs lap-measured %.3fs (%.2fx)"
+    if ratio > MAX_SPREAD_INFLATION:
+        logger.warning(
+            "%s -- above the %.2fx band; the pace normalization may be leaking the "
+            "window's track mix into the predictions.",
+            message % (predicted_spread_s, measured_spread_s, ratio),
+            MAX_SPREAD_INFLATION,
+        )
+    else:
+        logger.info(message, predicted_spread_s, measured_spread_s, ratio)
+    return ratio
 
 
 def _apply_track_pace_normalization(
@@ -157,12 +223,17 @@ def _apply_track_pace_normalization(
     Math:
         Driver_Delta  = median over rounds of (lap - that round's median lap)
         Target_Pace   = Track_Historical_Baseline + Driver_Delta
-        Sector_Target = Sector_Season_Median * (Baseline / Window_Median)
+        Sector_Target = Field_Sector_Level * ratio + Driver_Sector_Delta * ratio
+        Speed_Target  = Field_Speed_Level + Driver_Speed_Delta
+        ratio         = Track_Historical_Baseline / Window_Median
 
     The driver delta is measured per round and then averaged, so the mix of
     circuits in the window cannot masquerade as pace (see
-    _driver_track_normalized_deltas). Sectors move with the window-to-track
-    ratio, which is a property of the two circuits and identical field-wide.
+    _driver_track_normalized_deltas). That applies to the sector and speed columns
+    too: they arrive as season medians pooled across the same mixed window, so a
+    driver's value mostly reflects which circuits they have laps at. Only the
+    field-wide level is carried over from the window; every driver-specific
+    deviation is re-measured per circuit.
     """
     # 1. Get current season global baseline
     season_global_median = df_current["LapTime_s"].median()
@@ -212,8 +283,8 @@ def _apply_track_pace_normalization(
         spread,
     )
 
-    # Sectors are season medians too, so they follow the window-to-track ratio:
-    # one scale for the whole field, not one per driver.
+    # Sectors are season medians too, so the field's level follows the
+    # window-to-track ratio: one scale for the whole field, not one per driver.
     sector_scale = (
         track_baseline / season_global_median if season_global_median > 0 else 1.0
     )
@@ -228,9 +299,31 @@ def _apply_track_pace_normalization(
         for col in ("roll_laptime_3", "roll_laptime_5"):
             if col in df.columns:
                 df.at[idx, col] = target_lap_pace
-        for col in ("Sector1Time_s", "Sector2Time_s", "Sector3Time_s"):
-            if col in df.columns:
-                df.at[idx, col] = row[col] * sector_scale
+
+    # Sector and speed columns carry the same pooled-median artefact as lap time.
+    # Measured on the current window, Sector2's cross-driver spread correlated with
+    # lap-count mix at -0.71 against +0.19 with measured pace, and feeding the pooled
+    # values to the model published a 6.5s field spread where the laps support 4.9s.
+    # Keep the field's level (scaled to the target circuit for sectors) and rebuild
+    # every driver deviation from their own per-circuit measurements.
+    for column in _DEVIATION_NORMALIZED_FEATURES:
+        if column not in df.columns:
+            continue
+        is_sector = column in _SECTOR_PACE_FEATURES
+        ratio = sector_scale if is_sector else 1.0
+        field_level = float(df_sim[column].mean()) * ratio
+        column_deltas = _driver_track_normalized_deltas(
+            df_current, is_wet_race, value_column=column
+        )
+        for idx, row in df.iterrows():
+            delta = (
+                float(column_deltas.get(row["Driver"], 0.0))
+                if len(column_deltas)
+                else 0.0
+            )
+            if not np.isfinite(delta):
+                delta = 0.0
+            df.at[idx, column] = field_level + delta * ratio
 
     return df
 
@@ -348,7 +441,12 @@ def run_race_simulation(
 
     for driver in drivers:
         d_info = driver_stats[driver_stats["Driver"] == driver].iloc[0]
-        prior_delta, prior_conf = MADRID_PUBLISHED_PRIOR.get(driver, (1.50, 0.50))
+        # NOTE: MADRID_PUBLISHED_PRIOR is deliberately *not* fed in as
+        # clean_air_pace_delta_s / clean_air_confidence. Those columns exist only in
+        # this scenario and in no training row, so the trees can never split on them
+        # and they changed nothing (verified: zeroing them leaves predictions
+        # byte-identical). A feature that is present at inference and absent in
+        # training is train/serve skew, not signal.
         sim_data.append(
             {
                 "Season": year,
@@ -376,8 +474,6 @@ def run_race_simulation(
                 "delta_roll_pace": d_info["delta_roll_pace"],
                 "tyre_deg_slope": d_info["tyre_deg_slope"],
                 "tyre_life_norm": d_info["tyre_life_norm"],
-                "clean_air_pace_delta_s": prior_delta,
-                "clean_air_confidence": prior_conf,
                 "PitInTime_s": 0,
                 "PitOutTime_s": 0,
                 "LapTime_s": 0,
@@ -438,6 +534,15 @@ def run_race_simulation(
     stack_model = StackingPaceRegressor()
     cast(Any, stack_model.model).fit(x_train, y_train, sample_weight=sample_weights)
     y_pred_baseline = cast(Any, stack_model.model).predict(x_sim)
+
+    # Tripwire: the published spread must be the one the laps support.
+    measured_deltas = _driver_track_normalized_deltas(df_current, is_wet_race)
+    check_published_dispersion(
+        float(np.max(y_pred_baseline) - np.min(y_pred_baseline)),
+        float(measured_deltas.max() - measured_deltas.min())
+        if len(measured_deltas)
+        else float("nan"),
+    )
 
     # LightGBM Quantile Models
     quantiles = [0.05, 0.50, 0.95]

@@ -1,18 +1,24 @@
 """Unit tests for the pace normalisation in scripts/simulate_race.py.
 
 The simulator translates a driver's season median onto the target circuit's
-lap-time scale. That translation used to subtract a *pooled* season median,
-which mostly measures which circuits a driver happened to have laps at: the
-current-season window mixes circuits whose lap times differ by more than ten
-seconds, so a driver with no laps at a short track read as seconds per lap
-slower than a team-mate with no laps at a long one.
+lap-time scale. That translation used to subtract a *pooled* season median, which
+mostly measures which circuits a driver happened to have laps at: the current-season
+window mixes circuits whose lap times differ by more than ten seconds, so a driver
+with no laps at a short track read as seconds per lap slower than a team-mate with no
+laps at a long one.
 
-These tests pin the corrected behaviour: pace is measured against each round's
-own baseline, one observation per round, so track mix cannot masquerade as pace.
+Sector times and speeds arrive through exactly the same door and carried the same
+artefact, worse: across the current window the pooled sector spread is 12-16x the
+per-circuit spread, against 2.8x for lap time. Both are corrected here.
+
+These tests pin the corrected behaviour: pace is measured against each round's own
+baseline, one observation per round, so track mix cannot masquerade as pace.
 """
 
 from __future__ import annotations
 
+import logging
+import math
 from pathlib import Path
 
 import pandas as pd
@@ -21,6 +27,7 @@ import pytest
 from scripts.simulate_race import (
     _apply_track_pace_normalization,
     _driver_track_normalized_deltas,
+    check_published_dispersion,
 )
 
 _FAST_DRIVER = "FAST"
@@ -191,8 +198,171 @@ def test_empty_window_is_a_graceful_no_op() -> None:
     assert out["Sector1Time_s"].tolist() == [30.0, 30.0]
 
 
+def _laps_with_sectors() -> pd.DataFrame:
+    """Two circuits whose sectors and speeds differ, with clean per-round deltas.
+
+    Round 1 sectors run ~25s and round 2 ~32s. Per round the fast driver is 0.2s up
+    in round 1 and 0.3s up in round 2, so their measured delta is -0.25s; on speed
+    they are +2 and +1 km/h, so +1.5 km/h. A *pooled* median over both circuits is
+    dominated instead by how many laps each driver has at each.
+    """
+    rows: list[dict[str, object]] = []
+    for _ in range(4):
+        rows.append(
+            {
+                "Driver": _FAST_DRIVER, "RoundNumber": 1, "LapTime_s": 80.0,
+                "Rainfall": False, "Sector1Time_s": 25.0, "SpeedI1": 200.0,
+            }
+        )
+        rows.append(
+            {
+                "Driver": _SLOW_DRIVER, "RoundNumber": 1, "LapTime_s": 81.0,
+                "Rainfall": False, "Sector1Time_s": 25.4, "SpeedI1": 196.0,
+            }
+        )
+        rows.append(
+            {
+                "Driver": _FAST_DRIVER, "RoundNumber": 2, "LapTime_s": 100.5,
+                "Rainfall": False, "Sector1Time_s": 32.0, "SpeedI1": 240.0,
+            }
+        )
+        rows.append(
+            {
+                "Driver": _SLOW_DRIVER, "RoundNumber": 2, "LapTime_s": 100.0,
+                "Rainfall": False, "Sector1Time_s": 32.6, "SpeedI1": 238.0,
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def _sim_with_pooled_gap() -> pd.DataFrame:
+    """A scenario whose pooled sector and speed medians are badly contaminated.
+
+    The fast driver carries a 4s better *pooled* sector and 20 km/h more speed, which
+    is what the window's lap mix produces -- not pace.
+    """
+    return pd.DataFrame(
+        [
+            {
+                "Driver": _FAST_DRIVER, "roll_laptime_3": 90.0, "roll_laptime_5": 90.0,
+                "Sector1Time_s": 30.0, "SpeedI1": 300.0,
+            },
+            {
+                "Driver": _SLOW_DRIVER, "roll_laptime_3": 90.0, "roll_laptime_5": 90.0,
+                "Sector1Time_s": 26.0, "SpeedI1": 280.0,
+            },
+        ]
+    )
+
+
+def test_sector_deviations_are_rebuilt_from_per_round_deltas() -> None:
+    """A contaminated pooled sector gap is replaced by the measured one."""
+    current = _laps_with_sectors()
+    out = _apply_track_pace_normalization(
+        _sim_with_pooled_gap(),
+        "Canada Grand Prix",
+        _gold("Canada Grand Prix", 78.0),
+        current,
+        is_wet_race=False,
+    ).set_index("Driver")
+
+    scale = 78.0 / current["LapTime_s"].median()
+    field_level = 28.0 * scale  # mean of the pooled 30.0 and 26.0, rescaled
+
+    assert out.loc[_FAST_DRIVER, "Sector1Time_s"] == pytest.approx(
+        field_level - 0.25 * scale
+    )
+    assert out.loc[_SLOW_DRIVER, "Sector1Time_s"] == pytest.approx(
+        field_level + 0.25 * scale
+    )
+
+    # The published gap is the measured 0.5s, not the pooled 4s the window implied.
+    gap = out["Sector1Time_s"].max() - out["Sector1Time_s"].min()
+    assert gap == pytest.approx(0.5 * scale)
+    assert gap < 1.0
+
+
+def test_speed_deviations_are_rebuilt_but_not_rescaled() -> None:
+    """Speeds are not proportional to lap time, so only their deltas are replaced."""
+    out = _apply_track_pace_normalization(
+        _sim_with_pooled_gap(),
+        "Canada Grand Prix",
+        _gold("Canada Grand Prix", 78.0),
+        _laps_with_sectors(),
+        is_wet_race=False,
+    ).set_index("Driver")
+
+    assert out.loc[_FAST_DRIVER, "SpeedI1"] == pytest.approx(291.5)
+    assert out.loc[_SLOW_DRIVER, "SpeedI1"] == pytest.approx(288.5)
+    # 3 km/h apart, not the pooled 20 the window implied.
+    assert out["SpeedI1"].max() - out["SpeedI1"].min() == pytest.approx(3.0)
+
+
+def test_driver_without_sector_laps_gets_the_bare_field_level() -> None:
+    """An unknown driver is never handed another driver's deviation."""
+    sim = pd.concat(
+        [
+            _sim_with_pooled_gap(),
+            pd.DataFrame(
+                [
+                    {
+                        "Driver": "GHOST", "roll_laptime_3": 90.0, "roll_laptime_5": 90.0,
+                        "Sector1Time_s": 30.0, "SpeedI1": 300.0,
+                    }
+                ]
+            ),
+        ],
+        ignore_index=True,
+    )
+    current = _laps_with_sectors()
+    out = _apply_track_pace_normalization(
+        sim, "Canada Grand Prix", _gold("Canada Grand Prix", 78.0), current,
+        is_wet_race=False,
+    ).set_index("Driver")
+
+    scale = 78.0 / current["LapTime_s"].median()
+    assert out.loc["GHOST", "Sector1Time_s"] == pytest.approx(
+        float(sim["Sector1Time_s"].mean()) * scale
+    )
+    assert out.loc["GHOST", "SpeedI1"] == pytest.approx(
+        float(sim["SpeedI1"].mean())
+    )
+
+
+def test_dispersion_check_passes_a_spread_the_laps_support(caplog: pytest.LogCaptureFixture) -> None:
+    """A 1.00x spread -- the corrected round -- raises nothing."""
+    with caplog.at_level(logging.WARNING):
+        ratio = check_published_dispersion(4.920, 4.897)
+
+    assert ratio == pytest.approx(1.005, abs=0.001)
+    assert not [r for r in caplog.records if r.levelno >= logging.WARNING]
+
+
+def test_dispersion_check_flags_the_regression_it_was_written_for(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """The published 6.465s against a measured 4.897s must not pass silently."""
+    with caplog.at_level(logging.WARNING):
+        ratio = check_published_dispersion(6.465, 4.897)
+
+    assert ratio == pytest.approx(1.32, abs=0.01)
+    assert any("track mix" in record.getMessage() for record in caplog.records)
+
+
+def test_dispersion_check_degrades_when_nothing_was_measured(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """No laps means no measurement, which is reported rather than assumed."""
+    with caplog.at_level(logging.WARNING):
+        ratio = check_published_dispersion(6.0, float("nan"))
+
+    assert math.isnan(ratio)
+    assert any("skipped" in record.getMessage() for record in caplog.records)
+
+
 _DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "outputs" / "laps"
 _lap_files = sorted(_DATA_DIR.glob("season=*/**/*.parquet"))
+_lap_files_2026 = sorted(_DATA_DIR.glob("season=2026/**/*.parquet"))
 
 
 @pytest.mark.skipif(not _lap_files, reason="local lap data not ingested")
@@ -205,3 +375,25 @@ def test_real_window_shows_the_artefact_the_fix_removes() -> None:
 
     assert pooled.max() - pooled.min() > 10.0
     assert deltas.max() - deltas.min() < (pooled.max() - pooled.min()) / 2
+
+
+@pytest.mark.skipif(not _lap_files_2026, reason="local lap data not ingested")
+def test_real_window_sectors_are_mostly_track_mix() -> None:
+    """Pin the measurement that justifies rebuilding the sector deviations.
+
+    Across the current-season window the pooled sector spread is 12-16x the
+    per-circuit spread, so a model reading the pooled values is mostly reading which
+    circuits each driver has laps at. If the data ever stops showing that, the
+    normalisation should be re-derived rather than kept on faith.
+    """
+    current = pd.concat([pd.read_parquet(path) for path in _lap_files_2026])
+
+    for column in ("Sector1Time_s", "Sector2Time_s", "Sector3Time_s"):
+        pooled = current.groupby("Driver")[column].median()
+        measured = _driver_track_normalized_deltas(
+            current, is_wet_race=False, value_column=column
+        )
+        pooled_spread = pooled.max() - pooled.min()
+        measured_spread = measured.max() - measured.min()
+
+        assert measured_spread < pooled_spread / 4
