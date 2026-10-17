@@ -103,6 +103,44 @@ def _enrich_with_track_metadata(df: pd.DataFrame) -> pd.DataFrame:
     return enriched_df
 
 
+def _driver_track_normalized_deltas(
+    df_current: pd.DataFrame, is_wet_race: bool
+) -> pd.Series:
+    """Per-driver pace delta in seconds, weighting every circuit equally.
+
+    A driver's median lap time pooled across a season mostly measures *which*
+    circuits they have laps at: the current-season window mixes tracks whose lap
+    times differ by more than ten seconds, so a driver who retired at a short
+    circuit ends up seconds per lap "faster" than a team-mate who did not.
+
+    Reference every lap to its own round's median instead, reduce each driver to
+    one observation per round, then take the median across rounds. Lap counts at
+    any single circuit can no longer flatter or punish anyone.
+
+    Args:
+        df_current: Current-season laps, one row per lap.
+        is_wet_race: Whether to restrict to wet or dry laps.
+
+    Returns:
+        Median delta to the round baseline, indexed by driver. Empty when there
+        is nothing to measure.
+    """
+    laps = df_current.dropna(subset=["LapTime_s"]).copy()
+    if "Rainfall" in laps.columns and not laps["Rainfall"].isna().all():
+        matching = laps[laps["Rainfall"] == is_wet_race]
+        if not matching.empty:
+            laps = matching
+    if laps.empty:
+        return pd.Series(dtype="float64")
+
+    key = "RoundNumber" if "RoundNumber" in laps.columns else "EventName"
+    laps["_round_median"] = laps.groupby(key)["LapTime_s"].transform("median")
+    laps["_delta"] = laps["LapTime_s"] - laps["_round_median"]
+
+    per_round = laps.groupby(["Driver", key], as_index=False)["_delta"].median()
+    return per_round.groupby("Driver")["_delta"].median()
+
+
 def _apply_track_pace_normalization(
     df_sim: pd.DataFrame,
     event_name: str,
@@ -110,15 +148,21 @@ def _apply_track_pace_normalization(
     df_current: pd.DataFrame,
     is_wet_race: bool = False,
 ) -> pd.DataFrame:
-    """Normalize cross-track driver medians to the target track's baseline.
+    """Translate cross-track pace onto the target circuit's lap-time scale.
 
-    The simulation initially aggregates driver pace across all tracks in the
-    current season (e.g., 94.8s average for 2026 so far). We must translate this
-    to the target track (e.g., Canada ~78s).
+    The simulation's pace features are season medians, so they sit at the
+    current-season window's level (e.g. 95s) rather than the target circuit's
+    (e.g. Canada ~78s).
 
     Math:
-        Driver_Delta = Driver_Season_Median - Global_Season_Median
-        Target_Pace = Track_Historical_Baseline + Driver_Delta
+        Driver_Delta  = median over rounds of (lap - that round's median lap)
+        Target_Pace   = Track_Historical_Baseline + Driver_Delta
+        Sector_Target = Sector_Season_Median * (Baseline / Window_Median)
+
+    The driver delta is measured per round and then averaged, so the mix of
+    circuits in the window cannot masquerade as pace (see
+    _driver_track_normalized_deltas). Sectors move with the window-to-track
+    ratio, which is a property of the two circuits and identical field-wide.
     """
     # 1. Get current season global baseline
     season_global_median = df_current["LapTime_s"].median()
@@ -152,40 +196,41 @@ def _apply_track_pace_normalization(
     else:
         track_baseline = track_laps["LapTime_s"].median()
 
+    # 3. Driver pace, measured per circuit so the window's track mix cannot
+    #    masquerade as pace.
+    deltas = _driver_track_normalized_deltas(df_current, is_wet_race)
+    fallback_delta = float(deltas.median()) if len(deltas) else 0.0
+    if not np.isfinite(fallback_delta):
+        fallback_delta = 0.0
+    spread = float(deltas.max() - deltas.min()) if len(deltas) else 0.0
+
     logger.info(
-        "Pace normalization for %s: Historical Baseline = %.3fs, Current Season Global = %.3fs",
+        "Pace normalization for %s: Historical Baseline = %.3fs, Current Season Global = %.3fs, driver delta spread = %.3fs",
         event_name,
         track_baseline,
         season_global_median,
+        spread,
+    )
+
+    # Sectors are season medians too, so they follow the window-to-track ratio:
+    # one scale for the whole field, not one per driver.
+    sector_scale = (
+        track_baseline / season_global_median if season_global_median > 0 else 1.0
     )
 
     df = df_sim.copy()
-    pace_cols = [
-        "roll_laptime_3",
-        "roll_laptime_5",
-        "Sector1Time_s",
-        "Sector2Time_s",
-        "Sector3Time_s",
-    ]
-
-    # For sectors, we apply a proportional adjustment based on the lap time shift
-    # For lap times, we apply the additive delta
     for idx, row in df.iterrows():
-        driver_season_pace = row[
-            "roll_laptime_3"
-        ]  # This holds the driver's cross-track median
-        driver_delta = driver_season_pace - season_global_median
+        driver_delta = float(deltas.get(row["Driver"], fallback_delta))
+        if not np.isfinite(driver_delta):
+            driver_delta = fallback_delta
         target_lap_pace = track_baseline + driver_delta
 
-        # Proportional scalar for sector times
-        scalar = target_lap_pace / driver_season_pace if driver_season_pace > 0 else 1.0
-
-        for col in pace_cols:
+        for col in ("roll_laptime_3", "roll_laptime_5"):
             if col in df.columns:
-                if "Sector" in col:
-                    df.at[idx, col] = row[col] * scalar
-                else:
-                    df.at[idx, col] = target_lap_pace
+                df.at[idx, col] = target_lap_pace
+        for col in ("Sector1Time_s", "Sector2Time_s", "Sector3Time_s"):
+            if col in df.columns:
+                df.at[idx, col] = row[col] * sector_scale
 
     return df
 
