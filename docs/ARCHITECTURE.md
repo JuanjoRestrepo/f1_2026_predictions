@@ -167,7 +167,7 @@ The dashboard no longer depends on a race-day GitHub Actions cron to refresh its
 The project enforces strict code quality and test coverage across the entire stack:
 
 ```bash
-# Execute unit & integration test suite (331 tests across ML, cleaning, pipeline & AI)
+# Execute unit & integration test suite (340 tests across ML, cleaning, pipeline & AI)
 uv run pytest
 
 # Execute strict MyPy type check (0 issues across source files)
@@ -183,5 +183,5 @@ pnpm --filter dashboard exec tsc --noEmit
 pnpm --filter dashboard run build
 ```
 
-All 331 Python tests pass under an enforced **80% line-coverage gate** (current: 84.2%), with 0 MyPy `--strict` errors, a clean Ruff lint/format check, and pnpm workspace verification.
+All 340 Python tests pass under an enforced **80% line-coverage gate** (current: 84.2%), with 0 MyPy `--strict` errors, a clean Ruff lint/format check, and pnpm workspace verification.
 
