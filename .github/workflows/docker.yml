@@ -1,8 +1,15 @@
 name: Docker Build and Publish
 
+# Publishing is intentionally tied to version tags only.
+#
+# Nothing consumes this image: the dashboard is built by Vercel from source, the
+# pipeline runs on Databricks serverless compute, and no manifest references a
+# container. Building on every push to master therefore published the same bytes
+# twice per release -- once for the merge commit and again for the tag -- and cost
+# ~7 minutes a run for no consumer. `workflow_dispatch` remains for on-demand
+# publishes (useful for testing a Dockerfile change on a branch).
 on:
   push:
-    branches: [master]
     tags: ['v*.*.*']
   workflow_dispatch:
 
@@ -65,12 +72,40 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # Run the artifact this job just produced, by digest.
+      #
+      # Building is not evidence that the image works: the previous Dockerfile left
+      # /app owned by root, so `f1user` could not create its cache directories and
+      # uvicorn died on startup with PermissionError. Nothing ran the image, so the
+      # broken artifact was published on every merge unnoticed. This step makes the
+      # published image mean something.
+      - name: Smoke-test the image (${{ matrix.platform }})
+        run: |
+          image="${REGISTRY}/${IMAGE_NAME_LC}@${{ steps.build.outputs.digest }}"
+          docker run -d --name smoke --platform ${{ matrix.platform }} -p 8000:8000 "${image}"
+
+          status=""
+          for _ in $(seq 1 60); do
+            status=$(curl -s -o /tmp/health.json -w '%{http_code}' http://localhost:8000/health || true)
+            [ "${status}" = "200" ] && break
+            sleep 2
+          done
+
+          echo "GET /health -> ${status}"
+          cat /tmp/health.json 2>/dev/null || true
+          docker logs smoke 2>&1 | tail -20 || true
+          docker rm -f smoke >/dev/null 2>&1 || true
+
+          if [ "${status}" != "200" ]; then
+            echo "::error::The image built for ${{ matrix.platform }} does not serve /health."
+            exit 1
+          fi
+
       - name: Export digest
         run: |
           mkdir -p /tmp/digests
           digest="${{ steps.build.outputs.digest }}"
           touch "/tmp/digests/${digest#sha256:}"
-
       - name: Upload digest
         uses: actions/upload-artifact@v7
         with:
@@ -114,7 +149,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LC }}
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'master') }}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
             type=semver,pattern={{version}}
             type=sha,format=short
 
