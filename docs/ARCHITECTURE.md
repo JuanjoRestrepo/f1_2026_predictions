@@ -78,11 +78,35 @@ In accordance with empirical benchmarks on tabular data (Grinsztajn et al., 2022
 | **Stacking Pace Regressor** | Ensemble meta-learner | Ridge Regression meta-estimator |
 
 ### 2.2 Cross-Track Baseline Pace Normalization
-To translate season-wide driver pace to a specific circuit's physical lap time baseline:
+To translate season-wide driver pace onto a specific circuit's physical lap-time baseline:
 
-$$\text{Driver\_Delta}_i = \text{Median}(\text{LapTime}_{i, \text{season}}) - \text{Median}(\text{LapTime}_{\text{global, season}})$$
+$$\text{Driver\_Delta}_i = \operatorname*{Median}_{\text{rounds}}\Big(\operatorname*{Median}_{\text{laps}}\big(\text{LapTime} - \operatorname*{Median}_{\text{field, round}}(\text{LapTime})\big)\Big)$$
 
 $$\text{Target\_Pace}_{i, \text{track}} = \text{Baseline}_{\text{historical, track}} + \text{Driver\_Delta}_i$$
+
+$$\text{Sector}_{i} = \text{Field\_Sector\_Level} \cdot r + \text{Driver\_Sector\_Delta}_i \cdot r \qquad r = \frac{\text{Baseline}_{\text{historical, track}}}{\operatorname*{Median}_{\text{field, season}}(\text{LapTime})}$$
+
+$$\text{Speed}_{i} = \text{Field\_Speed\_Level} + \text{Driver\_Speed\_Delta}_i$$
+
+**Why the delta is measured per round.** A driver's median lap time pooled across a season mostly measures *which* circuits they have laps at, not pace: the current-season window mixes circuits whose lap times differ by more than ten seconds. Reducing every lap to its own round's median, collapsing each driver to one observation per round, and then taking the median across rounds removes that confound — a driver who retired at a short circuit can no longer read as seconds per lap faster than a team-mate who did not.
+
+**Why sectors and speeds get the same treatment.** `Sector1Time_s`–`Sector3Time_s` and `SpeedI1`–`SpeedST` reach the model as the same pooled per-driver season medians, so they carry the same confound — more severely. Measured across the current window:
+
+| feature | field spread, pooled | field spread, per circuit | inflation |
+|---|---|---|---|
+| `LapTime_s` | 13.554 s | 4.897 s | 2.8× |
+| `Sector1Time_s` | 9.028 s | 1.816 s | 5.0× |
+| `Sector2Time_s` | 24.548 s | 2.051 s | 12.0× |
+| `Sector3Time_s` | 24.681 s | 1.504 s | 16.4× |
+| `SpeedI2` | 51 km/h | 18 km/h | 2.8× |
+
+Only the field-wide level is carried over from the window; every driver-specific deviation is re-measured per circuit. Sector deviations follow the window-to-track ratio $r$ because sector times are proportional to lap time, whereas speeds are not and stay in km/h.
+
+**Effect on a published round.** Re-running the 2026 United States Grand Prix with the corrected normalization moves the field spread from 6.465 s to 4.920 s against a lap-measured 4.897 s, correlation with measured pace from 0.946 to 0.988, and residual standard deviation from 0.502 s to 0.215 s. Because the corrected inputs now *contain* the measured deltas, the correlation is not independent validation — the defensible claim is that the published spread no longer exceeds what the laps support.
+
+**A removed feature.** `clean_air_pace_delta_s` and `clean_air_confidence` are no longer supplied to the model. They had no counterpart in any of the 77,696 training rows, so no tree could ever split on them: zeroing them left predictions byte-identical. A feature present at inference and absent in training is train/serve skew, not signal. The curated prior behind it remains in service inside the clean-air pace module.
+
+**Report boundary.** Reports for rounds 1–17 predate this correction and are left exactly as published rather than retro-fitted; the corrected model applies from round 18 onward.
 
 ### 2.3 Chronological Validation (Leakage Prevention)
 Models are trained exclusively on historical seasons with known outcomes (e.g. 2022–2025) and tested on unseen future seasons (2026), preventing temporal data leakage.
@@ -194,5 +218,5 @@ pnpm --filter dashboard exec tsc --noEmit
 pnpm --filter dashboard run build
 ```
 
-All 340 Python tests pass under an enforced **80% line-coverage gate** (current: 84.2%), with 0 MyPy `--strict` errors, a clean Ruff lint/format check, and pnpm workspace verification.
+All 426 Python tests pass under an enforced **80% line-coverage gate** (current: 84.66%), with 0 MyPy `--strict` errors, a clean Ruff lint/format check, and pnpm workspace verification.
 
