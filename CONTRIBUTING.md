@@ -77,6 +77,24 @@ corepack pnpm build
   `py/clear-text-logging-sensitive-data` query runs on every PR and will fail the
   build for both.
 
+### Rotating the Supabase S3 keys
+
+The S3 pair that backs both the FastF1 cache and the dashboard bundle is stored
+twice — in `.env` and in the `f1_secrets` scope — so rotate it with the script
+rather than by hand:
+
+```bash
+uv run scripts/rotate_supabase_s3_keys.py --dry-run   # show the plan, change nothing
+uv run scripts/rotate_supabase_s3_keys.py             # prompt for the new pair
+```
+
+Mint the replacement pair in the Supabase dashboard first (`Storage → S3 Access
+Keys → Create new access key`) — the Storage S3 API cannot create keys. The
+script backs up `.env` to a mode-600 `.env.bak.<utc>` file, updates both
+locations, and proves the new pair against the bucket before reporting success.
+Delete the previous access key afterwards; Databricks reads secrets at task
+runtime, so no job edit or redeploy is needed.
+
 ## Dependency updates
 
 Dependabot opens `dependabot/github_actions/...` PRs. Treat them like any other
