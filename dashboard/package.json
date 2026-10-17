@@ -4,11 +4,13 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "prebuild": "node ./scripts/fetch-dashboard-data.mjs",
     "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
     "preview": "next build && next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "sync:data": "node ./scripts/fetch-dashboard-data.mjs"
   },
   "dependencies": {
     "@t3-oss/env-nextjs": "^0.12.0",

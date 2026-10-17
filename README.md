@@ -33,6 +33,18 @@ Expert-level race reporting powered by configurable **Gemini 3.1 Pro** primary g
 
 ---
 
+## [v6.2.0] - 2026-10-16
+
+### ☁️ Single-Orchestrator Consolidation & Databricks → Dashboard Serving
+
+- **Feature**: `export_dashboard_data` Lakeflow task publishes the season's `reports/<season>` bundle to S3-compatible storage; the dashboard's `prebuild` step pulls it back, keeping the web app live without a GitHub Actions race cron.
+- **Feature**: Real FastF1 ingestion (`--run-mode ingest`) lands completed-round laps in the Unity Catalog `raw_telemetry` Volume; `telemetry_bronze` now tails it via Auto Loader instead of sample data.
+- **Feature**: Champion promotion gate — `@champion` is only re-tagged when the candidate beats the incumbent's CV RMSE.
+- **Changed**: Retired the Trigger.dev orchestration (sources, config, CI job, SDK deps) and the GitHub Actions race cron; Databricks Lakeflow is now the single scheduler. The Actions race workflow remains as a manual `workflow_dispatch` fallback.
+- **Fix**: Post-race verdicts no longer fabricate accuracy when lap timing or results are unavailable — they degrade to explicit `preview`/`partial` statuses.
+
+---
+
 ## [v6.1.0] - 2026-08-23
 
 ### 🏎️ Race Weekend Auto-Gate & FastF1 Calendar Integration
@@ -122,8 +134,35 @@ The job chains serverless tasks:
 2. **`run_medallion_pipeline`** — Lakeflow Spark Declarative Pipeline: Bronze (Auto Loader over the Volume) → Silver (DLT quality expectations) → Gold (driver feature aggregates).
 3. **`train_and_register_champion`** — trains the pace regressor and promotes `@champion` in Unity Catalog **only when the candidate beats the incumbent champion's CV RMSE**; otherwise it registers `@challenger`.
 4. **`dispatch_notifications`** — sends the post-race Gmail/Discord verdict briefing.
+5. **`export_dashboard_data`** — publishes the season's `reports/<season>` bundle to object storage so the web dashboard refreshes (runs in parallel with notifications; non-fatal).
 
 The old GitHub Actions Friday/Monday/Wednesday cron and the Trigger.dev scheduled tasks have been retired; the GitHub Actions race workflow is kept as a **manual fallback** ("Run workflow" in the Actions UI) for replaying a run by hand.
+
+### 📡 Databricks → Dashboard Serving Path
+
+With orchestration owned by Databricks, the cloud job is also the **producer** for the web dashboard. The channel has two halves:
+
+1. **Publish (Databricks)** — the `export_dashboard_data` task runs `databricks_entrypoint.py --run-mode export`, which collects `reports/<season>/**` and uploads it to S3-compatible storage (the same Supabase bucket/credentials as the FastF1 cache) under a `dashboard/<season>/` prefix:
+
+   ```text
+   dashboard/<season>/manifest.json    ← written LAST: its presence means "bundle complete"
+   dashboard/<season>/<relative path>  ← mirrors reports/<season>/ exactly
+   ```
+
+   Only dashboard artifact types are published (`.json`, `.csv`, `.md`, `.png`, `.svg`, `.html`, `.txt`). Publishing is best-effort: a missing bucket or credentials logs a warning instead of failing the job.
+
+2. **Consume (dashboard)** — the Next.js build pulls the bundle back into the local `reports/<season>/` layout before `next build`, via `dashboard/scripts/fetch-dashboard-data.mjs` (wired as the `prebuild` script). This keeps `dashboard/src/utils/fileReader.ts` unchanged and works with the committed data as a fallback.
+
+Enable consumption by pointing the dashboard at the published bundle:
+
+```bash
+F1_DASHBOARD_DATA_BASE_URL=https://<project>.supabase.co/storage/v1/object/public/<bucket>/dashboard/2026
+# F1_DASHBOARD_DATA_TOKEN=...        # optional, for private buckets
+# F1_DASHBOARD_SEASON=2026           # default 2026
+# F1_DASHBOARD_DATA_STRICT=1         # fail the build instead of falling back
+```
+
+Left unset, the sync is a no-op and the dashboard uses the committed `reports/` files — so local development and existing deployments are unaffected.
 
 ### 🧱 Databricks Lakehouse Deployment (DABs)
 
@@ -162,8 +201,9 @@ The old GitHub Actions Friday/Monday/Wednesday cron and the Trigger.dev schedule
 ├── databricks.yml           # Databricks Asset Bundle (DABs) Root Config
 ├── databricks_entrypoint.py  # Databricks Lakeflow Job Entrypoint
 ├── resources/               # DABs Resource Definitions (Jobs & Pipelines)
-│   ├── jobs.yml             # 3-Task Lakeflow Orchestration Workflow
-│   └── pipelines.yml        # Delta Live Tables (DLT) Medallion Pipeline Spec
+│   ├── jobs.yml             # 5-Task Lakeflow Orchestration Workflow
+│   ├── pipelines.yml        # Delta Live Tables (DLT) Medallion Pipeline Spec
+│   └── volumes.yml          # Unity Catalog Volume for raw FastF1 telemetry
 ├── src/f1_predictions/      # Core Python Package (ML, API, Databricks)
 │   ├── api/                 # FastAPI Inference Service
 │   ├── databricks/          # DLT Medallion Pipeline & MLflow 3 UC Integration
@@ -237,4 +277,4 @@ The long-term vision for this platform is to move beyond scheduled reporting and
 
 Operational note (Databricks):
 
-- `databricks_entrypoint.py` is the single entry point for every Lakeflow job task (`--run-mode {ingest,train,notify}`). It resolves `src/` onto `sys.path` relative to its own location, so it works regardless of the driver's working directory.
+- `databricks_entrypoint.py` is the single entry point for every Lakeflow job task (`--run-mode {ingest,train,notify,export}`). It resolves `src/` onto `sys.path` relative to its own location, so it works regardless of the driver's working directory.

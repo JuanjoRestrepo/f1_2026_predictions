@@ -16,6 +16,7 @@ Usage (Databricks job):
     python databricks_entrypoint.py --run-mode ingest --season 2026
     python databricks_entrypoint.py --run-mode train  --season 2026
     python databricks_entrypoint.py --run-mode notify --season 2026
+    python databricks_entrypoint.py --run-mode export --season 2026
 
 Deployed via DABs:
     resources/jobs.yml → spark_python_task.python_file: ../databricks_entrypoint.py
@@ -692,6 +693,92 @@ def run_notify(
     logger.info("=" * 60)
 
 
+# S3 configuration values the dashboard publisher needs, resolved from the
+# Databricks secret scope when they are not already present in the environment.
+_S3_CONFIG_ENV_VARS = (
+    "SUPABASE_S3_ENDPOINT_URL",
+    "SUPABASE_S3_ACCESS_KEY",
+    "SUPABASE_S3_SECRET_KEY",
+    "SUPABASE_S3_BUCKET_NAME",
+)
+
+
+def _load_s3_secrets_from_databricks() -> None:
+    """Populate S3 env vars from the ``f1_secrets`` scope when unset.
+
+    Values are written straight into the environment and never logged; only a
+    count of the values that could not be resolved is emitted, so neither
+    credential material nor credential names reach the logs.
+    """
+    try:
+        from pyspark.dbutils import DBUtils  # type: ignore[import-untyped]
+        from pyspark.sql import SparkSession
+
+        spark = SparkSession.builder.getOrCreate()
+        dbutils = DBUtils(spark)
+        unresolved = 0
+        for env_var in _S3_CONFIG_ENV_VARS:
+            if os.environ.get(env_var):
+                continue
+            try:
+                os.environ[env_var] = dbutils.secrets.get(
+                    scope="f1_secrets", key=env_var
+                )
+            except Exception:
+                unresolved += 1
+        if unresolved:
+            logger.debug(
+                "%d/%d S3 configuration values were not present in the "
+                "'f1_secrets' scope; falling back to environment variables.",
+                unresolved,
+                len(_S3_CONFIG_ENV_VARS),
+            )
+    except Exception:
+        logger.debug("Databricks secrets lookup skipped; using env var S3 config.")
+
+
+def run_export(season: int, catalog: str = CATALOG, schema: str = SCHEMA) -> None:
+    """Publish the season's dashboard artifacts to S3-compatible storage.
+
+    This is the "serving" half of the Databricks → dashboard channel: the
+    season's report bundle under ``reports/<season>`` is uploaded to object
+    storage, and the dashboard's prebuild step
+    (``dashboard/scripts/fetch-dashboard-data.mjs``) pulls it back down.
+
+    Publishing is best-effort and non-fatal: a missing bucket, missing
+    credentials, or an empty season logs a warning and returns rather than
+    failing the job (the notification task has already done its work).
+
+    Args:
+        season: F1 season year to publish.
+        catalog: Unity Catalog catalog name (context only).
+        schema: Unity Catalog schema name (context only).
+    """
+    logger.info("=" * 60)
+    logger.info("DATABRICKS EXPORT MODE — Season %d (%s.%s)", season, catalog, schema)
+    logger.info("=" * 60)
+
+    from f1_predictions.utils.dashboard_publish import publish_dashboard_data
+
+    _load_s3_secrets_from_databricks()
+
+    try:
+        summary = publish_dashboard_data(PROJECT_ROOT / "reports", season)
+    except Exception as exc:
+        logger.warning(
+            "Dashboard publish skipped for season %d (%s). "
+            "Set SUPABASE_S3_* / f1_secrets to enable cloud serving.",
+            season,
+            exc,
+        )
+        return
+
+    logger.info("Dashboard publish summary: %s", summary)
+    logger.info("=" * 60)
+    logger.info("EXPORT COMPLETE — Season %d", season)
+    logger.info("=" * 60)
+
+
 def is_race_window_active(season: int) -> bool:
     """Determine if today is within a Race Weekend (Fri-Sun) or post-race Monday."""
     try:
@@ -732,10 +819,11 @@ def main() -> None:
     parser.add_argument(
         "--run-mode",
         required=True,
-        choices=["ingest", "train", "notify"],
+        choices=["ingest", "train", "notify", "export"],
         help="Execution mode: 'ingest' lands FastF1 laps in the raw_telemetry "
         "Volume; 'train' trains XGBoost and promotes @champion on improvement; "
-        "'notify' dispatches race verdict to Gmail and Discord.",
+        "'notify' dispatches race verdict to Gmail and Discord; 'export' "
+        "publishes the dashboard bundle to object storage.",
     )
     parser.add_argument(
         "--season",
@@ -804,6 +892,8 @@ def main() -> None:
             schema=args.schema,
             round_number=args.round,
         )
+    elif args.run_mode == "export":
+        run_export(season=args.season, catalog=args.catalog, schema=args.schema)
 
 
 if __name__ == "__main__":
