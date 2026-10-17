@@ -137,3 +137,25 @@ resources:
               - "${var.schema}"
               - "--force"
 
+        # ── Task 5: publish the dashboard bundle to object storage ─────────
+        # Runs in parallel with notifications (independent side effect): the
+        # season's reports/<season> artifacts are uploaded so the Next.js
+        # dashboard's prebuild step can pull them. Non-fatal by design.
+        - task_key: export_dashboard_data
+          description: "Publish reports/<season> artifacts for the dashboard"
+          depends_on:
+            - task_key: train_and_register_champion
+          environment_key: serverless_py312
+          spark_python_task:
+            python_file: ../databricks_entrypoint.py
+            parameters:
+              - "--season"
+              - "2026"
+              - "--run-mode"
+              - "export"
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.schema}"
+              - "--force"
+

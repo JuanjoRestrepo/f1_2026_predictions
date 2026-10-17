@@ -94,6 +94,18 @@ def _get_s3_client() -> "botocore.client.S3":  # type: ignore[name-defined]  # n
     )
 
 
+def get_s3_client() -> "botocore.client.S3":  # type: ignore[name-defined]  # noqa: F821
+    """Public accessor for the shared S3-compatible client factory.
+
+    Exposed so sibling utilities (e.g. dashboard publishing) reuse the exact
+    same credential resolution and endpoint configuration as the cache.
+
+    Returns:
+        A configured boto3 S3 client (see :func:`_get_s3_client`).
+    """
+    return _get_s3_client()
+
+
 def _zip_directory(source_dir: Path) -> bytes:
     """Zip a directory tree into an in-memory byte buffer.
 
