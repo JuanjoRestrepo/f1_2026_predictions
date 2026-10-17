@@ -166,6 +166,94 @@ def register_champion_model(
     return full_path
 
 
+def get_champion_metric(
+    catalog: str,
+    schema: str,
+    model_name: str,
+    metric: str = "rmse",
+    alias: str = "champion",
+) -> float | None:
+    """Read a metric logged with the currently-aliased champion model version.
+
+    Used by the training task as the *gate* for promoting a newly trained
+    candidate: without the incumbent's score there is no way to know whether a
+    retrain is actually an improvement.
+
+    Args:
+        catalog: Unity Catalog catalog name.
+        schema: Unity Catalog schema name.
+        model_name: Base model name (e.g. `xgb_race_pace_regressor`).
+        metric: Metric key to read from the incumbent run (e.g. `"rmse"`).
+        alias: Registered-model alias to resolve (default `"champion"`).
+
+    Returns:
+        The metric value as a float, or ``None`` when the alias, run, or metric
+        cannot be resolved (e.g. first-ever training, or offline tests).
+    """
+    uc_model_name = f"{catalog}.{schema}.{model_name}"
+    try:
+        mlflow.set_registry_uri("databricks-uc")
+        client = mlflow.MlflowClient()
+        version = client.get_model_version_by_alias(uc_model_name, alias)
+        run_id = getattr(version, "run_id", None)
+        if not run_id:
+            logger.info(
+                "Alias '@%s' on %s has no source run; treating as no incumbent.",
+                alias,
+                uc_model_name,
+            )
+            return None
+        run = client.get_run(str(run_id))
+        value = run.data.metrics.get(metric)
+        if value is None:
+            logger.info(
+                "Incumbent '@%s' run '%s' has no '%s' metric.", alias, run_id, metric
+            )
+            return None
+        return float(value)
+    except Exception:
+        logger.warning(
+            "Could not read incumbent '@%s' '%s' metric for %s.",
+            alias,
+            metric,
+            uc_model_name,
+            exc_info=True,
+        )
+        return None
+
+
+def should_promote(
+    new_metric: float,
+    incumbent_metric: float | None,
+    tolerance: float = 0.0,
+) -> bool:
+    """Decide whether a candidate model should become the new champion.
+
+    Lower metrics are better (the platform gates on RMSE). A candidate is
+    promoted when there is no incumbent, or when it improves on the incumbent
+    by more than ``tolerance``. Ties are NOT promoted, so the incumbent is only
+    replaced by a measurable improvement.
+
+    Args:
+        new_metric: Candidate model's validation metric (e.g. CV RMSE).
+        incumbent_metric: Current champion's metric, or ``None`` if none exists.
+        tolerance: Minimum improvement required to promote. Defaults to 0.0
+            (any improvement). Raise it to avoid churn from noise.
+
+    Returns:
+        True if the candidate should be promoted to ``@champion``.
+
+    Raises:
+        ValueError: If ``tolerance`` is negative.
+    """
+    if tolerance < 0:
+        msg = f"Promotion tolerance must be non-negative, got {tolerance}."
+        raise ValueError(msg)
+    if incumbent_metric is None:
+        return True
+    return new_metric < incumbent_metric - tolerance
+
+
 def format_feature_store_metadata(
     feature_df: pd.DataFrame,
     primary_keys: list[str],

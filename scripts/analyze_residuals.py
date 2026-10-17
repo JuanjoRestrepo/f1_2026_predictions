@@ -15,6 +15,7 @@ import fastf1
 import numpy as np
 import pandas as pd
 
+from f1_predictions.utils.analysis import ensure_uncertainty_bounds
 from f1_predictions.utils.config import get_settings
 from f1_predictions.utils.logging_setup import (
     configure_root_pipeline_logger,
@@ -68,8 +69,23 @@ def run_residual_analysis(
         return None
 
     # Calculate actual median lap time per driver
-    # Filter for clean laps: no pit stops, valid lap time
-    actual_laps = session.laps.copy()
+    # Filter for clean laps: no pit stops, valid lap time.
+    # Lap timing is required for a residual verdict. If FastF1 could not supply
+    # it (feed unavailable, blocked, or still propagating), bail out cleanly:
+    # returning None signals "analysis not possible" so the caller skips the
+    # retrain decision instead of crashing or acting on a bogus MAE.
+    try:
+        actual_laps = session.laps.copy()
+    except Exception as laps_exc:
+        logger.warning(
+            "Lap-timing data unavailable for %s %d (%s); "
+            "skipping residual analysis.",
+            event_name,
+            year,
+            laps_exc,
+        )
+        return None
+
     actual_laps = actual_laps[
         (actual_laps["PitInTime"].isna())
         & (actual_laps["PitOutTime"].isna())
@@ -98,6 +114,10 @@ def run_residual_analysis(
         df_merged["actual_median_s"] - df_merged["median_predicted_s"]
     )
     df_merged["abs_error_s"] = df_merged["residual_s"].abs()
+
+    # Defensive: guarantee the P05-P95 band exists even if an older standings
+    # producer omitted it. Alignment-safe by construction (see the helper).
+    ensure_uncertainty_bounds(df_merged)
 
     # Coverage check: did the actual time fall within the P05-P95 range?
     df_merged["in_range"] = (

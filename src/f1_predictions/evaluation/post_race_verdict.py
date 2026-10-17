@@ -55,10 +55,16 @@ class RaceVerdict:
     podium_accuracy_pct: float
     top10_accuracy_pct: float
     key_misses: list[str] = field(default_factory=list)
+    # Accuracy classification. Left as "unknown" it is derived from MAE in
+    # __post_init__; an explicit value ("preview", "unavailable", …) is
+    # preserved so notifications that carry no measured accuracy are never
+    # mislabelled as a real result.
     status: str = "unknown"
 
     def __post_init__(self) -> None:
-        """Classify accuracy status based on MAE threshold."""
+        """Classify accuracy status from MAE unless one was set explicitly."""
+        if self.status != "unknown":
+            return
         if self.mae_lap_time_s < 0.200:
             self.status = "excellent"
         elif self.mae_lap_time_s < 0.350:
@@ -144,8 +150,29 @@ def load_actuals(season: int, round_number: int) -> pd.DataFrame:
         session = fastf1.get_session(season, round_number, "R")
         session.load(laps=True, telemetry=False, weather=False, messages=False)
         results: pd.DataFrame = session.results[["Abbreviation", "Position"]].copy()
-        if not session.laps.empty:
-            fastest_laps = session.laps.groupby("Driver")["LapTime"].min().reset_index()
+
+        # Fastest-lap times are an *optional* enrichment: the timing feed can be
+        # unavailable (blocked, rate-limited, or still propagating) even when
+        # finishing positions are already known. Missing lap data must never
+        # abort the verdict — positional accuracy remains valid without it.
+        try:
+            laps = session.laps
+        except Exception as laps_exc:
+            logger.warning(
+                "Lap-timing data unavailable for %d R%d (%s); "
+                "computing positional accuracy only.",
+                season,
+                round_number,
+                laps_exc,
+            )
+            laps = None
+
+        fastest_laps = (
+            laps.groupby("Driver")["LapTime"].min().reset_index()
+            if laps is not None and not laps.empty
+            else None
+        )
+        if fastest_laps is not None:
             fastest_laps = fastest_laps.rename(
                 columns={
                     "Driver": "Abbreviation",
@@ -210,15 +237,41 @@ def compute_verdict(
         )
 
     # ── Lap time accuracy ─────────────────────────────────────────────────
-    # Convert FastestLapTime timedelta to seconds for comparison.
-    merged["Actual_LapTime_s"] = pd.to_timedelta(
-        merged["FastestLapTime"]
-    ).dt.total_seconds()
+    # FastestLapTime is a timedelta when laps loaded; an all-NaT placeholder
+    # column arrives as datetime64 (or object), which pd.to_timedelta rejects.
+    # Guard the conversion so a lap-less actuals frame cannot crash the verdict.
+    raw_lap_times = merged["FastestLapTime"]
+    if pd.api.types.is_timedelta64_dtype(raw_lap_times):
+        merged["Actual_LapTime_s"] = raw_lap_times.dt.total_seconds()
+    else:
+        merged["Actual_LapTime_s"] = pd.Series(float("nan"), index=merged.index)
     merged["abs_error"] = (
         merged["Predicted_LapTime_s"] - merged["Actual_LapTime_s"]
     ).abs()
-    mae = float(merged["abs_error"].mean())
-    mape = float((merged["abs_error"] / merged["Actual_LapTime_s"] * 100).mean())
+    # Timing data (FastestLapTime) may be entirely absent even when finishing
+    # positions are known. In that case emit a positional-only verdict with an
+    # explicit "partial" status rather than a NaN MAE that would be silently
+    # misclassified as "needs_improvement" by the MAE-based classifier.
+    lap_time_available = bool(
+        merged["Actual_LapTime_s"].notna().any()
+        and merged["Predicted_LapTime_s"].notna().any()
+    )
+    if lap_time_available:
+        mae = float(merged["abs_error"].mean())
+        mape = float((merged["abs_error"] / merged["Actual_LapTime_s"] * 100).mean())
+        key_misses: list[str] = merged.nlargest(3, "abs_error")["Driver"].tolist()
+        verdict_status = "unknown"
+    else:
+        logger.warning(
+            "Lap-timing data unavailable for %s (R%d); "
+            "emitting positional-only verdict.",
+            gp_name,
+            round_number,
+        )
+        mae = float("nan")
+        mape = float("nan")
+        key_misses = []
+        verdict_status = "partial"
 
     # ── Positional accuracy ───────────────────────────────────────────────
     predicted_winner = merged.sort_values("Predicted_Position").iloc[0]["Driver"]
@@ -233,15 +286,13 @@ def compute_verdict(
     actual_top10 = set(merged.nsmallest(10, "Position")["Abbreviation"].tolist())
     top10_accuracy = len(pred_top10 & actual_top10) / 10.0 * 100.0
 
-    # ── Key misses (top 3 largest errors) ────────────────────────────────
-    key_misses: list[str] = merged.nlargest(3, "abs_error")["Driver"].tolist()
-
     logger.info(
-        "Verdict: MAE=%.4fs | MAPE=%.2f%% | Winner=%s | Podium=%.0f%%",
+        "Verdict: MAE=%.4fs | MAPE=%.2f%% | Winner=%s | Podium=%.0f%% | status=%s",
         mae,
         mape,
         "✓" if winner_correct else "✗",
         podium_accuracy,
+        verdict_status,
     )
 
     return RaceVerdict(
@@ -253,4 +304,5 @@ def compute_verdict(
         podium_accuracy_pct=podium_accuracy,
         top10_accuracy_pct=top10_accuracy,
         key_misses=key_misses,
+        status=verdict_status,
     )

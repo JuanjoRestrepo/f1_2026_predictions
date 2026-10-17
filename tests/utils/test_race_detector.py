@@ -10,8 +10,14 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 import pandas as pd
+import pytest
 
-from f1_predictions.utils.race_detector import find_last_completed_race
+from f1_predictions.utils.race_detector import (
+    detect_last_race,
+    detect_upcoming_race,
+    find_last_completed_race,
+    find_upcoming_race,
+)
 
 
 def _make_schedule(
@@ -132,3 +138,72 @@ class TestFindLastCompletedRace:
         assert "round" in result
         assert "gp_name" in result
         assert "event_date" in result
+
+
+class TestFindUpcomingRace:
+    """Tests for find_upcoming_race."""
+
+    def test_finds_upcoming_race_in_window(self) -> None:
+        now = datetime(2026, 5, 22, 9, 0, tzinfo=UTC)  # Friday
+        schedule = _make_schedule(
+            [
+                ("Monaco Grand Prix", "2026-05-24T14:00:00+00:00", 8),  # Sunday
+            ]
+        )
+        result = find_upcoming_race(schedule, now_utc=now, days_ahead=3)
+        assert result is not None
+        assert result["round"] == 8
+        assert "Monaco" in result["gp_name"]
+
+    def test_returns_none_when_outside_lookahead(self) -> None:
+        now = datetime(2026, 5, 10, 9, 0, tzinfo=UTC)
+        schedule = _make_schedule(
+            [
+                ("Monaco Grand Prix", "2026-05-24T14:00:00+00:00", 8),
+            ]
+        )
+        result = find_upcoming_race(schedule, now_utc=now, days_ahead=3)
+        assert result is None
+
+    def test_empty_schedule_returns_none(self) -> None:
+        now = datetime(2026, 5, 22, 9, 0, tzinfo=UTC)
+        schedule = _make_schedule([])
+        assert find_upcoming_race(schedule, now_utc=now) is None
+
+
+class TestDetectRaceWrappers:
+    """Tests for high-level detect_last_race and detect_upcoming_race wrappers."""
+
+    def test_detect_last_race_calls_schedule(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        schedule = _make_schedule(
+            [
+                ("Monaco Grand Prix", "2026-05-25T14:00:00+00:00", 8),
+            ]
+        )
+        monkeypatch.setattr(
+            "f1_predictions.utils.race_detector.get_event_schedule",
+            lambda season: schedule,
+        )
+        now = datetime(2026, 5, 26, 9, 0, tzinfo=UTC)
+        res = detect_last_race(season=2026, days_back=2, now_utc=now)
+        assert res is not None
+        assert res["round"] == 8
+
+    def test_detect_upcoming_race_calls_schedule(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        schedule = _make_schedule(
+            [
+                ("Monaco Grand Prix", "2026-05-24T14:00:00+00:00", 8),
+            ]
+        )
+        monkeypatch.setattr(
+            "f1_predictions.utils.race_detector.get_event_schedule",
+            lambda season: schedule,
+        )
+        now = datetime(2026, 5, 22, 9, 0, tzinfo=UTC)
+        res = detect_upcoming_race(season=2026, days_ahead=3, now_utc=now)
+        assert res is not None
+        assert res["round"] == 8

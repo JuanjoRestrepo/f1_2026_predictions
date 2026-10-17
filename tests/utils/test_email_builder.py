@@ -13,7 +13,11 @@ from pathlib import Path
 import pytest
 
 from f1_predictions.evaluation.post_race_verdict import RaceVerdict
-from f1_predictions.utils.email_builder import build_email_html, build_subject
+from f1_predictions.utils.email_builder import (
+    build_email_html,
+    build_plaintext,
+    build_subject,
+)
 
 
 @pytest.fixture()
@@ -70,6 +74,51 @@ class TestBuildSubject:
         v = RaceVerdict(5, "Spanish GP", 0.25, 0.3, True, 66.7, 80.0)
         subject = build_subject(v)
         assert "📊" in subject
+
+    def test_preview_subject_omits_accuracy_claims(self) -> None:
+        """Preview verdicts carry no measured accuracy — the subject must not
+        advertise an MAE or a winner outcome."""
+        v = RaceVerdict(
+            1,
+            "Bahrain Grand Prix",
+            0.0,
+            0.0,
+            False,
+            0.0,
+            0.0,
+            status="preview",
+        )
+        subject = build_subject(v)
+        assert "🔮" in subject
+        assert "MAE" not in subject
+        assert "Winner" not in subject
+        assert "Bahrain Grand Prix" in subject
+
+    def test_unavailable_subject_uses_pending_emoji(self) -> None:
+        v = RaceVerdict(
+            1, "Bahrain Grand Prix", 0.0, 0.0, False, 0.0, 0.0, status="unavailable"
+        )
+        subject = build_subject(v)
+        assert "⏳" in subject
+        assert "MAE" not in subject
+
+    def test_partial_subject_reports_winner_without_mae(self) -> None:
+        """A positional-only verdict shows the winner but no lap-time MAE."""
+        v = RaceVerdict(
+            16,
+            "Bahrain Grand Prix",
+            float("nan"),
+            float("nan"),
+            True,
+            33.3,
+            60.0,
+            status="partial",
+        )
+        subject = build_subject(v)
+        assert "🟡" in subject
+        assert "Winner ✓" in subject
+        assert "MAE" not in subject
+        assert "nan" not in subject.lower()
 
 
 class TestBuildEmailHtml:
@@ -165,3 +214,73 @@ class TestBuildEmailHtml:
             assert "data:image/png;base64," in html
         finally:
             tmp_path.unlink(missing_ok=True)
+
+    def test_preview_status_renders_preview_badge(self) -> None:
+        """A preview verdict renders the neutral PREVIEW badge, not REVIEW."""
+        v = RaceVerdict(
+            1, "Bahrain Grand Prix", 0.0, 0.0, False, 0.0, 0.0, status="preview"
+        )
+        html = build_email_html(v)
+        assert "🔮 PREVIEW" in html
+        assert "✗ REVIEW" not in html
+
+    def test_unavailable_status_renders_pending_badge(self) -> None:
+        v = RaceVerdict(
+            1, "Bahrain Grand Prix", 0.0, 0.0, False, 0.0, 0.0, status="unavailable"
+        )
+        html = build_email_html(v)
+        assert "⏳ PENDING" in html
+        assert "✗ REVIEW" not in html
+
+    def test_partial_status_renders_positional_badge_and_na_metrics(self) -> None:
+        """NaN lap-time metrics must render as N/A, never the literal 'nan'."""
+        v = RaceVerdict(
+            16,
+            "Bahrain Grand Prix",
+            float("nan"),
+            float("nan"),
+            False,
+            33.3,
+            60.0,
+            status="partial",
+        )
+        html = build_email_html(v)
+        assert "🟡 POSITIONAL" in html
+        assert "N/A" in html
+        assert "nan" not in html.lower()
+
+
+class TestBuildPlaintext:
+    """Plain-text fallback must report only what was actually measured."""
+
+    def test_measured_verdict_reports_real_metrics(self) -> None:
+        v = RaceVerdict(8, "Monaco Grand Prix", 0.178, 0.21, True, 100.0, 90.0)
+        body = build_plaintext(v)
+        assert "MAE: 0.1780s" in body
+        assert "Winner Prediction: CORRECT" in body
+        assert "Podium Accuracy: 100.0%" in body
+
+    def test_preview_verdict_omits_accuracy_and_winner(self) -> None:
+        v = RaceVerdict(
+            1, "Bahrain Grand Prix", 0.0, 0.0, False, 0.0, 0.0, status="preview"
+        )
+        body = build_plaintext(v)
+        assert "preview only" in body
+        assert "MAE" not in body
+        assert "Winner Prediction" not in body
+
+    def test_partial_verdict_shows_na_mae_and_real_winner(self) -> None:
+        v = RaceVerdict(
+            16,
+            "Bahrain Grand Prix",
+            float("nan"),
+            float("nan"),
+            True,
+            33.3,
+            60.0,
+            status="partial",
+        )
+        body = build_plaintext(v)
+        assert "MAE: N/A" in body
+        assert "Winner Prediction: CORRECT" in body
+        assert "nan" not in body.lower()

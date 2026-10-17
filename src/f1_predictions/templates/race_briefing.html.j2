@@ -12,6 +12,7 @@
      verdict.top10_accuracy_pct  : float
      verdict.key_misses     : list[str]
      verdict.status         : str  — 'excellent' | 'good' | 'needs_improvement'
+                                          | 'partial' | 'preview' | 'unavailable'
      chart_base64           : str | None — base64 PNG string
      ai_narrative           : str | None — Gemini race summary
      predicted_podium       : list[str] — predicted P1, P2, P3
@@ -66,6 +67,18 @@
                       <div style="background:#FFD600;color:#000;padding:8px 16px;
                                   border-radius:20px;font-size:12px;font-weight:700;
                                   letter-spacing:1px;">▲ GOOD</div>
+                    {% elif verdict.status == 'preview' %}
+                      <div style="background:#0091EA;color:#fff;padding:8px 16px;
+                                  border-radius:20px;font-size:12px;font-weight:700;
+                                  letter-spacing:1px;">🔮 PREVIEW</div>
+                    {% elif verdict.status == 'unavailable' %}
+                      <div style="background:#FF6D00;color:#fff;padding:8px 16px;
+                                  border-radius:20px;font-size:12px;font-weight:700;
+                                  letter-spacing:1px;">⏳ PENDING</div>
+                    {% elif verdict.status == 'partial' %}
+                      <div style="background:#F9A825;color:#000;padding:8px 16px;
+                                  border-radius:20px;font-size:12px;font-weight:700;
+                                  letter-spacing:1px;">🟡 POSITIONAL</div>
                     {% else %}
                       <div style="background:#D50000;color:#fff;padding:8px 16px;
                                   border-radius:20px;font-size:12px;font-weight:700;
@@ -91,7 +104,12 @@
                   <td width="25%" style="text-align:center;padding:12px 8px;
                       background:#1a1a2e;border-radius:8px;margin:0 4px;">
                     <div style="font-size:22px;font-weight:800;color:#e8002d;">
-                      {{ "%.4f"|format(verdict.mae_lap_time_s) }}s
+                      {# NaN != NaN — timing data was unavailable for this race. #}
+                      {% if verdict.mae_lap_time_s == verdict.mae_lap_time_s %}
+                        {{ "%.4f"|format(verdict.mae_lap_time_s) }}s
+                      {% else %}
+                        N/A
+                      {% endif %}
                     </div>
                     <div style="font-size:10px;color:#666688;margin-top:4px;
                                 text-transform:uppercase;letter-spacing:1px;">
@@ -103,7 +121,11 @@
                   <td width="25%" style="text-align:center;padding:12px 8px;
                       background:#1a1a2e;border-radius:8px;">
                     <div style="font-size:22px;font-weight:800;color:#ff8c42;">
-                      {{ "%.2f"|format(verdict.mape_pct) }}%
+                      {% if verdict.mape_pct == verdict.mape_pct %}
+                        {{ "%.2f"|format(verdict.mape_pct) }}%
+                      {% else %}
+                        N/A
+                      {% endif %}
                     </div>
                     <div style="font-size:10px;color:#666688;margin-top:4px;
                                 text-transform:uppercase;letter-spacing:1px;">

@@ -32,6 +32,9 @@ variables:
   schedule_pause_status:
     description: PAUSED for non-prod targets; UNPAUSED for prod.
     default: PAUSED
+  pipeline_development:
+    description: Development mode for DLT pipeline (false in production).
+    default: true
 
 # ---------------------------------------------------------------------------
 # Deployment Targets
@@ -47,6 +50,7 @@ targets:
       catalog: main
       schema: race_pace
       schedule_pause_status: PAUSED
+      pipeline_development: true
 
   staging:
     mode: development
@@ -54,11 +58,15 @@ targets:
       catalog: f1_2026_staging
       schema: race_pace
       schedule_pause_status: PAUSED
+      pipeline_development: true
 
   prod:
     mode: production
+    workspace:
+      root_path: /Workspace/Users/restrepojuanjo@gmail.com/.bundle/${bundle.name}/${bundle.target}
     variables:
       catalog: f1_2026_prod
       schema: race_pace
       schedule_pause_status: UNPAUSED
+      pipeline_development: false
 

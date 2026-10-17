@@ -21,11 +21,30 @@ import pyspark.sql.functions as SF  # noqa: N812 (Spark convention)
 
 # ---------------------------------------------------------------------------
 # Bronze — raw telemetry ingestion layer
-# Formats raw lap telemetry into the Bronze Delta table in Unity Catalog.
-# In production with cloud storage (S3/ADLS/GCS), replace the sample DataFrame
-# below with `spark.readStream.format("cloudFiles")` reading from a Unity Catalog
-# Volume path (e.g. `/Volumes/main/race_pace/raw_telemetry`).
+# The job's first task (databricks_entrypoint.py --run-mode ingest) lands one
+# Parquet directory per round under the raw_telemetry Unity Catalog Volume:
+#     /Volumes/<catalog>/<schema>/raw_telemetry/season=<year>/round=<NN>/
+# Auto Loader ("cloudFiles") tails that Volume incrementally, so each pipeline
+# update only processes newly-arrived laps instead of rescanning everything.
+#
+# The Volume path is injected via the pipeline `configuration` block in
+# resources/pipelines.yml (keys `f1.raw_telemetry_path` and
+# `f1.raw_telemetry_schema`), keeping the layout in one place.
 # ---------------------------------------------------------------------------
+
+_BRONZE_COLUMNS = [
+    "Driver",
+    "LapNumber",
+    "LapTime",
+    "Compound",
+    "TyreLife",
+    "SessionType",
+    "EventName",
+    "Season",
+    "RoundNumber",
+]
+
+_DEFAULT_VOLUME_PATH = "/Volumes/main/race_pace/raw_telemetry"
 
 
 @dlt.table(
@@ -36,40 +55,27 @@ import pyspark.sql.functions as SF  # noqa: N812 (Spark convention)
     },
 )
 def telemetry_bronze() -> object:  # return type is SparkDataFrame at runtime
-    """Ingest raw lap telemetry into the Bronze Delta table.
+    """Stream raw FastF1 lap telemetry from the raw_telemetry Volume.
 
     Returns:
-        Spark DataFrame with raw FastF1 telemetry.
+        Streaming Spark DataFrame with raw FastF1 telemetry.
     """
-    sample_data = [
-        ("VER", 1, 84.12, "SOFT", 1, "Race", "Bahrain GP", 2026),
-        ("VER", 2, 83.95, "SOFT", 2, "Race", "Bahrain GP", 2026),
-        ("VER", 3, 83.88, "SOFT", 3, "Race", "Bahrain GP", 2026),
-        ("HAM", 1, 84.50, "MEDIUM", 1, "Race", "Bahrain GP", 2026),
-        ("HAM", 2, 84.20, "MEDIUM", 2, "Race", "Bahrain GP", 2026),
-        ("HAM", 3, 84.15, "MEDIUM", 3, "Race", "Bahrain GP", 2026),
-        ("LEC", 1, 84.30, "SOFT", 1, "Race", "Bahrain GP", 2026),
-        ("LEC", 2, 84.05, "SOFT", 2, "Race", "Bahrain GP", 2026),
-        ("LEC", 3, 83.99, "SOFT", 3, "Race", "Bahrain GP", 2026),
-        ("NOR", 1, 84.60, "HARD", 1, "Race", "Bahrain GP", 2026),
-        ("NOR", 2, 84.35, "HARD", 2, "Race", "Bahrain GP", 2026),
-        ("NOR", 3, 84.25, "HARD", 3, "Race", "Bahrain GP", 2026),
-    ]
-    columns = [
-        "Driver",
-        "LapNumber",
-        "LapTime",
-        "Compound",
-        "TyreLife",
-        "SessionType",
-        "EventName",
-        "Season",
-    ]
-    # spark is injected by the DLT runtime — not available locally
+    # `spark` is injected by the DLT runtime; the alias keeps the single
+    # undefined-name reference in one place for the linter/type checker.
+    session = spark  # type: ignore[name-defined]  # noqa: F821
+    volume_path = session.conf.get("f1.raw_telemetry_path", _DEFAULT_VOLUME_PATH)
+    schema_path = session.conf.get("f1.raw_telemetry_schema", f"{volume_path}/_schema")
     return (
-        spark.createDataFrame(sample_data, schema=columns)  # type: ignore[name-defined] # noqa: F821
-        .withColumn("_source_file", SF.lit("telemetry_ingest.parquet"))
-        .withColumn("_ingested_at", SF.current_timestamp())
+        session.readStream.format("cloudFiles")
+        .option("cloudFiles.format", "parquet")
+        .option("cloudFiles.schemaLocation", schema_path)
+        .option("cloudFiles.inferColumnTypes", "true")
+        .load(volume_path)
+        .select(
+            *[SF.col(column) for column in _BRONZE_COLUMNS],
+            SF.input_file_name().alias("_source_file"),
+            SF.current_timestamp().alias("_ingested_at"),
+        )
     )
 
 

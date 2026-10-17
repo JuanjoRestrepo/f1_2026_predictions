@@ -1,11 +1,17 @@
 name: Scheduled Race Sync & Briefing
 
-# Runs Friday (Pre-race simulation), Monday (Post-race audit), and Wednesday (Safety)
+# ---------------------------------------------------------------------------
+# Orchestration ownership
+# ---------------------------------------------------------------------------
+# Race-weekend scheduling is owned by Databricks Lakeflow Jobs
+# (resources/jobs.yml -> f1_2026_race_predictions_job, cron "0 0 6 ? * FRI-MON").
+# This workflow is now a MANUAL, on-demand fallback only.
+#
+# It previously carried its own Friday/Monday/Wednesday cron, which duplicated
+# the Databricks schedule and risked double notifications and racing git
+# writes. Use the Actions UI "Run workflow" button to replay a run by hand.
+# ---------------------------------------------------------------------------
 on:
-  schedule:
-    - cron: '0 18 * * 5'  # Friday 18:00 UTC (Pre-race simulation)
-    - cron: '0 9 * * 1'   # Monday 09:00 UTC (Post-race audit)
-    - cron: '0 9 * * 3'   # Wednesday 09:00 UTC (Safety net)
   workflow_dispatch:
     inputs:
       round:
@@ -111,6 +117,22 @@ jobs:
             echo "race_found=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Ingest completed race into Gold training set
+        if: steps.resolve.outputs.race_found == 'true' && steps.resolve.outputs.mode == 'post-race'
+        # Best-effort incremental learning step: pull the just-completed round's
+        # laps (Bronze → Silver → Gold) so the model refit below trains on the
+        # newest real result. Non-fatal — a FastF1 hiccup must never block
+        # prediction, reporting or notification. ingest_season.py is idempotent
+        # and skips rounds whose Parquets already exist.
+        continue-on-error: true
+        env:
+          F1_TARGET_SEASON: ${{ inputs.season || '2026' }}
+          F1_FASTF1_CACHE_DIR: /tmp/fastf1_cache
+        run: |
+          uv run python scripts/ingest_season.py \
+            --year ${{ inputs.season || '2026' }} \
+            --rounds ${{ steps.resolve.outputs.round }}
+
       - name: Run ML simulation
         if: steps.resolve.outputs.race_found == 'true'
         run: |
@@ -139,6 +161,9 @@ jobs:
 
       - name: Compute post-race verdict
         if: steps.resolve.outputs.race_found == 'true' && steps.resolve.outputs.mode == 'post-race'
+        # Non-fatal: if ground truth (FastF1) or predictions are unavailable,
+        # the notification step degrades to an honest prediction preview.
+        continue-on-error: true
         env:
           F1_TARGET_SEASON: ${{ inputs.season || '2026' }}
         run: |
@@ -185,27 +210,64 @@ jobs:
           mode = '${{ steps.resolve.outputs.mode }}'
           event_name = '${{ steps.resolve.outputs.event }}'
           
-          if mode == 'post-race':
-              verdict_path = Path('data/outputs') / f'verdict_round_{round_num:02d}.json'
-              data = json.loads(verdict_path.read_text())
-              verdict = RaceVerdict(**data)
-              report_name = f'report_round_{round_num:02d}.md'
+          safe_event = event_name.replace(' ', '_')
+          results_dir = Path('reports') / str(settings.target_season) / safe_event / 'results'
+          summaries_dir = Path('reports') / str(settings.target_season) / 'summaries'
+
+          verdict_path = Path('data/outputs') / f'verdict_round_{round_num:02d}.json'
+          if mode == 'post-race' and verdict_path.exists():
+              verdict = RaceVerdict(**json.loads(verdict_path.read_text()))
+              candidates = [
+                  results_dir / f'report_round_{round_num}.md',
+                  results_dir / f'report_round_{round_num:02d}.md',
+                  summaries_dir / f'report_round_{round_num}.md',
+              ]
               subj_prefix = ''
           else:
-              verdict = RaceVerdict(round=round_num, gp_name=event_name, mae_lap_time_s=0, mape_pct=0, winner_correct=True, podium_accuracy_pct=0, top10_accuracy_pct=0)
-              report_name = f'predicted_report_round_{round_num:02d}.md'
+              # Pre-race, or a post-race run whose verdict could not be
+              # computed: send an honest preview rather than fabricated
+              # accuracy metrics.
+              verdict = RaceVerdict(
+                  round=round_num,
+                  gp_name=event_name,
+                  mae_lap_time_s=0,
+                  mape_pct=0,
+                  winner_correct=False,
+                  podium_accuracy_pct=0,
+                  top10_accuracy_pct=0,
+                  status='preview',
+              )
+              candidates = [
+                  results_dir / f'predicted_report_round_{round_num}.md',
+                  results_dir / f'predicted_report_round_{round_num:02d}.md',
+                  summaries_dir / f'predicted_report_round_{round_num}.md',
+              ]
               subj_prefix = '🚀 PREDICTION PREVIEW: '
 
-          report_path = Path('reports') / str(settings.target_season) / event_name.replace(' ', '_') / 'results' / report_name
-          ai_narrative = report_path.read_text() if report_path.exists() else 'Simulation complete.'
+          ai_narrative = 'Simulation complete.'
+          for cand in candidates:
+              if cand.exists():
+                  ai_narrative = cand.read_text()
+                  break
           
           html = build_email_html(verdict, ai_narrative=ai_narrative)
           subject = subj_prefix + build_subject(verdict)
 
-          channels = [GmailSMTPChannel(settings.gmail_user, settings.gmail_app_password, settings.recipient_email)]
+          channels = []
+          if settings.gmail_user and settings.gmail_app_password:
+              channels.append(
+                  GmailSMTPChannel(
+                      settings.gmail_user,
+                      settings.gmail_app_password,
+                      settings.recipient_email or settings.gmail_user,
+                  )
+              )
           if settings.discord_webhook_url:
               channels.append(DiscordWebhookChannel(settings.discord_webhook_url))
           
-          dispatcher = NotificationDispatcher(channels)
-          dispatcher.dispatch(RaceBriefingPayload(verdict=verdict, html_body=html, subject=subject))
+          if channels:
+              dispatcher = NotificationDispatcher(channels)
+              dispatcher.dispatch(RaceBriefingPayload(verdict=verdict, html_body=html, subject=subject))
+          else:
+              print("No notification channels configured (credentials absent). Skipping dispatch.")
           "

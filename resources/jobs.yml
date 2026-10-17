@@ -63,14 +63,40 @@ resources:
               - "mlflow>=2.14.0"
 
       tasks:
-        # ── Task 1: run the DLT medallion pipeline to refresh Gold features ──
+        # ── Task 1: land the completed race's FastF1 laps in the UC Volume ──
+        # Pulls the newest completed round (FastF1) and writes per-round
+        # Parquet into /Volumes/<catalog>/<schema>/raw_telemetry, which the
+        # medallion pipeline reads via Auto Loader. This is the real Bronze
+        # drop that closes the cloud self-learning loop.
+        - task_key: ingest_race_telemetry
+          description: "Ingest completed-round FastF1 laps into the raw_telemetry Volume"
+          environment_key: serverless_py312
+          spark_python_task:
+            python_file: ../databricks_entrypoint.py
+            parameters:
+              - "--season"
+              - "2026"
+              - "--run-mode"
+              - "ingest"
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.schema}"
+              - "--force"
+          retry_on_timeout: true
+          max_retries: 1
+          min_retry_interval_millis: 60000   # 1 minute
+
+        # ── Task 2: run the DLT medallion pipeline to refresh Gold features ──
         - task_key: run_medallion_pipeline
           description: "Bronze → Silver → Gold DLT update"
+          depends_on:
+            - task_key: ingest_race_telemetry
           pipeline_task:
             pipeline_id: ${resources.pipelines.f1_2026_medallion_pipeline.id}
             full_refresh: false    # incremental update; full refresh only on manual trigger
 
-        # ── Task 2: train XGBoost and register @champion in Unity Catalog ───
+        # ── Task 3: train XGBoost and register @champion in Unity Catalog ───
         - task_key: train_and_register_champion
           description: "Train pace regressor, register @champion in Unity Catalog"
           depends_on:
@@ -83,12 +109,16 @@ resources:
               - "2026"
               - "--run-mode"
               - "train"
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.schema}"
               - "--force"
           retry_on_timeout: true
           max_retries: 1
           min_retry_interval_millis: 60000   # 1 minute
 
-        # ── Task 3: dispatch race verdict notifications ────────────────────
+        # ── Task 4: dispatch race verdict notifications ────────────────────
         - task_key: dispatch_notifications
           description: "Send Gmail + Discord race verdict notification"
           depends_on:
@@ -101,5 +131,9 @@ resources:
               - "2026"
               - "--run-mode"
               - "notify"
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.schema}"
               - "--force"
 

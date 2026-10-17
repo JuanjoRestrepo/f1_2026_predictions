@@ -17,6 +17,7 @@ Design decisions:
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -30,6 +31,44 @@ logger = get_logger(__name__)
 # Path to the templates directory relative to this module's package root.
 _TEMPLATES_DIR: Path = Path(__file__).parent.parent / "templates"
 _BRIEFING_TEMPLATE: str = "race_briefing.html.j2"
+
+
+def build_plaintext(verdict: RaceVerdict) -> str:
+    """Render the plain-text email fallback body.
+
+    Reports only what was actually measured. Preview/pending verdicts carry no
+    accuracy, and a positional-only (``partial``) verdict carries no lap-time
+    MAE — the plain-text body must never present those as real numbers
+    (previously it printed "MAE: nans" and a fabricated winner line).
+
+    Args:
+        verdict: The race accuracy verdict.
+
+    Returns:
+        Multi-line plain-text body.
+    """
+    lines: list[str] = [
+        f"F1 Race Briefing: {verdict.gp_name}",
+        f"Status: {verdict.status.upper()}",
+    ]
+
+    if verdict.status in _NON_ACCURACY_STATUSES:
+        lines.append("Prediction preview only - no measured accuracy is available yet.")
+        return "\n".join(lines)
+
+    if math.isnan(verdict.mae_lap_time_s):
+        lines.append("MAE: N/A (lap-timing data unavailable)")
+    else:
+        lines.append(f"MAE: {verdict.mae_lap_time_s:.4f}s")
+    if not math.isnan(verdict.mape_pct):
+        lines.append(f"MAPE: {verdict.mape_pct:.2f}%")
+
+    lines.append(
+        f"Winner Prediction: {'CORRECT' if verdict.winner_correct else 'INCORRECT'}"
+    )
+    lines.append(f"Podium Accuracy: {verdict.podium_accuracy_pct:.1f}%")
+    lines.append(f"Top-10 Accuracy: {verdict.top10_accuracy_pct:.1f}%")
+    return "\n".join(lines)
 
 
 def build_email_html(
@@ -82,6 +121,20 @@ def build_email_html(
     return html
 
 
+# Statuses that carry no measured accuracy — the subject must not advertise an
+# MAE or a winner outcome for these, since none was computed.
+_NON_ACCURACY_STATUSES: frozenset[str] = frozenset({"preview", "unavailable"})
+
+_STATUS_EMOJI: dict[str, str] = {
+    "excellent": "✅",
+    "good": "📊",
+    "needs_improvement": "⚠️",
+    "preview": "🔮",
+    "unavailable": "⏳",
+    "partial": "🟡",
+}
+
+
 def build_subject(verdict: RaceVerdict) -> str:
     """Construct the email subject line from the verdict.
 
@@ -89,11 +142,20 @@ def build_subject(verdict: RaceVerdict) -> str:
         verdict: The race accuracy verdict.
 
     Returns:
-        Formatted subject string with status emoji and MAE.
+        Formatted subject string with status emoji. Measured-accuracy verdicts
+        include the MAE and winner outcome; preview/pending verdicts include
+        neither, because no accuracy was computed.
     """
-    emoji = {"excellent": "✅", "good": "📊", "needs_improvement": "⚠️"}.get(
-        verdict.status, "🏁"
-    )
+    emoji = _STATUS_EMOJI.get(verdict.status, "🏁")
+    if verdict.status in _NON_ACCURACY_STATUSES:
+        return f"{emoji} F1 Briefing: {verdict.gp_name}"
+    if verdict.status == "partial":
+        # Positional accuracy only — no lap-time MAE was computable.
+        return (
+            f"{emoji} F1 Verdict: {verdict.gp_name} "
+            f"| {'Winner ✓' if verdict.winner_correct else 'Winner ✗'} "
+            f"(lap-time accuracy pending)"
+        )
     return (
         f"{emoji} F1 Verdict: {verdict.gp_name} "
         f"| MAE {verdict.mae_lap_time_s:.4f}s "

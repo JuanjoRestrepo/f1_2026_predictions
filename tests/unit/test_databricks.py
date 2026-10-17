@@ -13,7 +13,9 @@ from f1_predictions.databricks.medallion import (
 )
 from f1_predictions.databricks.mlflow_utils import (
     format_feature_store_metadata,
+    get_champion_metric,
     register_champion_model,
+    should_promote,
     track_experiment,
 )
 
@@ -107,3 +109,40 @@ def test_get_spark_dlt_pipeline_definition_returns_valid_python_str() -> None:
     assert "@dlt.table" in code
     assert "telemetry_bronze" in code
     assert "liquidClusteringColumns" in code
+
+
+def test_should_promote_without_incumbent() -> None:
+    """First-ever training has no incumbent, so the candidate is promoted."""
+    assert should_promote(0.42, None) is True
+
+
+def test_should_promote_on_improvement() -> None:
+    """A strictly lower metric beats the incumbent."""
+    assert should_promote(0.30, 0.42) is True
+
+
+def test_should_not_promote_on_regression() -> None:
+    """A higher metric never replaces the incumbent."""
+    assert should_promote(0.55, 0.42) is False
+
+
+def test_should_not_promote_on_tie() -> None:
+    """Ties keep the incumbent (only measurable improvement promotes)."""
+    assert should_promote(0.42, 0.42) is False
+
+
+def test_should_promote_respects_tolerance() -> None:
+    """A marginal improvement below the tolerance does not promote."""
+    assert should_promote(0.415, 0.42, tolerance=0.01) is False
+    assert should_promote(0.40, 0.42, tolerance=0.01) is True
+
+
+def test_should_promote_rejects_negative_tolerance() -> None:
+    """A negative tolerance is a configuration error."""
+    with pytest.raises(ValueError, match="tolerance must be non-negative"):
+        should_promote(0.30, 0.42, tolerance=-0.1)
+
+
+def test_get_champion_metric_returns_none_without_registry() -> None:
+    """Offline (no MLflow registry) the incumbent metric degrades to None."""
+    assert get_champion_metric("main", "race_pace", "xgb_race_pace") is None
