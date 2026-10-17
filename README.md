@@ -33,6 +33,19 @@ Expert-level race reporting powered by configurable **Gemini 3.1 Pro** primary g
 
 ---
 
+## [v6.5.0] - 2026-10-17
+
+### 📐 Model Dispersion Measured from Laps, and a Container That Actually Runs
+
+- **Fix**: The model no longer publishes a field spread its own laps contradict. `Sector1Time_s`–`Sector3Time_s` and `SpeedI1`–`SpeedST` reached the model as per-driver season medians pooled across a window that mixes circuits 13s apart, so their cross-driver spread mostly measured *which* circuits each driver had laps at — 12.0× the per-circuit spread for `Sector2Time_s` and 16.4× for `Sector3Time_s`, against 2.8× for lap time. Every driver-specific deviation is now re-measured per circuit, exactly as the lap-time path already does. Round 18: field spread 6.465s → 4.920s against a lap-measured 4.897s, correlation with measured pace 0.946 → 0.988, residual std 0.502s → 0.215s. Runs remain byte-for-byte reproducible.
+- **Fix**: The published container image could not start. `COPY` layers materialise their destination directories as root, so `/app` was root-owned, `f1user` could not create `/app/.cache`, and uvicorn died with `PermissionError` before binding a port — and nothing ran the image, so it went unnoticed. Runtime directories are now scaffolded and owned after every `COPY`.
+- **Fix**: Removed `clean_air_pace_delta_s` and `clean_air_confidence` from the simulation scenario. They existed in none of the 77,696 training rows, so no tree could split on them; zeroing them left predictions byte-identical. That is train/serve skew, not signal — the curated prior keeps its real job in the clean-air pace module.
+- **Added**: `check_published_dispersion()` compares the spread about to be published against the lap-measured one and warns above 1.25× (it reads 1.32× on the old behaviour, 1.00× after). The Docker workflow now smoke-tests each platform's image by digest, requiring `GET /health` to answer `200` with the model loaded.
+- **Changed**: Container images publish on version tags only. A push to `master` fired a build that the tag then duplicated — identical bytes twice per release for ~7 minutes of runner time. The dependency stage is now cross-built with `uv sync --python-platform`, taking the `arm64` leg from 528s to 232s with no emulation.
+- **Docs**: `ARCHITECTURE.md` §2.2 now states the normalisation actually implemented — the pooled-median formula it described had been superseded — with the measured inflation table, and §5.4 records what the container artifact is and that nothing automated consumes it.
+
+---
+
 ## [v6.4.1] - 2026-10-17
 
 ### 🎯 Pace-Normalisation Correctness, an Honest CI Gate & Credential Hygiene
