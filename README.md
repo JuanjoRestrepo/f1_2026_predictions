@@ -151,7 +151,7 @@ Expert-level race reporting powered by configurable **Gemini 3.1 Pro** primary g
 
 ## 🌟 Key Features
 
-- **Industrialized Inference API**: High-performance FastAPI microservice for real-time lap time predictions.
+- **Industrialized Inference API**: FastAPI microservice serving lap-time predictions from `/predict`, published as a container image. It is a manual, local surface: the deployed product is the dashboard (built by Vercel from source) and the scheduled pipeline runs on Databricks, so nothing consumes the image.
 - **⚡ Databricks Lakehouse & DLT**: Production-grade Medallion architecture (Bronze/Silver/Gold) deployed via Databricks Asset Bundles (DABs) on Serverless compute.
 - **🎯 Unity Catalog & MLflow 3**: Automated experiment tracking and `@champion` / `@challenger` model promotion in Unity Catalog.
 - **🔄 Autonomous Workflow (Event-Driven)**: The system operates on a professional, autonomous cycle via GitHub Actions & Databricks Lakeflow Jobs:
@@ -159,7 +159,7 @@ Expert-level race reporting powered by configurable **Gemini 3.1 Pro** primary g
   2. **Monday @ 09:00 UTC**: **Post-Race Mode**. Syncs actual results, calculates MAE/Accuracy, and sends the "Race Verdict" audit.
   3. **Wednesday @ 09:00 UTC**: **Safety Sync**. Re-verifies data in case of official delays.
 - **Multi-Channel Intelligence Dispatch**: Automated race briefings delivered via F1-branded HTML emails and Discord cards.
-- **Multi-Platform Docker Infrastructure**: Automated builds for `amd64` (servers) and `arm64` (Apple Silicon) using parallel GitHub Actions pipelines.
+- **Multi-Platform Docker Infrastructure**: `amd64` and `arm64` images published to GHCR on version tags. The two platforms are built in parallel and cross-compiled — the dependency install runs on the native builder and selects wheels for the runtime architecture — then the resulting image is smoke-tested by digest (`/health` must return `200`) before the workflow finishes.
 - **2026 Regulation Awareness**: Custom feature engineering including `Era Normalization` (adjusting historical times to 2026 rules) and `PU Strain Index`.
 - **Track Evolution Intelligence**: Captures "rubbering-in" effects through rolling pace potential analysis.
 - **Differentiated Analysis**: Unique AI narratives for both **Actual Results** (post-race debrief) and **Predicted ML Simulations** (pre-race forecasting).
@@ -268,7 +268,7 @@ Left unset, the sync is a no-op and the dashboard uses the committed `reports/` 
 
 ### 1. Inference API (Docker)
 
-The easiest way to run the prediction engine:
+Pull and run the service locally without installing the project:
 
 ```bash
 docker pull ghcr.io/juanjorestrepo/f1_2026_predictions:latest
@@ -276,6 +276,20 @@ docker run -p 8000:8000 ghcr.io/juanjorestrepo/f1_2026_predictions:latest
 ```
 
 Access the API docs at `http://localhost:8000/docs`.
+
+Images are published **only on version tags**, so `latest` always corresponds to a
+release (semver and short-SHA tags are published alongside it). `amd64` and `arm64`
+manifests are both available and Docker selects the right one for your machine; to
+force one, pass `--platform linux/arm64` (or `linux/amd64`) to `docker run`.
+
+Two things are worth knowing about this artifact:
+
+- **Nothing in the deployed stack consumes it.** The dashboard is built by Vercel
+  from source and the scheduled pipeline runs on Databricks serverless compute, so
+  the image exists for local and manual use.
+- **It is smoke-tested as part of publishing.** Each platform's image is started by
+  digest and must answer `GET /health` with `200` before the workflow is allowed to
+  succeed. Build success alone is not evidence the image runs.
 
 ### 2. Local Development
 
