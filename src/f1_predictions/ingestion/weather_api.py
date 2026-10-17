@@ -76,7 +76,7 @@ def get_forecast(city: str, date_str: str) -> dict[str, Any] | None:
         location = geo_data["results"][0]
         lat = location["latitude"]
         lon = location["longitude"]
-        logger.info("Found coordinates for %s: %s, %s", city, lat, lon)
+        logger.info("Found coordinates for %s", city)
 
         weather_resp = requests.get(
             WEATHER_URL,

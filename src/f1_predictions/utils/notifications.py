@@ -83,7 +83,7 @@ class NotificationChannel(Protocol):
         Returns:
             True if delivery succeeded, False if it failed gracefully.
         """
-        ...
+        raise NotImplementedError
 
 
 class GmailSMTPChannel:

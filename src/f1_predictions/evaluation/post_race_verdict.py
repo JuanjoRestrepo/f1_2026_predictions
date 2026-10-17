@@ -27,9 +27,6 @@ logger = get_logger(__name__)
 # Columns expected in the predictions CSV (Gold layer output of master_pipeline).
 _PRED_COLS: list[str] = ["Driver", "Predicted_LapTime_s", "Predicted_Position"]
 
-# Columns expected from FastF1 results session.
-_RESULT_COLS: list[str] = ["Abbreviation", "Position", "FastestLapTime"]
-
 
 @dataclass
 class RaceVerdict:

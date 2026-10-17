@@ -24,9 +24,6 @@ logger = logging.getLogger(__name__)
 # Set to 7 to safely cover full post-race audit windows.
 _DEFAULT_DAYS_BACK: int = 7
 
-# FastF1 event type identifier for a full race weekend.
-_RACE_EVENT_TYPE: str = "Race"
-
 
 def get_event_schedule(season: int) -> pd.DataFrame:
     """Fetch the full event schedule for a given F1 season.

@@ -50,9 +50,6 @@ BRONZE_LAP_COLUMNS: Final[tuple[str, ...]] = (
 # synthesised (metadata) or defaulted to NULL when absent.
 _REQUIRED_SOURCE_COLUMNS: Final[tuple[str, ...]] = ("Driver", "LapNumber", "LapTime")
 
-# FastF1 event type string that denotes a competitive race weekend.
-_RACE_EVENT_FORMAT: Final[str] = "Race"
-
 
 # ---------------------------------------------------------------------------
 # Path helpers — the single source of truth for the Volume layout

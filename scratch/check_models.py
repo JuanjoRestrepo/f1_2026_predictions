@@ -10,7 +10,7 @@ if not api_key:
     print("No API Key found.")
 else:
     genai.configure(api_key=api_key)
-    print(f"Checking models for key: {api_key[:10]}...")
+    print("Checking available models...")
     try:
         for m in genai.list_models():
             if "generateContent" in m.supported_generation_methods:

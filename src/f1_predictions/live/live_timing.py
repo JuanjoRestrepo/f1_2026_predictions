@@ -43,4 +43,3 @@ class LiveTimingMonitor:
                 "Connecting to live FastF1 SignalR stream. "
                 "This requires an active F1 session."
             )
-            pass
