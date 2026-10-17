@@ -60,6 +60,18 @@ uv run pytest --cov=src          # coverage gate: 80%
 databricks bundle validate --target dev
 ```
 
+Before you touch `reports/**`, or whenever the calendar has moved on, also check
+that the next race is still servable by the dashboard:
+
+```bash
+uv run python scripts/check_next_race_coverage.py
+```
+
+It exits non-zero when the calendar's next race — or a race that has already run
+— has no artifacts, which shows up in the UI only as a greyed-out "Awaiting
+Data" tile. `scripts/simulate_race.py --year <season> --round <n> --event "<name>"`
+generates the missing prediction.
+
 Dashboard (`dashboard/`) changes additionally:
 
 ```bash

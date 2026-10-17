@@ -87,3 +87,14 @@ jobs:
           else
             echo "ℹ️  No calendar changes detected — nothing to commit."
           fi
+
+      - name: Verify the next race is still servable
+        env:
+          SEASON: ${{ inputs.season || env.DEFAULT_SEASON }}
+        run: |
+          # Runs last so a stale season can never block the calendar sync/commit
+          # above. A failure here means the dashboard's next Grand Prix has no
+          # artifacts and will render as "Awaiting Data" — generate it with:
+          #   uv run python scripts/simulate_race.py --year <season> --round <n> \
+          #     --event "<Event Name>"
+          uv run python scripts/check_next_race_coverage.py --season "$SEASON"

@@ -22,7 +22,7 @@ import logging
 import os
 import posixpath
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol
@@ -132,6 +132,7 @@ def build_dashboard_manifest(
     reports_dir: Path,
     season: int,
     files: list[Path] | None = None,
+    directory_rounds: Mapping[str, int] | None = None,
 ) -> dict[str, Any]:
     """Build the JSON manifest that describes a published season bundle.
 
@@ -139,6 +140,11 @@ def build_dashboard_manifest(
         reports_dir: Root ``reports`` directory.
         season: F1 season year.
         files: Pre-collected artifact paths. Recollected when omitted.
+        directory_rounds: On-disk race directory to round-number map, read from
+            the calendar. Supplying it lets a round that only has a
+            ``results/predictions.csv`` (a pre-race prediction, no ``round_N``
+            anywhere in the file names) still appear in ``rounds`` — the same
+            rule the dashboard applies when deciding a round is available.
 
     Returns:
         Manifest payload with season, timestamp, object prefix, rounds and the
@@ -149,14 +155,40 @@ def build_dashboard_manifest(
         files if files is not None else collect_dashboard_files(reports_dir, season)
     )
     relative = [path.relative_to(season_dir).as_posix() for path in resolved]
+
+    rounds = set(discover_rounds(resolved))
+    for path in resolved:
+        if path.name != "predictions.csv" or path.parent.name != "results":
+            continue
+        inferred = (directory_rounds or {}).get(path.parent.parent.name)
+        if inferred is not None:
+            rounds.add(inferred)
+
     return {
         "season": season,
         "generated_at": datetime.now(UTC).isoformat(),
         "object_prefix": f"{DASHBOARD_OBJECT_PREFIX}/{season}",
-        "rounds": discover_rounds(resolved),
+        "rounds": sorted(rounds),
         "file_count": len(relative),
         "files": relative,
     }
+
+
+def _directory_round_map(reports_dir: Path, season: int) -> dict[str, int]:
+    """Map race directories on disk to round numbers using the calendar.
+
+    Args:
+        reports_dir: Root ``reports`` directory.
+        season: F1 season year.
+
+    Returns:
+        Directory name to round number, empty when the calendar is unavailable.
+    """
+    # Imported lazily: calendar_coverage imports season_directory from this
+    # module, so a module-level import here would be circular.
+    from f1_predictions.utils.calendar_coverage import load_calendar
+
+    return {race.directory: race.round for race in load_calendar(reports_dir, season)}
 
 
 def _content_type(relative_path: str) -> str:
@@ -218,7 +250,12 @@ def publish_dashboard_data(
         published += 1
 
     # Manifest last: its presence signals that the bundle is complete.
-    manifest = build_dashboard_manifest(reports_dir, season, files)
+    manifest = build_dashboard_manifest(
+        reports_dir,
+        season,
+        files,
+        directory_rounds=_directory_round_map(reports_dir, season),
+    )
     manifest_key = posixpath.join(prefix, str(season), MANIFEST_FILENAME)
     s3.put_object(
         Bucket=resolved_bucket,

@@ -89,6 +89,77 @@ def test_build_dashboard_manifest_fields(tmp_path: Path) -> None:
     assert all(not f.startswith("/") for f in manifest["files"])
 
 
+def test_manifest_rounds_include_prediction_only_rounds(tmp_path: Path) -> None:
+    """A round whose only artifact is results/predictions.csv still counts.
+
+    That file name carries no ``round_N``, so without the calendar mapping the
+    manifest would deny a round the dashboard happily renders — the mismatch
+    that appears when a pre-race prediction is published with no results yet.
+    """
+    season_dir = tmp_path / "2026"
+    (season_dir / "British_Grand_Prix" / "results").mkdir(parents=True)
+    (season_dir / "British_Grand_Prix" / "results" / "predictions.csv").write_text(
+        "Driver,predicted_laptime_xgb_s\nVER,88.1\n"
+    )
+
+    manifest = build_dashboard_manifest(
+        tmp_path, 2026, directory_rounds={"British_Grand_Prix": 9}
+    )
+
+    assert manifest["rounds"] == [9]
+
+
+def test_manifest_rounds_ignore_directories_the_calendar_does_not_know(
+    tmp_path: Path,
+) -> None:
+    """A stray predictions.csv must not invent a round."""
+    season_dir = tmp_path / "2026"
+    (season_dir / "Nowhere_Grand_Prix" / "results").mkdir(parents=True)
+    (season_dir / "Nowhere_Grand_Prix" / "results" / "predictions.csv").write_text(
+        "Driver\n"
+    )
+
+    manifest = build_dashboard_manifest(
+        tmp_path, 2026, directory_rounds={"British_Grand_Prix": 9}
+    )
+
+    assert manifest["rounds"] == []
+
+
+def test_publish_manifest_rounds_use_the_calendar(tmp_path: Path) -> None:
+    """publish_dashboard_data resolves prediction-only rounds via calendar.json."""
+    season_dir = tmp_path / "2026"
+    (season_dir / "United_States_Grand_Prix" / "results").mkdir(parents=True)
+    (
+        season_dir / "United_States_Grand_Prix" / "results" / "predictions.csv"
+    ).write_text("Driver,RoundNumber\nNOR,18\n")
+    (season_dir / "calendar.json").write_text(
+        json.dumps(
+            {
+                "season": 2026,
+                "races": [
+                    {
+                        "round": 18,
+                        "name": "United States Grand Prix",
+                        "dir": "United_States_Grand_Prix",
+                        "date": "2026-10-25",
+                    }
+                ],
+            }
+        )
+    )
+    client = _FakeS3()
+
+    publish_dashboard_data(tmp_path, 2026, bucket_name="b", client=client)
+
+    body = next(
+        payload["Body"]
+        for payload in client.puts
+        if str(payload["Key"]).endswith("manifest.json")
+    )
+    assert json.loads(body)["rounds"] == [18]
+
+
 def test_publish_uploads_artifacts_and_manifest(tmp_path: Path) -> None:
     """Every artifact plus the manifest is uploaded under the season prefix."""
     _seed_season(tmp_path)
