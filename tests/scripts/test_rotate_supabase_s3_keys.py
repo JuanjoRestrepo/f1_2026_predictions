@@ -156,21 +156,35 @@ def test_set_databricks_secret_reports_cli_failure(mock_run: MagicMock) -> None:
 
 
 @patch("scripts.rotate_supabase_s3_keys.subprocess.run")
-def test_set_databricks_secret_prints_no_credential_material(
+def test_set_databricks_secret_prints_nothing(
     mock_run: MagicMock, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """Nothing derived from the value reaches stdout - not even a masked prefix."""
+    """Not the value, not a masked prefix, not even the variable name."""
     mock_run.return_value = SimpleNamespace(returncode=0, stdout="", stderr="")
 
     assert set_databricks_secret(
         "f1_secrets", SECRET_KEY, "s3cr3t-value", dry_run=False
     )
 
-    out = capsys.readouterr().out
-    assert SECRET_KEY in out
-    assert "s3cr3t-value" not in out
-    assert "s3cr" not in out
-    assert "<redacted>" in out
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == ""
+
+
+@patch("scripts.rotate_supabase_s3_keys.subprocess.run")
+def test_set_databricks_secret_failure_prints_nothing(
+    mock_run: MagicMock, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The CLI's stderr can echo the command, so it is never forwarded."""
+    mock_run.return_value = SimpleNamespace(
+        returncode=1, stdout="", stderr="Error: put-secret SUPABASE_S3_SECRET_KEY"
+    )
+
+    assert not set_databricks_secret("f1_secrets", SECRET_KEY, "s3cr3t", dry_run=False)
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == ""
 
 
 @patch("scripts.rotate_supabase_s3_keys.subprocess.run")

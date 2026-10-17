@@ -128,16 +128,25 @@ def write_env(path: Path, rendered: str) -> Path:
     return backup
 
 
-def set_databricks_secret(
-    scope: str, env_var: str, value: str, dry_run: bool
-) -> bool:
+def set_databricks_secret(scope: str, env_var: str, value: str, dry_run: bool) -> bool:
     """Write one secret into a Databricks scope, passing the value via stdin.
 
-    Neither the value nor anything derived from it is printed — only the
-    (public, documented) environment variable name.
+    Prints nothing at all — not the value, not a masked prefix, and not the
+    variable name. CONTRIBUTING.md forbids logging either credential values or
+    credential names, and CodeQL's py/clear-text-logging-sensitive-data fails
+    the build for both (a masked value still counts, and so does a name that
+    travelled alongside one). Callers report an aggregate count instead.
+
+    Args:
+        scope: Databricks secret scope to write into.
+        env_var: Secret key, matching the environment variable name.
+        value: Secret value, delivered on stdin so it never reaches argv.
+        dry_run: When True, report success without touching Databricks.
+
+    Returns:
+        True when the secret was written (or would be, under ``dry_run``).
     """
     if dry_run:
-        print(f"  would set {env_var} ({_REDACTED})")
         return True
     try:
         proc = subprocess.run(  # noqa: S603 - fixed argv, values arrive on stdin
@@ -148,14 +157,8 @@ def set_databricks_secret(
             check=False,
         )
     except FileNotFoundError:
-        print(f"  {env_var} SKIPPED (databricks CLI not on PATH)")
         return False
-    if proc.returncode != 0:
-        detail = (proc.stderr or proc.stdout or "").strip()[:200]
-        print(f"  {env_var} FAILED: {detail}")
-        return False
-    print(f"  {env_var} ({_REDACTED})")
-    return True
+    return proc.returncode == 0
 
 
 def verify(endpoint: str, access_key: str, secret_key: str, bucket: str) -> bool:
@@ -175,7 +178,9 @@ def verify(endpoint: str, access_key: str, secret_key: str, bucket: str) -> bool
     )
     try:
         client.head_bucket(Bucket=bucket)
-        listing = client.list_objects_v2(Bucket=bucket, Prefix="dashboard/", MaxKeys=1000)
+        listing = client.list_objects_v2(
+            Bucket=bucket, Prefix="dashboard/", MaxKeys=1000
+        )
     except Exception as exc:  # surface any auth/network failure verbatim
         print(f"  FAILED: {type(exc).__name__}: {str(exc)[:180]}")
         return False
@@ -196,9 +201,13 @@ def parse_args() -> argparse.Namespace:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("--access-key", help="New access key ID (prompted if omitted).")
-    parser.add_argument("--secret-key", help="New secret access key (prompted if omitted).")
+    parser.add_argument(
+        "--secret-key", help="New secret access key (prompted if omitted)."
+    )
     parser.add_argument("--env-file", default=".env", help="Dotenv file to update.")
-    parser.add_argument("--scope", default="f1_secrets", help="Databricks secret scope.")
+    parser.add_argument(
+        "--scope", default="f1_secrets", help="Databricks secret scope."
+    )
     parser.add_argument(
         "--endpoint-url",
         help="Override the S3 endpoint (defaults to the value already in the env file).",
@@ -207,13 +216,17 @@ def parse_args() -> argparse.Namespace:
         "--bucket-name",
         help="Override the bucket (defaults to the value already in the env file).",
     )
-    parser.add_argument("--skip-env", action="store_true", help="Do not touch the env file.")
+    parser.add_argument(
+        "--skip-env", action="store_true", help="Do not touch the env file."
+    )
     parser.add_argument(
         "--skip-databricks",
         action="store_true",
         help="Do not touch Databricks secrets.",
     )
-    parser.add_argument("--dry-run", action="store_true", help="Show what would change.")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Show what would change."
+    )
     return parser.parse_args()
 
 
@@ -233,11 +246,15 @@ def main() -> int:
     bucket = args.bucket_name or current.get(BUCKET_KEY, "")
     for name, value in ((ENDPOINT_KEY, endpoint), (BUCKET_KEY, bucket)):
         if not value:
-            print(f"error: {name} unknown - pass it explicitly or set it in {env_path}.")
+            print(
+                f"error: {name} unknown - pass it explicitly or set it in {env_path}."
+            )
             return 1
 
     access_key = args.access_key or getpass.getpass("New Supabase S3 Access Key ID: ")
-    secret_key = args.secret_key or getpass.getpass("New Supabase S3 Secret Access Key: ")
+    secret_key = args.secret_key or getpass.getpass(
+        "New Supabase S3 Secret Access Key: "
+    )
     validate(ACCESS_KEY, access_key)
     validate(SECRET_KEY, secret_key)
 
@@ -249,8 +266,12 @@ def main() -> int:
     }
 
     print("\nRotation plan")
-    print(f"  env file    : {env_path} ({'skipped' if args.skip_env else 'backed up + rewritten'})")
-    print(f"  secrets     : {args.scope} ({'skipped' if args.skip_databricks else 'updated'})")
+    print(
+        f"  env file    : {env_path} ({'skipped' if args.skip_env else 'backed up + rewritten'})"
+    )
+    print(
+        f"  secrets     : {args.scope} ({'skipped' if args.skip_databricks else 'updated'})"
+    )
     print(f"  endpoint    : {endpoint}")
     print(f"  bucket      : {bucket}")
     print(f"  credentials : {_REDACTED} (access key + secret)")
@@ -266,21 +287,27 @@ def main() -> int:
         print(f"\n[dry-run] would rewrite {env_path} and back it up")
 
     if not args.skip_databricks:
-        print(f"\nDatabricks scope {args.scope}")
-        failures = [
-            env_var
-            for env_var in MIRRORED_KEYS
-            if not set_databricks_secret(
-                args.scope, env_var, updates[env_var], args.dry_run
-            )
-        ]
-        if failures:
+        if args.dry_run:
             print(
-                f"\nFAILED to set {len(failures)} of {len(MIRRORED_KEYS)} secrets "
-                f"- check WRITE permission on the scope."
+                f"\n[dry-run] would update {len(MIRRORED_KEYS)} secret(s) in "
+                f"{args.scope}"
             )
-            print("Re-run with --skip-env to retry only the secrets.")
-            return 1
+        else:
+            written = sum(
+                1
+                for env_var in MIRRORED_KEYS
+                if set_databricks_secret(args.scope, env_var, updates[env_var], False)
+            )
+            print(
+                f"\nDatabricks scope {args.scope}: updated "
+                f"{written}/{len(MIRRORED_KEYS)} secret(s)"
+            )
+            if written != len(MIRRORED_KEYS):
+                print(
+                    "Some secret writes failed - check WRITE permission on the "
+                    "scope, then re-run with --skip-env."
+                )
+                return 1
 
     if args.dry_run:
         print("\nDry run complete - no changes made.")
@@ -293,7 +320,9 @@ def main() -> int:
         return 1
 
     print("\nRotation complete.")
-    print("Next: delete the previous access key in Supabase -> Storage -> S3 Access Keys.")
+    print(
+        "Next: delete the previous access key in Supabase -> Storage -> S3 Access Keys."
+    )
     print("Databricks jobs read secrets at task runtime, so no job edit is needed.")
     return 0
 
