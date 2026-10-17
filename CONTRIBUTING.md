@@ -81,3 +81,23 @@ corepack pnpm build
 
 Dependabot opens `dependabot/github_actions/...` PRs. Treat them like any other
 PR: they must pass CI before merging, and their branches are deleted on merge.
+
+Note that the `github-actions` ecosystem is capped at `open-pull-requests-limit:
+10`, so when that many are open Dependabot silently stops proposing more — check
+the workflow files for stale action versions if no PRs have appeared for a while.
+
+### Action pins
+
+Workflows normally reference an action's floating major tag (for example
+`actions/checkout@v7`), which keeps patch and minor fixes flowing automatically.
+
+An action that does not publish floating major tags must instead be pinned to a
+full version. `astral-sh/setup-uv` is the current example: upstream stopped
+publishing floating majors after `v7`, so `@v10` does not resolve and the pin is
+written as `astral-sh/setup-uv@v10.3.0`. Verify a ref actually exists before
+using it — an unresolvable action fails the job in seconds with
+`Unable to resolve action ... unable to find version ...`.
+
+```bash
+git ls-remote --tags https://github.com/astral-sh/setup-uv.git | grep -oE 'refs/tags/v[0-9]+$'
+```

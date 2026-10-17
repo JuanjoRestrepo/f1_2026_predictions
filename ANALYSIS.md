@@ -126,11 +126,11 @@ The platform now incorporates an enterprise Databricks Lakehouse architecture de
 |---|---|---|
 | **Delta Live Tables (DLT)** | Bronze → Silver → Gold Medallion Streaming Pipeline | Automated ingestion, schema validation (`expect_or_drop`), and feature aggregation with sub-second retrieval. |
 | **Unity Catalog Model Registry** | MLflow 3 alias management (`@champion`, `@challenger`) | Replaces deprecated stage transitions with zero-downtime model promotion. |
-| **Lakeflow Orchestration** | 3-Task Workflow (`f1_2026_daily_predictions_job`) | End-to-end execution of feature updates, XGBoost model retraining, and stakeholder briefing dispatch. |
+| **Lakeflow Orchestration** | 5-Task Workflow (`f1_2026_race_predictions_job`) | FastF1 lap ingest into the UC Volume → DLT refresh → promotion-gated XGBoost champion retraining → stakeholder briefing dispatch ∥ dashboard data export. |
 | **Serverless Compute** | `client: "2"` REPL channel with custom dependency specs | Zero infrastructure maintenance with isolated, version-pinned Python runtimes. |
 
 **Final Conclusion:**
-The platform is a fully autonomous, production-grade MLOps ecosystem. By unifying **Optuna Bayesian optimization**, **Trigger.dev durable orchestration**, and **Databricks Lakehouse DLT/Unity Catalog pipelines**, we have established a state-of-the-art foundation for 2026 race dynamics prediction.
+The platform is a fully autonomous, production-grade MLOps ecosystem. By unifying **Optuna Bayesian optimization**, **Databricks Lakeflow durable orchestration**, and **Databricks Lakehouse DLT/Unity Catalog pipelines**, we have established a state-of-the-art foundation for 2026 race dynamics prediction.
 
 ---
 **Author**: Juan Jose Restrepo Rosero  
