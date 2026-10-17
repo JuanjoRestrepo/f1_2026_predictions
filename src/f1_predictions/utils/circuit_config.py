@@ -34,7 +34,7 @@ logger = get_logger(__name__)
 # ── Path resolution ────────────────────────────────────────────────────────────
 
 # Resolve relative to this file's location so the module works regardless of
-# the current working directory (important for Trigger.dev cloud workers).
+# the current working directory (important for cloud/serverless workers).
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _CONFIG_PATH: Path = _REPO_ROOT / "configs" / "config.yaml"
 

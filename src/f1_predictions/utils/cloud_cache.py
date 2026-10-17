@@ -3,8 +3,9 @@
 Rationale:
     The FastF1 cache directory (~200MB compressed) contains pre-fetched
     telemetry, timing, and session data. Without persistence, ephemeral
-    workers (Trigger.dev / AWS Lambda) re-download everything on each run,
-    adding 2-5 minutes of cold-start latency and burning API rate limits.
+    workers (Databricks serverless / AWS Lambda) re-download everything on
+    each run, adding 2-5 minutes of cold-start latency and burning API rate
+    limits.
 
     Strategy:
         - Pre-run: Download the zipped cache from cloud storage into a local

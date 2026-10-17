@@ -114,24 +114,16 @@ Expert-level race reporting powered by configurable **Gemini 3.1 Pro** primary g
 
 ### 🤖 Autonomous Orchestration (v4.3.0+)
 
-The engine features durable, long-running workflows powered by **Trigger.dev v3** and **Databricks Lakeflow Jobs**. This enables:
+Race-weekend orchestration is owned by a **single scheduler: Databricks Lakeflow Jobs** (`resources/jobs.yml` → `f1_2026_race_predictions_job`, Quartz cron `0 0 6 ? * FRI-MON` UTC). One orchestrator means one source of truth — no duplicate briefings and no racing git writes from competing schedulers.
 
-- **Friday Forecasts**: Automatic pre-race predictions based on practice data.
-- **Monday Audits**: Automatic post-race telemetry analysis and AI narrative synthesis.
-- **Manual Sync**: On-demand race processing via the Trigger.dev Cloud Dashboard or Databricks CLI (`databricks bundle run`).
+The job chains serverless tasks:
 
-#### Setup Orchestration
+1. **`ingest_race_telemetry`** — pulls the just-completed round's FastF1 laps into the Unity Catalog Volume `/Volumes/<catalog>/<schema>/raw_telemetry` (the real Bronze drop).
+2. **`run_medallion_pipeline`** — Lakeflow Spark Declarative Pipeline: Bronze (Auto Loader over the Volume) → Silver (DLT quality expectations) → Gold (driver feature aggregates).
+3. **`train_and_register_champion`** — trains the pace regressor and promotes `@champion` in Unity Catalog **only when the candidate beats the incumbent champion's CV RMSE**; otherwise it registers `@challenger`.
+4. **`dispatch_notifications`** — sends the post-race Gmail/Discord verdict briefing.
 
-1. Install dependencies: `npm install`
-2. Connect to your Trigger.dev project: `npx trigger.dev@latest login`
-3. Start local development worker:
-   ```bash
-   npx trigger.dev@latest dev
-   ```
-4. Deploy to cloud for 24/7 autonomy:
-   ```bash
-   npx trigger.dev@latest deploy
-   ```
+The old GitHub Actions Friday/Monday/Wednesday cron and the Trigger.dev scheduled tasks have been retired; the GitHub Actions race workflow is kept as a **manual fallback** ("Run workflow" in the Actions UI) for replaying a run by hand.
 
 ### 🧱 Databricks Lakehouse Deployment (DABs)
 
@@ -143,16 +135,16 @@ The engine features durable, long-running workflows powered by **Trigger.dev v3*
    ```bash
    databricks bundle deploy --target dev
    ```
-3. Run the daily predictions workflow:
+3. Run the race-weekend workflow:
    ```bash
-   databricks bundle run --target dev f1_2026_daily_predictions_job
+   databricks bundle run --target dev f1_2026_race_predictions_job
    ```
 
 ### 🛠️ Core Engine Setup
 
 1. **Environment**: Ensure you have `uv` installed.
 2. **Sync**: `uv sync`
-3. **API Keys**: Add `F1_GEMINI_API_KEY` and `TRIGGER_SECRET_KEY` to your `.env`.
+3. **API Keys**: Add `F1_GEMINI_API_KEY` (and, for Databricks runs, your workspace credentials) to your `.env`.
 4. **Gemini Models**: The default AI narrative stack is `F1_GEMINI_MODEL=gemini-3.1-pro-preview` with `F1_GEMINI_FALLBACK_MODEL=gemini-3.5-flash`. `gemini-3.1-pro-preview` requires usable API quota/billing in Google AI Studio; otherwise the pipeline falls back to Flash or local engineering copy.
 
 ### 🛠️ Technical Retrospective & Lessons Learned
@@ -235,7 +227,7 @@ uv run scripts/master_pipeline.py --round [ROUND_NUM]
 
 ## 🔮 Future Vision: The "Invincible" Race Agent
 
-The long-term vision for this platform is to move beyond scheduled reporting and into **Durable Agentic Orchestration**. By potentially integrating frameworks like **Trigger.dev**, we aim to build a "Live Race Assistant" capable of:
+The long-term vision for this platform is to move beyond scheduled reporting and into **Durable Agentic Orchestration**. Built on **Databricks Lakeflow Jobs** and Lakeflow Spark Declarative Pipelines, we aim to build a "Live Race Assistant" capable of:
 
 - **Durable State**: Handling multi-hour race events with automatic retries and state persistence across API failures or system restarts.
 - **Human-in-the-Loop**: Transitioning to a model where the AI proposes strategic shifts (e.g., "Box now for Intermediates") and waits for human validation before broadcasting briefings.
@@ -243,6 +235,6 @@ The long-term vision for this platform is to move beyond scheduled reporting and
 
 ---
 
-Operational note (Trigger.dev):
+Operational note (Databricks):
 
-- Trigger tasks in `src/trigger` execute Python scripts under `scripts/`. To avoid "Script does not exist" errors when the Trigger worker's current working directory differs from the repository root, tasks resolve absolute script paths from `process.cwd()` (see `src/trigger/f1_tasks.ts`).
+- `databricks_entrypoint.py` is the single entry point for every Lakeflow job task (`--run-mode {ingest,train,notify}`). It resolves `src/` onto `sys.path` relative to its own location, so it works regardless of the driver's working directory.
