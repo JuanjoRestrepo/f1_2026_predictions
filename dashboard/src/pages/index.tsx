@@ -192,7 +192,7 @@ export default function Home({ availableRaces, fullCalendar }: HomeProps) {
           </div>
           <div className="space-y-1">
             <p className="text-gray-500 font-mono text-xs uppercase">Races Processed</p>
-            <p className="text-2xl font-bold text-white">{availableRaces.length} / 22</p>
+            <p className="text-2xl font-bold text-white">{availableRaces.length} / {fullCalendar.length}</p>
           </div>
           <div className="space-y-1">
             <p className="text-gray-500 font-mono text-xs uppercase">Data Points</p>
