@@ -117,13 +117,14 @@ The Databricks job is the **single scheduler** — the Trigger.dev orchestration
 ## 4. Next.js Web Dashboard & Vercel Deployment
 
 ### 4.1 Rendering Strategy (SSG + ISR)
-- **Static Site Generation (SSG)**: Pre-renders race pages at build time for instant global delivery via Vercel CDN.
-- **Incremental Static Regeneration (ISR)**: Configured with `revalidate: 3600` (1 hour) to pick up new race artifacts without requiring full application rebuilds.
+- **Static Site Generation (SSG)**: Pre-renders the home page and every available race page at build time for instant global delivery via Vercel CDN.
+- **Incremental Static Regeneration (ISR)**: `revalidate: 3600` re-runs `getStaticProps` hourly. Note that this re-reads the **build-time filesystem**, not object storage — ISR refreshes stale markup, it cannot introduce a round that was absent when the deployment was built. Newly published rounds therefore require a rebuild; see §4.4.
 
-### 4.2 Available Race Discovery & Date-Gating (`getAvailableRaces`)
-- **Pass 1**: Scans `reports/2026/summaries/` for `round_N` telemetry & report files.
-- **Pass 2**: Scans `reports/2026/<race_dir>/results/predictions.csv`.
-- **Date Guard**: Compares `race.isoDate` against current system time. Races scheduled in the future (e.g., Round 14 Spanish GP) remain **locked** until their scheduled race weekend arrives.
+### 4.2 Available Race Discovery (`getAvailableRaces`)
+- **Pass 1**: Scans `reports/2026/summaries/` for any file name containing `round_N`.
+- **Pass 2**: Scans `reports/2026/<calendar dir>/results/predictions.csv`, honouring the `Barcelona_Grand_Prix` ↔ `Spanish_Grand_Prix` alias.
+- Availability is **not** date-gated: a round becomes servable as soon as either artifact exists, which is what lets the *next* Grand Prix display its pre-race prediction while results are still pending. A round with no artifacts renders as a greyed-out "Awaiting Data" tile.
+- **Guard**: `f1_predictions.utils.calendar_coverage` mirrors this rule in Python, and `scripts/check_next_race_coverage.py` exits non-zero when the calendar's next race — or any completed race — has no artifacts. `sync_calendar.yml` runs it twice weekly so a stale season surfaces loudly instead of quietly greying out the next GP.
 
 ### 4.3 UI Component Hierarchy & State Management
 - **Hero Card (`index.tsx`)**: Displays countdown timer to the current/next Grand Prix and links to the latest completed analysis.
@@ -140,6 +141,8 @@ The dashboard no longer depends on a race-day GitHub Actions cron to refresh its
 - **Publisher** (`src/f1_predictions/utils/dashboard_publish.py`): `--run-mode export` collects `reports/<season>/**`, discovers the completed rounds, uploads them under `dashboard/<season>/` through the shared `get_s3_client()` accessor, and writes `manifest.json` **last** as the completeness signal.
 - **Consumer** (`dashboard/scripts/fetch-dashboard-data.mjs`): the dashboard `prebuild` step pulls that prefix. It is opt-in via `F1_DASHBOARD_DATA_BASE_URL`, refuses path traversal, and never breaks the build unless `F1_DASHBOARD_DATA_STRICT=1`.
 - **Fallback**: the committed `reports/**` tree remains the source of truth whenever the base URL is unset, so the build works with no cloud configuration at all.
+- **Rebuild trigger**: because the round list is baked in at build time (§4.1), the export task POSTs `F1_VERCEL_DEPLOY_HOOK_URL` after a successful publish so Vercel rebuilds and the new round becomes reachable. Best-effort by design: an unset hook, a missing `requests`, or a failed request is logged rather than raised, so a flaky deploy hook can never fail the export task.
+- **Coverage guard**: `scripts/check_next_race_coverage.py` asserts the same availability rule the UI uses and fails when the calendar's next race has no artifacts — the failure mode where the home page looks healthy while the next Grand Prix is unreachable.
 
 ---
 

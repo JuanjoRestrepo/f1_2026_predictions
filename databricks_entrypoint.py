@@ -702,13 +702,23 @@ _S3_CONFIG_ENV_VARS = (
     "SUPABASE_S3_BUCKET_NAME",
 )
 
+# Optional Vercel Deploy Hook, resolved from the same scope when set. Publishing
+# new artifacts is not enough on its own: the dashboard pulls reports/ at build
+# time and derives its round list from getStaticPaths, so a rebuilt site is what
+# actually makes a newly published round reachable.
+_DEPLOY_HOOK_ENV_VAR = "F1_VERCEL_DEPLOY_HOOK_URL"
 
-def _load_s3_secrets_from_databricks() -> None:
-    """Populate S3 env vars from the ``f1_secrets`` scope when unset.
+
+def _load_secrets_from_databricks(env_vars: tuple[str, ...], label: str) -> None:
+    """Populate env vars from the ``f1_secrets`` scope when they are unset.
 
     Values are written straight into the environment and never logged; only a
     count of the values that could not be resolved is emitted, so neither
     credential material nor credential names reach the logs.
+
+    Args:
+        env_vars: Environment variable names, also used as the secret keys.
+        label: Human-readable group name used in the debug messages.
     """
     try:
         from pyspark.dbutils import DBUtils  # type: ignore[import-untyped]
@@ -717,7 +727,7 @@ def _load_s3_secrets_from_databricks() -> None:
         spark = SparkSession.builder.getOrCreate()
         dbutils = DBUtils(spark)
         unresolved = 0
-        for env_var in _S3_CONFIG_ENV_VARS:
+        for env_var in env_vars:
             if os.environ.get(env_var):
                 continue
             try:
@@ -728,13 +738,59 @@ def _load_s3_secrets_from_databricks() -> None:
                 unresolved += 1
         if unresolved:
             logger.debug(
-                "%d/%d S3 configuration values were not present in the "
-                "'f1_secrets' scope; falling back to environment variables.",
+                "%d/%d %s values were not present in the 'f1_secrets' scope; "
+                "falling back to environment variables.",
                 unresolved,
-                len(_S3_CONFIG_ENV_VARS),
+                len(env_vars),
+                label,
             )
     except Exception:
-        logger.debug("Databricks secrets lookup skipped; using env var S3 config.")
+        logger.debug(
+            "Databricks secrets lookup skipped; using env var %s config.", label
+        )
+
+
+def _load_s3_secrets_from_databricks() -> None:
+    """Populate the S3 configuration env vars from ``f1_secrets`` when unset."""
+    _load_secrets_from_databricks(_S3_CONFIG_ENV_VARS, "S3 configuration")
+
+
+def _trigger_dashboard_rebuild() -> None:
+    """Ask Vercel to rebuild so newly published rounds become reachable.
+
+    Best-effort by design: an unset hook, a missing ``requests``, or a failed
+    request is logged and swallowed. The export task must never fail because the
+    site could not be poked — the next deploy still picks the bundle up.
+    """
+    _load_secrets_from_databricks((_DEPLOY_HOOK_ENV_VAR,), "deploy hook")
+    hook_url = os.environ.get(_DEPLOY_HOOK_ENV_VAR)
+    if not hook_url:
+        logger.info(
+            "%s is not set — skipping the dashboard rebuild; the next deploy will "
+            "pick up the published bundle.",
+            _DEPLOY_HOOK_ENV_VAR,
+        )
+        return
+
+    try:
+        import requests
+    except ImportError:
+        logger.warning("requests is unavailable; cannot trigger a dashboard rebuild.")
+        return
+
+    try:
+        response = requests.post(hook_url, timeout=30)
+    except Exception as exc:
+        logger.warning("Dashboard rebuild trigger failed (%s); redeploy manually.", exc)
+        return
+
+    if response.ok:
+        logger.info("Dashboard rebuild triggered (HTTP %d).", response.status_code)
+    else:
+        logger.warning(
+            "Dashboard rebuild trigger returned HTTP %d; redeploy manually.",
+            response.status_code,
+        )
 
 
 def run_export(season: int, catalog: str = CATALOG, schema: str = SCHEMA) -> None:
@@ -774,6 +830,7 @@ def run_export(season: int, catalog: str = CATALOG, schema: str = SCHEMA) -> Non
         return
 
     logger.info("Dashboard publish summary: %s", summary)
+    _trigger_dashboard_rebuild()
     logger.info("=" * 60)
     logger.info("EXPORT COMPLETE — Season %d", season)
     logger.info("=" * 60)
