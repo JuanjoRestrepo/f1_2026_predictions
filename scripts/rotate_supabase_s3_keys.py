@@ -19,9 +19,10 @@ replacement pair in the dashboard first:
 
     Storage -> S3 Access Keys -> Create new access key
 
-then run this script. Secret values are never printed (only masked) and are
-handed to the Databricks CLI over stdin, so they stay out of the process list
-and shell history. Delete the previous access key in Supabase afterwards.
+then run this script. Secret values are never printed — nothing derived from
+them is — and they are handed to the Databricks CLI over stdin, so they stay out
+of the process list and shell history. Delete the previous access key in
+Supabase afterwards.
 
 Usage:
     uv run scripts/rotate_supabase_s3_keys.py            # hidden prompt
@@ -40,13 +41,13 @@ import argparse
 import getpass
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 ENDPOINT_KEY = "SUPABASE_S3_ENDPOINT_URL"
 ACCESS_KEY = "SUPABASE_S3_ACCESS_KEY"
-SECRET_KEY = "SUPABASE_S3_SECRET_KEY"
+SECRET_KEY = "SUPABASE_S3_SECRET_KEY"  # noqa: S105 - an env var name, not a credential
 BUCKET_KEY = "SUPABASE_S3_BUCKET_NAME"
 
 # Every one of these is mirrored into the Databricks scope. The endpoint and
@@ -54,15 +55,16 @@ BUCKET_KEY = "SUPABASE_S3_BUCKET_NAME"
 # repairs a half-configured scope.
 MIRRORED_KEYS = (ENDPOINT_KEY, ACCESS_KEY, SECRET_KEY, BUCKET_KEY)
 
+# What we print instead of any credential material. The repo's rule
+# (CONTRIBUTING.md) is to log neither credential values nor credential names, and
+# CodeQL's py/clear-text-logging-sensitive-data enforces it — a partially masked
+# value still counts as clear-text logging, so we print nothing derived from one.
+_REDACTED = "<redacted>"
+
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
-def mask(value: str) -> str:
-    """Return a log-safe rendering of a secret."""
-    return f"{value[:4]}****" if len(value) > 4 else "****"
 
 
 def parse_env(path: Path) -> dict[str, str]:
@@ -117,7 +119,7 @@ def validate(name: str, value: str) -> None:
 
 def write_env(path: Path, rendered: str) -> Path:
     """Back up the dotenv file, then write the rotated contents."""
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     backup = path.with_name(f"{path.name}.bak.{stamp}")
     backup.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
     backup.chmod(0o600)
@@ -126,27 +128,33 @@ def write_env(path: Path, rendered: str) -> Path:
     return backup
 
 
-def set_databricks_secret(scope: str, key: str, value: str, dry_run: bool) -> bool:
-    """Write one secret into a Databricks scope, passing the value via stdin."""
+def set_databricks_secret(
+    scope: str, env_var: str, value: str, dry_run: bool
+) -> bool:
+    """Write one secret into a Databricks scope, passing the value via stdin.
+
+    Neither the value nor anything derived from it is printed — only the
+    (public, documented) environment variable name.
+    """
     if dry_run:
-        print(f"  would set {key:26} = {mask(value)}")
+        print(f"  would set {env_var} ({_REDACTED})")
         return True
     try:
-        proc = subprocess.run(
-            ["databricks", "secrets", "put-secret", scope, key],
+        proc = subprocess.run(  # noqa: S603 - fixed argv, values arrive on stdin
+            ["databricks", "secrets", "put-secret", scope, env_var],  # noqa: S607 - via PATH
             input=value,
             text=True,
             capture_output=True,
             check=False,
         )
     except FileNotFoundError:
-        print(f"  {key:26} SKIPPED (databricks CLI not on PATH)")
+        print(f"  {env_var} SKIPPED (databricks CLI not on PATH)")
         return False
     if proc.returncode != 0:
         detail = (proc.stderr or proc.stdout or "").strip()[:200]
-        print(f"  {key:26} FAILED: {detail}")
+        print(f"  {env_var} FAILED: {detail}")
         return False
-    print(f"  {key:26} = {mask(value)}")
+    print(f"  {env_var} ({_REDACTED})")
     return True
 
 
@@ -168,7 +176,7 @@ def verify(endpoint: str, access_key: str, secret_key: str, bucket: str) -> bool
     try:
         client.head_bucket(Bucket=bucket)
         listing = client.list_objects_v2(Bucket=bucket, Prefix="dashboard/", MaxKeys=1000)
-    except Exception as exc:  # noqa: BLE001 - surface any auth/network failure verbatim
+    except Exception as exc:  # surface any auth/network failure verbatim
         print(f"  FAILED: {type(exc).__name__}: {str(exc)[:180]}")
         return False
     print(f"  head_bucket({bucket}) OK")
@@ -245,8 +253,7 @@ def main() -> int:
     print(f"  secrets     : {args.scope} ({'skipped' if args.skip_databricks else 'updated'})")
     print(f"  endpoint    : {endpoint}")
     print(f"  bucket      : {bucket}")
-    print(f"  access key  : {mask(access_key)}")
-    print(f"  secret key  : {mask(secret_key)}")
+    print(f"  credentials : {_REDACTED} (access key + secret)")
     if args.dry_run:
         print("  mode        : DRY RUN - nothing will be written")
 
@@ -261,13 +268,18 @@ def main() -> int:
     if not args.skip_databricks:
         print(f"\nDatabricks scope {args.scope}")
         failures = [
-            key
-            for key in MIRRORED_KEYS
-            if not set_databricks_secret(args.scope, key, updates[key], args.dry_run)
+            env_var
+            for env_var in MIRRORED_KEYS
+            if not set_databricks_secret(
+                args.scope, env_var, updates[env_var], args.dry_run
+            )
         ]
         if failures:
-            print(f"\nFAILED to set: {', '.join(failures)}")
-            print(f"Re-run with --skip-env to retry only the secrets.")
+            print(
+                f"\nFAILED to set {len(failures)} of {len(MIRRORED_KEYS)} secrets "
+                f"- check WRITE permission on the scope."
+            )
+            print("Re-run with --skip-env to retry only the secrets.")
             return 1
 
     if args.dry_run:

@@ -26,7 +26,6 @@ from scripts.rotate_supabase_s3_keys import (
     ENDPOINT_KEY,
     SECRET_KEY,
     main,
-    mask,
     parse_env,
     rewrite_lines,
     set_databricks_secret,
@@ -53,12 +52,6 @@ def _seed_env(tmp_path: Path, body: str = _ENV_BODY) -> Path:
 # ---------------------------------------------------------------------------
 # Pure helpers
 # ---------------------------------------------------------------------------
-
-
-def test_mask_reveals_only_a_prefix() -> None:
-    """A long secret keeps at most its first four characters."""
-    assert mask("37cceeeba674152f46459a93facf0051") == "37cc****"
-    assert mask("abc") == "****"
 
 
 def test_parse_env_ignores_noise_and_strips_quotes(tmp_path: Path) -> None:
@@ -99,10 +92,7 @@ def test_rewrite_lines_appends_keys_that_are_absent() -> None:
 
     assert changed == [BUCKET_KEY]
     assert rendered == (
-        "A=1\n"
-        "\n"
-        "# Added by scripts/rotate_supabase_s3_keys.py\n"
-        f"{BUCKET_KEY}=f1-cache\n"
+        f"A=1\n\n# Added by scripts/rotate_supabase_s3_keys.py\n{BUCKET_KEY}=f1-cache\n"
     )
 
 
@@ -166,6 +156,24 @@ def test_set_databricks_secret_reports_cli_failure(mock_run: MagicMock) -> None:
 
 
 @patch("scripts.rotate_supabase_s3_keys.subprocess.run")
+def test_set_databricks_secret_prints_no_credential_material(
+    mock_run: MagicMock, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Nothing derived from the value reaches stdout - not even a masked prefix."""
+    mock_run.return_value = SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    assert set_databricks_secret(
+        "f1_secrets", SECRET_KEY, "s3cr3t-value", dry_run=False
+    )
+
+    out = capsys.readouterr().out
+    assert SECRET_KEY in out
+    assert "s3cr3t-value" not in out
+    assert "s3cr" not in out
+    assert "<redacted>" in out
+
+
+@patch("scripts.rotate_supabase_s3_keys.subprocess.run")
 def test_set_databricks_secret_dry_run_skips_the_cli(mock_run: MagicMock) -> None:
     """A dry run must not mutate the scope."""
     assert set_databricks_secret("f1_secrets", SECRET_KEY, "s3cr3t", dry_run=True)
@@ -176,6 +184,35 @@ def test_set_databricks_secret_dry_run_skips_the_cli(mock_run: MagicMock) -> Non
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
+
+
+def test_main_never_prints_credential_material(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """End-to-end: the credential values must not appear in the output at all."""
+    env_path = _seed_env(tmp_path)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "rotate",
+            "--env-file",
+            str(env_path),
+            "--access-key",
+            "AKIAIOSFODNN7EXAMPLE",
+            "--secret-key",
+            "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+            "--skip-databricks",
+            "--dry-run",
+        ],
+    )
+
+    assert main() == 0
+    out = capsys.readouterr().out
+
+    for leaked in ("AKIAIOSFODNN7EXAMPLE", "AKIA", "wJalrXUtnFEMI", "wJal"):
+        assert leaked not in out
+    assert "<redacted>" in out
 
 
 def test_main_dry_run_leaves_the_env_file_untouched(
@@ -224,7 +261,9 @@ def test_main_rotates_then_verifies(
         ],
     )
 
-    with patch("scripts.rotate_supabase_s3_keys.verify", return_value=True) as mock_verify:
+    with patch(
+        "scripts.rotate_supabase_s3_keys.verify", return_value=True
+    ) as mock_verify:
         assert main() == 0
 
     values = parse_env(env_path)
