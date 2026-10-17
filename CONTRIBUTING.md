@@ -91,9 +91,9 @@ corepack pnpm build
 
 ### Rotating the Supabase S3 keys
 
-The S3 pair that backs both the FastF1 cache and the dashboard bundle is stored
-twice — in `.env` and in the `f1_secrets` scope — so rotate it with the script
-rather than by hand:
+The S3 pair that backs both the FastF1 cache and the dashboard bundle has exactly
+two live copies — `.env` and the `f1_secrets` scope — so rotate both with the
+script rather than by hand:
 
 ```bash
 uv run scripts/rotate_supabase_s3_keys.py --dry-run   # show the plan, change nothing
@@ -106,6 +106,28 @@ script backs up `.env` to a mode-600 `.env.bak.<utc>` file, updates both
 locations, and proves the new pair against the bucket before reporting success.
 Delete the previous access key afterwards; Databricks reads secrets at task
 runtime, so no job edit or redeploy is needed.
+
+GitHub Actions does **not** consume these credentials — no workflow references
+`SUPABASE_S3_*` — so the pair must never be mirrored into repository secrets. The
+four copies created in June 2026 predate the move to Databricks and are dead;
+remove them with:
+
+```bash
+gh secret list | grep SUPABASE_S3           # expect no output
+for s in SUPABASE_S3_ACCESS_KEY SUPABASE_S3_SECRET_KEY \
+         SUPABASE_S3_ENDPOINT_URL SUPABASE_S3_BUCKET_NAME; do
+  gh secret delete "$s"                     # takes one name; already-absent is a harmless 404
+done
+```
+
+The same scope holds `F1_VERCEL_DEPLOY_HOOK_URL` (see `.env.example`), which the
+export task posts to after publishing so Vercel rebuilds and a newly published
+round becomes reachable. Store it via stdin, never `--string-value` (which would
+put it in the process list):
+
+```bash
+databricks secrets put-secret f1_secrets F1_VERCEL_DEPLOY_HOOK_URL   # prompts, or pipe it in
+```
 
 ## Dependency updates
 
