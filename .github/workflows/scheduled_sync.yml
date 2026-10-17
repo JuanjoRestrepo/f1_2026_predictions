@@ -117,6 +117,47 @@ jobs:
             echo "race_found=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Check credentials for this run
+        if: steps.resolve.outputs.race_found == 'true'
+        # Warnings, never failures: the pipeline degrades honestly on its own,
+        # but a green run that silently sends nothing is a trap. GitHub renders
+        # ::warning:: annotations at the top of the run page, so the state of
+        # the run is visible without reading the logs.
+        env:
+          F1_GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          F1_GMAIL_USER: ${{ secrets.F1_GMAIL_USER }}
+          F1_GMAIL_APP_PASSWORD: ${{ secrets.F1_GMAIL_APP_PASSWORD }}
+          F1_RECIPIENT_EMAIL: ${{ secrets.F1_RECIPIENT_EMAIL }}
+          F1_DISCORD_WEBHOOK_URL: ${{ secrets.F1_DISCORD_WEBHOOK_URL }}
+        run: |
+          missing=""
+          for name in F1_GEMINI_API_KEY F1_GMAIL_USER F1_GMAIL_APP_PASSWORD \
+                      F1_RECIPIENT_EMAIL F1_DISCORD_WEBHOOK_URL; do
+            if [ -z "${!name}" ]; then
+              missing="$missing $name"
+            fi
+          done
+          if [ -n "$missing" ]; then
+            echo "Unset:${missing}"
+          fi
+
+          if [ -z "$F1_GEMINI_API_KEY" ]; then
+            echo "::warning::F1_GEMINI_API_KEY is empty — race narratives fall back to non-AI copy."
+          fi
+
+          gmail_ready=false
+          if [ -n "$F1_GMAIL_USER" ] && [ -n "$F1_GMAIL_APP_PASSWORD" ]; then
+            gmail_ready=true
+          fi
+          discord_ready=false
+          if [ -n "$F1_DISCORD_WEBHOOK_URL" ]; then
+            discord_ready=true
+          fi
+          echo "Notification channels available: gmail=$gmail_ready discord=$discord_ready"
+          if [ "$gmail_ready" = "false" ] && [ "$discord_ready" = "false" ]; then
+            echo "::warning::No notification channel can be built — this run completes without sending anything."
+          fi
+
       - name: Ingest completed race into Gold training set
         if: steps.resolve.outputs.race_found == 'true' && steps.resolve.outputs.mode == 'post-race'
         # Best-effort incremental learning step: pull the just-completed round's
@@ -143,7 +184,11 @@ jobs:
       - name: Run master pipeline
         if: steps.resolve.outputs.race_found == 'true'
         env:
-          F1_GEMINI_API_KEY: ${{ secrets.F1_GEMINI_API_KEY }}
+          # The repository secret is GEMINI_API_KEY (no F1_ prefix). Referencing
+          # a non-existent name here would set F1_GEMINI_API_KEY to the empty
+          # string, which wins over the GEMINI_API_KEY alias in config.py and
+          # silently disables AI narratives.
+          F1_GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           F1_GEMINI_MODEL: gemini-3.1-pro-preview
           F1_GEMINI_FALLBACK_MODEL: gemini-3.5-flash
           F1_TARGET_SEASON: ${{ inputs.season || '2026' }}

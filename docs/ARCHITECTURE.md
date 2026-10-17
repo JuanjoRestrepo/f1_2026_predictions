@@ -105,11 +105,12 @@ The Databricks job is the **single scheduler** — the Trigger.dev orchestration
 - **Task 1 (`ingest_race_telemetry`)**: pulls the newest completed round from FastF1 and writes per-round Parquet into the Unity Catalog `raw_telemetry` Volume (`--run-mode ingest`).
 - **Task 2 (`run_medallion_pipeline`)**: executes the DLT pipeline over that Volume (Bronze → Silver → Gold).
 - **Task 3 (`train_and_register_champion`)**: fits the pace regressors, infers the MLflow signature (`infer_signature`), sets the registry URI to `databricks-uc`, and re-tags `@champion` in Unity Catalog (`<catalog>.race_pace.xgb_race_pace_regressor`) — **only when the candidate beats the incumbent's cross-validated RMSE**.
-- **Task 4 (`dispatch_notifications`)**: reads credentials from the Databricks Secrets scope `f1_secrets` (`gmail_app_password`) and sends HTML email briefings and Discord alerts via SMTP/webhook.
+- **Task 4 (`dispatch_notifications`)**: reads credentials from the Databricks Secrets scope `f1_secrets` (`F1_GMAIL_USER`, `F1_GMAIL_APP_PASSWORD`, and optionally `F1_DISCORD_WEBHOOK_URL`) and sends HTML email briefings and Discord alerts via SMTP/webhook.
 - **Task 5 (`export_dashboard_data`)**: runs in parallel with task 4 and publishes the season's `reports/<season>` bundle to object storage for the dashboard (see §4.4).
 
 ### 3.3 GitHub Actions: Manual Fallback & Calendar Sync
 - **`scheduled_sync.yml` — manual only.** The Friday/Monday race cron was removed alongside the Databricks consolidation; the workflow is kept as a `workflow_dispatch` fallback for replaying a single run by hand.
+- **The fallback keeps its own credential store: GitHub repository secrets, not `f1_secrets`.** `GEMINI_API_KEY`, `F1_GMAIL_USER`, `F1_GMAIL_APP_PASSWORD` and `F1_RECIPIENT_EMAIL` must all be present for a manual run to produce AI narratives and actually send a briefing. Anything missing is reported as a `::warning::` annotation on the run page, so a green run cannot be mistaken for a delivered notification.
 - **`sync_calendar.yml`** keeps its calendar cron so `calendar.json` continues to track the official FastF1/Ergast schedule.
 
 ---
