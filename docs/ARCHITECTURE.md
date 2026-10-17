@@ -164,6 +164,13 @@ The dashboard no longer depends on a race-day GitHub Actions cron to refresh its
 ### 5.3 Build Artifact Tracking (`.gitignore` Exceptions)
 - Targeted git exceptions (`!reports/**/summaries/*.json`, `!reports/**/summaries/*.md`) ensure all generated telemetry files, lap timelines, tyre intelligence JSONs, and AI reports are tracked in version control and deployed to Vercel.
 
+### 5.4 Published Container Image (no runtime consumer)
+- **What it is**: `Dockerfile` builds a two-stage image serving the FastAPI app (`/health`, `/predict`) on port 8000, as a non-root user (`1001:1001`) with the trained model baked in.
+- **Where it goes**: `.github/workflows/docker.yml` publishes `amd64` + `arm64` manifests to GHCR **on version tags only** (plus `workflow_dispatch`), tagged `latest`, semver and short-SHA. A push to `master` deliberately does not publish, because the tag then rebuilt the same bytes.
+- **How it is built**: the dependency stage runs on the *build* platform and uses `uv sync --python-platform` to select wheels for the *runtime* architecture, so installing the environment is never emulated. The `arm64` leg previously ran entirely under QEMU and took 528s against 21s for `amd64` for an identical result.
+- **How it is verified**: each publish starts the image it just produced, by digest, on its own platform, and requires `GET /health` to return `200` with `model_loaded: true`. Building is not treated as evidence that the image runs.
+- **What consumes it**: nothing automated. The dashboard is built by Vercel from source (§4.1) and the scheduled pipeline runs on Databricks serverless compute (§3.2), so the image is intentionally a local/manual surface — the only supported way to run the inference API without a Python environment.
+
 ---
 
 ## 6. System Verification & Test Suite
