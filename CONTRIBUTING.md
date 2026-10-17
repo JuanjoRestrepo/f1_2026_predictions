@@ -56,9 +56,15 @@ Run locally what CI runs remotely:
 uv run ruff format .
 uv run ruff check .
 uv run mypy src/ --strict
-uv run pytest --cov=src          # coverage gate: 80%
-databricks bundle validate --target dev
+uv run pytest --cov=src                  # coverage gate: 80%
+uv run python scripts/validate_bundle.py # offline bundle structure check
+databricks bundle validate --target dev  # authoritative, needs credentials
 ```
+
+CI runs both bundle checks, but only the first needs no credentials: the offline
+validator decides include targets, in-bundle file references, `environment_key`
+and `depends_on` integrity, and `${var.*}` / `${resources.*}` substitutions, so
+a broken bundle fails on the PR rather than at `bundle deploy`.
 
 Before you touch `reports/**`, or whenever the calendar has moved on, also check
 that the next race is still servable by the dashboard:

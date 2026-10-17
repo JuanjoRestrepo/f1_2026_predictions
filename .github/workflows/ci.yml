@@ -17,7 +17,9 @@
 # Notes:
 #   - FastF1 API is NOT called during CI: all tests mock network I/O.
 #   - The FastF1 cache dir is a throwaway temp dir in CI (set via env var).
-#   - No secrets are needed for unit tests.
+#   - No secrets are needed for unit tests. The bundle is validated
+#     structurally without credentials; 'databricks bundle validate' only
+#     runs once DATABRICKS_HOST is configured.
 # =============================================================================
 
 name: CI
@@ -161,11 +163,15 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # Job 4 — Validate DABs Bundle (Databricks Asset Bundles)
-  # Only runs when DATABRICKS_HOST secret is configured in the repo.
-  # Validates the databricks.yml bundle schema and resource references without
-  # deploying anything — safe to run on every PR.
-  # Rationale: databricks bundle validate catches mis-referenced pipeline files,
-  # invalid YAML keys, and missing variable substitutions before deployment.
+  # Two layers, neither of which deploys anything:
+  #   1. Offline structural checks (always run). scripts/validate_bundle.py
+  #      decides everything that needs no workspace: YAML validity, include
+  #      targets, in-bundle file references, environment_key / depends_on
+  #      integrity, and ${var.*} / ${resources.*} substitutions.
+  #   2. databricks bundle validate --target dev (runs only once
+  #      DATABRICKS_HOST is configured), which adds workspace-level checks.
+  # Layer 1 exists because layer 2 used to be the only check and silently
+  # skipped itself, leaving a green tick that validated nothing.
   # ---------------------------------------------------------------------------
   validate-bundle:
     name: Validate DABs Bundle
@@ -175,16 +181,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.0
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version-file: ".python-version"
+
+      - name: Install dependencies (dev group)
+        run: uv sync --group dev
+
+      - name: Validate bundle structure (offline — no credentials needed)
+        run: uv run python scripts/validate_bundle.py
+
       - name: Install Databricks CLI
         uses: databricks/setup-cli@main
 
-      - name: Validate bundle (dev target — no deployment)
+      - name: Validate bundle against the workspace (needs credentials)
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
           if [ -z "$DATABRICKS_HOST" ]; then
-            echo "DATABRICKS_HOST secret is not configured in this repository. Skipping DABs validation."
+            echo "DATABRICKS_HOST is not configured — skipping the workspace-level check."
+            echo "The offline structural check above already ran and gated this job."
             exit 0
           fi
           databricks bundle validate --target dev
