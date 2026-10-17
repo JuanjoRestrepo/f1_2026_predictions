@@ -23,6 +23,11 @@ resources:
         # Allow arbitrary Delta table properties (e.g. delta.liquidClusteringColumns).
         # Required on workspaces that restrict unknown Delta configs by default.
         spark.databricks.delta.allowArbitraryProperties.enabled: "true"
+        # Raw telemetry Bronze landing zone (read by telemetry_bronze via
+        # Auto Loader / cloudFiles). Kept in sync with the ingest task and the
+        # raw_telemetry Volume declared in resources/volumes.yml.
+        f1.raw_telemetry_path: /Volumes/${var.catalog}/${var.schema}/raw_telemetry
+        f1.raw_telemetry_schema: /Volumes/${var.catalog}/${var.schema}/raw_telemetry/_schema
 
       # Serverless compute for Delta Live Tables
       serverless: true

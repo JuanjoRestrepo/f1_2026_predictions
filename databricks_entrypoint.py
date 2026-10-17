@@ -13,7 +13,8 @@ Design rationale:
       branching logic that breaks local execution.
 
 Usage (Databricks job):
-    python databricks_entrypoint.py --run-mode train --season 2026
+    python databricks_entrypoint.py --run-mode ingest --season 2026
+    python databricks_entrypoint.py --run-mode train  --season 2026
     python databricks_entrypoint.py --run-mode notify --season 2026
 
 Deployed via DABs:
@@ -45,7 +46,9 @@ if str(SRC_DIR) not in sys.path:
 # Imports — deferred until after sys.path is patched
 # ---------------------------------------------------------------------------
 from f1_predictions.databricks.mlflow_utils import (  # noqa: E402
+    get_champion_metric,
     register_champion_model,
+    should_promote,
     track_experiment,
 )
 from f1_predictions.utils.logging_setup import (  # noqa: E402
@@ -186,17 +189,215 @@ def run_train(season: int, catalog: str = CATALOG, schema: str = SCHEMA) -> None
     )
     logger.info("MLflow run tracked: %s", summary.get("run_id"))
 
-    # ── Step 4: Register @champion alias ────────────────────────────────────
-    champion_path = register_champion_model(
+    # ── Step 4: Promote to @champion only if the candidate improves ─────────
+    # This closes the cloud learning loop: a retrain that fails to beat the
+    # incumbent is registered as @challenger and the running @champion is left
+    # untouched, so a noisy retrain can never degrade production. Set
+    # F1_PROMOTION_TOLERANCE to require a minimum improvement margin.
+    tolerance = float(os.environ.get("F1_PROMOTION_TOLERANCE", "0.0"))
+    incumbent_rmse = get_champion_metric(
+        catalog=catalog, schema=schema, model_name=MODEL_NAME, metric="rmse"
+    )
+    promote = should_promote(rmse, incumbent_rmse, tolerance=tolerance)
+    alias = "champion" if promote else "challenger"
+    if incumbent_rmse is None:
+        logger.info(
+            "No incumbent champion found — promoting candidate (CV RMSE %.4f).", rmse
+        )
+    elif promote:
+        logger.info(
+            "Candidate CV RMSE %.4f beats incumbent %.4f — promoting to @champion.",
+            rmse,
+            incumbent_rmse,
+        )
+    else:
+        logger.info(
+            "Candidate CV RMSE %.4f does not beat incumbent %.4f — keeping "
+            "@champion, registering candidate as @challenger.",
+            rmse,
+            incumbent_rmse,
+        )
+    registered_path = register_champion_model(
         model_name=MODEL_NAME,
         catalog=catalog,
         schema=schema,
-        alias="champion",
+        alias=alias,
     )
-    logger.info("Champion model registered at: %s", champion_path)
+    logger.info("Model registered at: %s", registered_path)
     logger.info("=" * 60)
     logger.info("TRAIN COMPLETE — Season %d", season)
     logger.info("=" * 60)
+
+
+def run_ingest(
+    season: int,
+    catalog: str = CATALOG,
+    schema: str = SCHEMA,
+    round_number: int | None = None,
+    all_completed: bool = False,
+) -> None:
+    """Land real FastF1 race laps into the raw_telemetry Unity Catalog Volume.
+
+    This is the first task of the race-weekend job, and it is what makes the
+    DLT Bronze layer real instead of synthetic. Each round is written to its own
+    Parquet directory (``season=<year>/round=<NN>/``) so re-runs are idempotent
+    and Auto Loader can process rounds incrementally.
+
+    Ingestion is best-effort per round: a FastF1 hiccup (or unavailable lap
+    timing) skips that round with a warning rather than failing the whole job,
+    mirroring the ``continue-on-error`` philosophy of the local ingestion step.
+
+    Args:
+        season: F1 season year.
+        catalog: Unity Catalog catalog name.
+        schema: Unity Catalog schema name.
+        round_number: Explicit round to ingest. When None, resolves to every
+            completed round (if ``all_completed``) or the most recent race.
+        all_completed: When True (and no explicit round), ingest every round
+            already raced this season.
+    """
+    logger.info("=" * 60)
+    logger.info("DATABRICKS INGEST MODE — Season %d (%s.%s)", season, catalog, schema)
+    logger.info("=" * 60)
+
+    from f1_predictions.databricks.volume_ingest import volume_root
+
+    rounds = _resolve_ingest_rounds(season, round_number, all_completed)
+    if not rounds:
+        logger.warning("No completed race to ingest for season %d.", season)
+        return
+
+    _ensure_volume_dir(volume_root(catalog, schema))
+
+    ingested = 0
+    for rnd in rounds:
+        if _ingest_round_to_volume(season, rnd, catalog, schema):
+            ingested += 1
+
+    logger.info(
+        "INGEST COMPLETE — %d/%d round(s) landed in %s",
+        ingested,
+        len(rounds),
+        volume_root(catalog, schema),
+    )
+    logger.info("=" * 60)
+
+
+def _resolve_ingest_rounds(
+    season: int,
+    round_number: int | None,
+    all_completed: bool,
+) -> list[int]:
+    """Resolve which rounds the ingest task should process.
+
+    Args:
+        season: F1 season year.
+        round_number: Explicit round override, or None to auto-resolve.
+        all_completed: Ingest the whole season's completed rounds when no
+            explicit round is given.
+
+    Returns:
+        Ascending list of round numbers to ingest (possibly empty).
+    """
+    if round_number is not None:
+        return [round_number]
+
+    from f1_predictions.databricks.volume_ingest import completed_round_numbers
+    from f1_predictions.utils.race_detector import (
+        detect_last_race,
+        get_event_schedule,
+    )
+
+    if all_completed:
+        try:
+            return completed_round_numbers(get_event_schedule(season))
+        except Exception as exc:
+            logger.warning("Could not resolve completed rounds (%s).", exc)
+            return []
+
+    last = detect_last_race(season=season, days_back=7)
+    return [int(last["round"])] if last is not None else []
+
+
+def _ensure_volume_dir(path: str) -> None:
+    """Best-effort create the Volume directory so Auto Loader has a target.
+
+    Args:
+        path: Absolute Volume path to create.
+    """
+    try:
+        from pyspark.dbutils import DBUtils  # type: ignore[import-untyped]
+        from pyspark.sql import SparkSession
+
+        spark = SparkSession.builder.getOrCreate()
+        DBUtils(spark).fs.mkdirs(path)
+        logger.debug("Ensured Volume directory exists: %s", path)
+    except Exception as exc:
+        logger.debug("Skipping mkdirs for %s (%s).", path, exc)
+
+
+def _ingest_round_to_volume(
+    season: int,
+    round_number: int,
+    catalog: str,
+    schema: str,
+) -> bool:
+    """Ingest one round's laps from FastF1 into the Volume as Parquet.
+
+    Args:
+        season: F1 season year.
+        round_number: Round number to ingest.
+        catalog: Unity Catalog catalog name.
+        schema: Unity Catalog schema name.
+
+    Returns:
+        True if the round was written, False if it was skipped or failed.
+    """
+    from f1_predictions.databricks.volume_ingest import (
+        build_bronze_laps,
+        round_volume_path,
+    )
+
+    try:
+        from f1_predictions.ingestion.fastf1_client import load_session
+        from f1_predictions.ingestion.session_loader import load_race
+
+        session, key = load_session(season, round_number, "R")
+        race = load_race(session, key)
+        bronze_df = build_bronze_laps(
+            race.laps,
+            season=season,
+            round_number=round_number,
+            event_name=key.event_name,
+        )
+    except Exception as exc:
+        logger.warning(
+            "Could not build Bronze laps for %d R%02d (%s). Skipping round.",
+            season,
+            round_number,
+            exc,
+        )
+        return False
+
+    try:
+        from pyspark.sql import SparkSession
+
+        spark = SparkSession.builder.getOrCreate()
+        target = round_volume_path(catalog, schema, season, round_number)
+        spark.createDataFrame(bronze_df).write.mode("overwrite").parquet(target)
+        logger.info(
+            "Landed %d laps for %d R%02d -> %s",
+            len(bronze_df),
+            season,
+            round_number,
+            target,
+        )
+    except Exception:
+        logger.exception(
+            "Failed to write Bronze laps for %d R%02d.", season, round_number
+        )
+        return False
+    return True
 
 
 def run_notify(
@@ -523,15 +724,17 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         prog="databricks_entrypoint",
         description=(
-            "Databricks Lakeflow Job entry point for the F1 2026 Predictions Pipeline. "
-            "Dispatches to train or notify mode based on --run-mode."
+            "Databricks Lakeflow Job entry point for the F1 2026 Predictions "
+            "Pipeline. Dispatches to ingest, train or notify mode based on "
+            "--run-mode."
         ),
     )
     parser.add_argument(
         "--run-mode",
         required=True,
-        choices=["train", "notify"],
-        help="Execution mode: 'train' trains XGBoost and registers @champion; "
+        choices=["ingest", "train", "notify"],
+        help="Execution mode: 'ingest' lands FastF1 laps in the raw_telemetry "
+        "Volume; 'train' trains XGBoost and promotes @champion on improvement; "
         "'notify' dispatches race verdict to Gmail and Discord.",
     )
     parser.add_argument(
@@ -554,12 +757,17 @@ def main() -> None:
         "--round",
         type=int,
         default=None,
-        help="F1 round number override for notifications.",
+        help="F1 round number override for ingest and notifications.",
     )
     parser.add_argument(
         "--force",
         action="store_true",
         help="Bypass race weekend gate and force execution.",
+    )
+    parser.add_argument(
+        "--all-completed",
+        action="store_true",
+        help="For --run-mode ingest: ingest every completed round this season.",
     )
 
     args = parser.parse_args()
@@ -579,7 +787,15 @@ def main() -> None:
         )
         return
 
-    if args.run_mode == "train":
+    if args.run_mode == "ingest":
+        run_ingest(
+            season=args.season,
+            catalog=args.catalog,
+            schema=args.schema,
+            round_number=args.round,
+            all_completed=args.all_completed,
+        )
+    elif args.run_mode == "train":
         run_train(season=args.season, catalog=args.catalog, schema=args.schema)
     elif args.run_mode == "notify":
         run_notify(

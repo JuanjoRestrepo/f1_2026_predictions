@@ -1,0 +1,21 @@
+# resources/volumes.yml
+# Unity Catalog Volume definitions for the bundle.
+# Referenced by databricks.yml via the `include: [resources/*.yml]` directive.
+#
+# raw_telemetry is the Bronze landing zone: the ingest job task
+# (databricks_entrypoint.py --run-mode ingest) writes per-round FastF1 laps
+# here as Parquet, and the DLT medallion pipeline tails it with Auto Loader.
+# The Volume must exist before either the job or the pipeline runs, so it is
+# declared as a managed bundle resource and created on deploy.
+
+resources:
+  volumes:
+    raw_telemetry:
+      name: raw_telemetry
+      catalog_name: ${var.catalog}
+      schema_name: ${var.schema}
+      volume_type: MANAGED
+      comment: >
+        Landing zone for raw FastF1 lap telemetry ingested by the
+        f1_2026_race_predictions_job ingest_task. Layout:
+        season=<year>/round=<NN>/race_laps.parquet
