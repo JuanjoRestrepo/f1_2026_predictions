@@ -171,7 +171,7 @@ The dashboard no longer depends on a race-day GitHub Actions cron to refresh its
 The project enforces strict code quality and test coverage across the entire stack:
 
 ```bash
-# Execute unit & integration test suite (340 tests across ML, cleaning, pipeline & AI)
+# Execute unit & integration test suite (422 tests across ML, cleaning, pipeline & AI)
 uv run pytest
 
 # Execute strict MyPy type check (0 issues across source files)

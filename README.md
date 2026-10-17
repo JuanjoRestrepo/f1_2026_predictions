@@ -33,6 +33,20 @@ Expert-level race reporting powered by configurable **Gemini 3.1 Pro** primary g
 
 ---
 
+## [v6.4.1] - 2026-10-17
+
+### 🎯 Pace-Normalisation Correctness, an Honest CI Gate & Credential Hygiene
+
+- **Fix**: Driver pace is now measured per circuit (`scripts/simulate_race.py`). The simulator subtracted a season median pooled across every circuit in the window, which mostly measured *which* tracks a driver had laps at — the window mixes circuits 13s apart, so 52–54% of some drivers' laps came from a short circuit and inflated them by 6–8s. Each lap is now referenced to its own round's baseline, reduced to one observation per round, and sector times follow the window-to-track ratio. Driver delta spread for round 18: 13.554s → 4.897s.
+- **Fix**: `Validate DABs Bundle` now validates. It exited 0 whenever `DATABRICKS_HOST` was unset, and since the secret was never configured it had validated nothing since it was added, leaving the bundle checked only at `bundle deploy` time. `scripts/validate_bundle.py` now decides everything that needs no workspace (YAML validity, include targets, in-bundle file references, `environment_key`/`depends_on` integrity, `${var.*}` / `${resources.*}` substitutions, `resources:` typos) on every pull request, and `databricks bundle validate` activates by itself once credentials exist.
+- **Fix**: The manual `scheduled_sync.yml` fallback asked for `secrets.F1_GEMINI_API_KEY` while the repository secret is `GEMINI_API_KEY`; because a present-but-empty env var beats the config's alias, every manual run silently produced non-AI narratives. It also built zero notification channels and exited 0 — a green run that briefed nobody. The name is corrected, the missing secrets are set, and a credential check now annotates the run page with `::warning::` for anything still absent.
+- **Fix**: The next-race availability guard (`scripts/check_next_race_coverage.py`) fails loudly in the weekly `sync_calendar.yml` workflow when the upcoming race cannot be rendered, instead of the dashboard quietly greying it out.
+- **Changed**: `scripts/rotate_supabase_s3_keys.py` rotates the Supabase S3 pair across `.env` and the Databricks `f1_secrets` scope, with the runbook in `CONTRIBUTING.md` recording that the pair lives in exactly two places.
+- **Security**: Rotated the Supabase S3 key pair (the retired pair now returns HTTP 403, verified against the bucket), documented the rotation runbook and the fact that the pair lives in exactly two places, and removed the retired keys, the five stale GitHub Actions secrets and the local `.env.bak.*` backups that held them.
+- **Docs**: `ARCHITECTURE.md` §4.1/§4.2 corrected to the serving path actually in use, and §3.3 now records that the Actions fallback keeps its own credential store; `CONTRIBUTING.md` distinguishes the two bundle checks.
+
+---
+
 ## [v6.4.0] - 2026-10-17
 
 ### ☁️ Single-Orchestrator Consolidation & Databricks → Dashboard Serving
