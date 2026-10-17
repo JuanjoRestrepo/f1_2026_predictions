@@ -41,7 +41,7 @@ class DashboardS3Client(Protocol):
 
     def put_object(self, **kwargs: object) -> object:
         """Upload one object (Bucket/Key/Body/ContentType as kwargs)."""
-        ...
+        raise NotImplementedError
 
 
 # Object-key prefix (folder) inside the bucket that holds the dashboard bundle.

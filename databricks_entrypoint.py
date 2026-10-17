@@ -693,9 +693,9 @@ def run_notify(
     logger.info("=" * 60)
 
 
-# S3 config keys the dashboard publisher needs. Resolved from the Databricks
-# secret scope when they are not already present as environment variables.
-_S3_SECRET_KEYS = (
+# S3 configuration values the dashboard publisher needs, resolved from the
+# Databricks secret scope when they are not already present in the environment.
+_S3_CONFIG_ENV_VARS = (
     "SUPABASE_S3_ENDPOINT_URL",
     "SUPABASE_S3_ACCESS_KEY",
     "SUPABASE_S3_SECRET_KEY",
@@ -704,20 +704,35 @@ _S3_SECRET_KEYS = (
 
 
 def _load_s3_secrets_from_databricks() -> None:
-    """Populate S3 env vars from the ``f1_secrets`` scope when unset."""
+    """Populate S3 env vars from the ``f1_secrets`` scope when unset.
+
+    Values are written straight into the environment and never logged; only a
+    count of the values that could not be resolved is emitted, so neither
+    credential material nor credential names reach the logs.
+    """
     try:
         from pyspark.dbutils import DBUtils  # type: ignore[import-untyped]
         from pyspark.sql import SparkSession
 
         spark = SparkSession.builder.getOrCreate()
         dbutils = DBUtils(spark)
-        for key in _S3_SECRET_KEYS:
-            if os.environ.get(key):
+        unresolved = 0
+        for env_var in _S3_CONFIG_ENV_VARS:
+            if os.environ.get(env_var):
                 continue
             try:
-                os.environ[key] = dbutils.secrets.get(scope="f1_secrets", key=key)
+                os.environ[env_var] = dbutils.secrets.get(
+                    scope="f1_secrets", key=env_var
+                )
             except Exception:
-                logger.debug("Secret '%s' not present in scope 'f1_secrets'.", key)
+                unresolved += 1
+        if unresolved:
+            logger.debug(
+                "%d/%d S3 configuration values were not present in the "
+                "'f1_secrets' scope; falling back to environment variables.",
+                unresolved,
+                len(_S3_CONFIG_ENV_VARS),
+            )
     except Exception:
         logger.debug("Databricks secrets lookup skipped; using env var S3 config.")
 
