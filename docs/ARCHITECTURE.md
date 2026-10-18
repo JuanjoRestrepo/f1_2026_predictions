@@ -104,11 +104,54 @@ Only the field-wide level is carried over from the window; every driver-specific
 
 **Effect on a published round.** Re-running the 2026 United States Grand Prix with the corrected normalization moves the field spread from 6.465 s to 4.920 s against a lap-measured 4.897 s, correlation with measured pace from 0.946 to 0.988, and residual standard deviation from 0.502 s to 0.215 s. Because the corrected inputs now *contain* the measured deltas, the correlation is not independent validation — the defensible claim is that the published spread no longer exceeds what the laps support.
 
-**A removed feature.** `clean_air_pace_delta_s` and `clean_air_confidence` are no longer supplied to the model. They had no counterpart in any of the 77,696 training rows, so no tree could ever split on them: zeroing them left predictions byte-identical. A feature present at inference and absent in training is train/serve skew, not signal. The curated prior behind it remains in service inside the clean-air pace module.
+**A removed feature.** `clean_air_pace_delta_s` and `clean_air_confidence` are no longer supplied to the model. They had no counterpart in any of the 77,696 training rows, so no tree could ever split on them: zeroing them left predictions byte-identical. A feature present at inference and absent in training is train/serve skew, not signal. The curated prior behind it remains in service inside the clean-air pace module. §2.3 describes the measurable version of the same idea that replaced it.
 
 **Report boundary.** Reports for rounds 1–17 predate this correction and are left exactly as published rather than retro-fitted; the corrected model applies from round 18 onward.
 
-### 2.3 Chronological Validation (Leakage Prevention)
+### 2.3 Traffic Exposure Labels
+
+**What they are.** A race lap is only comparable to another race lap if both were driven in comparable air: a car sitting one second behind another loses tenths to dirty air and to lifting, so a driver's raw lap-time median mixes *pace* with *traffic situation*. Every Gold lap therefore carries three labels, computed from the lap layer itself in `features/traffic_exposure.py`:
+
+| label | meaning |
+|---|---|
+| `traffic_ahead_s` | gap in seconds to the nearest car ahead |
+| `traffic_nearest_s` | gap in seconds to the nearest car either side |
+| `in_clean_air` | 1 when `traffic_ahead_s >= 2.0` **and** `traffic_nearest_s >= 1.2`, else 0 |
+
+**How the gaps are measured.** Each lap carries a known on-track interval (`LapStartTime`, `Time`). Every lap is sampled at 20/40/60/80% of its duration, each other car's active lap is mapped to a track position in laps (`LapNumber - 1 + fraction_complete`), and the distance to the focus car — converted through the session's own median lap time — is the gap in seconds. A single global constant cannot do this conversion: one lap of track distance is worth about 70 s at Monza and 120 s at Singapore. Measured on the current window, a fixed 101 s reference misclassifies 4,272 of 77,696 laps (5.5%), and 39 of the 86 rounds sit above 5% misclassification; substituting an independent reference (median lap *duration* instead of median lap *time*) moves the labels by at most 0.0054 s and flips 37 of 77,696. Only laps with durations inside 60–180 s enter the interval set — an in-lap or a stoppage that survived cleaning would poison every other car's margin — and the 37 laps whose margins cannot be computed stay NaN rather than being guessed.
+
+**Does the estimator measure what it claims?** The dirty-air penalty was measured independently of the label definition, by pairing each lap with the nearest clean-air lap of the same driver in the same stint at the same tyre age:
+
+| gap to car ahead | measured penalty | laps |
+|---|---|---|
+| ≤ 0.5 s | +0.571 s | 319 |
+| 0.5 – 1.0 s | +0.291 s | 237 |
+| 1.0 – 1.5 s | +0.092 s | 329 |
+| 1.5 – 2.0 s | +0.013 s | 513 |
+
+The penalty decays monotonically and reaches the noise floor at 2.0 s, which is where the clean-air threshold was set — measured, not assumed. Coverage after the pass over all 86 rounds: 77,659 of 77,696 laps labelled (99.95%), 44.0% of them clean; median clean-air margins are 4.95 s ahead and 2.98 s nearest.
+
+**Do they help the model?** Ablated on three held-out seasons, paired across 10 seeds (42–51). Every delta except the placebo column belongs to the shipped margins-only variant; the placebo receives the same two columns with their values shuffled within each round:
+
+| held-out season | baseline MAE | delta-MAE, margins | delta-MAE, placebo | delta-MAE, clean-air laps | delta-MAE, traffic-affected laps |
+|---|---|---|---|---|---|
+| 2024 | 0.227 s | **−0.0092 ± 0.0043** | −0.0026 | −0.0059 | **−0.0120** |
+| 2025 | 0.350 s | **−0.0164 ± 0.0048** | +0.0012 | **−0.0121** | **−0.0195** |
+| 2026 | 0.208 s | −0.0095 ± 0.0070 | −0.0010 | −0.0058 | **−0.0116** |
+
+Bold marks a change beyond two standard errors. The gain is consistent in direction in all three seasons and the placebo stays at zero, so it is information rather than extra model capacity; the largest improvement is on traffic-affected laps, which is the mechanism the labels encode. The effect on clean-air laps — the laps the product actually simulates — is smaller and not individually significant in 2026, so this is a modest, well-understood gain and not a step change.
+
+**Effect at the product level.** The race simulator was replayed walk-forward over five completed rounds (2025 R22–R24, 2026 R2–R3): train on every lap strictly before the round, serve the clean-air scenario, and compare the predicted driver order with the measured pace. Rank agreement improved in all five rounds (mean Spearman +0.047, from 0.544 to 0.590) and centred lap-time error improved in four of five (mean +0.008 s). These are single fits per round, and a control that keeps the labels in training but serves them missing shows no rank difference — so the product-level gain is directional evidence, not proof; the robust claim remains the lap-level ablation.
+
+**Effect on a published round.** Re-running the 2026 United States Grand Prix moves the published field spread from 4.920 s to 5.093 s against a lap-measured 4.897 s — 1.04×, inside the 1.25 tripwire — and the xgb path's correlation with the all-lap measured pace from 0.9883 to 0.9858, while the P50 quantile path improves (0.9466 to 0.9539; residual 0.474 s to 0.436 s). The simulated lap is a clean-air lap, so the all-lap reference is the mismatched one: against a clean-air-only reference the xgb correlation is unchanged (0.8859 to 0.8858) and the P50 path improves (0.8174 to 0.8426). One round, one fit — reported because it moved, not because it proves anything.
+
+**Why the flag is not a feature.** `in_clean_air` is exactly the two thresholds applied to the two margins, so it carries no information a tree cannot recover by splitting on them itself. Ablated alongside the margins it made every season *worse* (2025: −0.0117 s with the flag vs −0.0164 s without). The two margins are therefore the model features, `in_clean_air` is dropped from every feature matrix via `DEFAULT_DROP_COLS`, and it remains in the Gold frame as a measurement label.
+
+**A refuted alternative.** Measuring driver pace from clean-air laps only was tried and rejected. It improved the average delta error (0.596 s vs 0.624 s) but degraded the ordering — rank correlation of predicted vs measured pace fell from 0.554 to 0.500, worse in 8 of the 10 rounds tested — and ordering is what the product publishes. The per-round delta measurement keeps every lap.
+
+**Serving the simulated lap.** The simulator's virtual lap is a clean-air lap by construction (the scenario builder in `scripts/simulate_race.py`). It is served with the measured clean-air medians (`CLEAN_AIR_SCENARIO`: 5.0 s ahead, 3.0 s nearest) so a scenario row sits where the trees were trained, instead of falling through their missing-value branch. The scenario builder is unit-tested against the trained feature set, because an untested serve contract is exactly how train/serve skew returns.
+
+### 2.4 Chronological Validation (Leakage Prevention)
 Models are trained exclusively on historical seasons with known outcomes (e.g. 2022–2025) and tested on unseen future seasons (2026), preventing temporal data leakage.
 
 ---

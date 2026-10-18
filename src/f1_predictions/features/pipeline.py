@@ -1,7 +1,8 @@
 """Feature engineering pipeline orchestrator for f1_predictions.
 
 Entry point for the Gold-layer feature matrix construction.
-Orchestrates: rolling pace → tyre degradation → grid features → OHE encoding.
+Orchestrates: rolling pace → tyre degradation → grid features → OHE encoding
+→ traffic exposure labels.
 
 Output contract:
     The Gold-layer DataFrame written by this module is the direct input to
@@ -34,6 +35,7 @@ from f1_predictions.features.rolling_pace import (
     add_rolling_pace_features,
 )
 from f1_predictions.features.track_evolution import add_track_evolution_factor
+from f1_predictions.features.traffic_exposure import add_traffic_exposure
 from f1_predictions.features.tyre_degradation import (
     add_normalised_tyre_life,
     add_tyre_degradation_slope,
@@ -99,7 +101,8 @@ def run_feature_pipeline(
         4. Add tyre degradation OLS slope and normalised tyre life.
         5. Add grid position binary features.
         6. Apply OHE encoding (Compound, EventName, Team).
-        7. Write Gold-layer Parquet to ``data/outputs/``.
+        7. Add traffic exposure labels on the final row set.
+        8. Write Gold-layer Parquet to ``data/outputs/``.
 
     Args:
         key: Session identifier.
@@ -249,6 +252,14 @@ def run_feature_pipeline(
         report.ohe_feature_count = encoder.n_features_out
     else:
         logger.warning("No OHE columns found in DataFrame — encoding step skipped.")
+
+    # ── Step 7b: Traffic exposure labels ──────────────────────────────────
+    # Deliberately the last computation on the row set that gets written: an
+    # on-track interval belongs to the laps that survived cleaning, so
+    # labelling before a row-dropping step would place cars at positions the
+    # model never sees.
+    logger.info("Step 7b/8 — Traffic exposure labels")
+    df = add_traffic_exposure(df)
 
     # ── Step 8: Write Gold Parquet ────────────────────────────────────────
     logger.info("Step 8/8 — Writing Gold Parquet")

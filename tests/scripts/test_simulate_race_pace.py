@@ -24,8 +24,12 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+from f1_predictions.features.traffic_exposure import CLEAN_AIR_SCENARIO
+from f1_predictions.models.common import prepare_feature_matrix
 from scripts.simulate_race import (
     _apply_track_pace_normalization,
+    _build_simulation_scenario,
+    _current_form_stats,
     _driver_track_normalized_deltas,
     check_published_dispersion,
 )
@@ -210,26 +214,42 @@ def _laps_with_sectors() -> pd.DataFrame:
     for _ in range(4):
         rows.append(
             {
-                "Driver": _FAST_DRIVER, "RoundNumber": 1, "LapTime_s": 80.0,
-                "Rainfall": False, "Sector1Time_s": 25.0, "SpeedI1": 200.0,
+                "Driver": _FAST_DRIVER,
+                "RoundNumber": 1,
+                "LapTime_s": 80.0,
+                "Rainfall": False,
+                "Sector1Time_s": 25.0,
+                "SpeedI1": 200.0,
             }
         )
         rows.append(
             {
-                "Driver": _SLOW_DRIVER, "RoundNumber": 1, "LapTime_s": 81.0,
-                "Rainfall": False, "Sector1Time_s": 25.4, "SpeedI1": 196.0,
+                "Driver": _SLOW_DRIVER,
+                "RoundNumber": 1,
+                "LapTime_s": 81.0,
+                "Rainfall": False,
+                "Sector1Time_s": 25.4,
+                "SpeedI1": 196.0,
             }
         )
         rows.append(
             {
-                "Driver": _FAST_DRIVER, "RoundNumber": 2, "LapTime_s": 100.5,
-                "Rainfall": False, "Sector1Time_s": 32.0, "SpeedI1": 240.0,
+                "Driver": _FAST_DRIVER,
+                "RoundNumber": 2,
+                "LapTime_s": 100.5,
+                "Rainfall": False,
+                "Sector1Time_s": 32.0,
+                "SpeedI1": 240.0,
             }
         )
         rows.append(
             {
-                "Driver": _SLOW_DRIVER, "RoundNumber": 2, "LapTime_s": 100.0,
-                "Rainfall": False, "Sector1Time_s": 32.6, "SpeedI1": 238.0,
+                "Driver": _SLOW_DRIVER,
+                "RoundNumber": 2,
+                "LapTime_s": 100.0,
+                "Rainfall": False,
+                "Sector1Time_s": 32.6,
+                "SpeedI1": 238.0,
             }
         )
     return pd.DataFrame(rows)
@@ -244,12 +264,18 @@ def _sim_with_pooled_gap() -> pd.DataFrame:
     return pd.DataFrame(
         [
             {
-                "Driver": _FAST_DRIVER, "roll_laptime_3": 90.0, "roll_laptime_5": 90.0,
-                "Sector1Time_s": 30.0, "SpeedI1": 300.0,
+                "Driver": _FAST_DRIVER,
+                "roll_laptime_3": 90.0,
+                "roll_laptime_5": 90.0,
+                "Sector1Time_s": 30.0,
+                "SpeedI1": 300.0,
             },
             {
-                "Driver": _SLOW_DRIVER, "roll_laptime_3": 90.0, "roll_laptime_5": 90.0,
-                "Sector1Time_s": 26.0, "SpeedI1": 280.0,
+                "Driver": _SLOW_DRIVER,
+                "roll_laptime_3": 90.0,
+                "roll_laptime_5": 90.0,
+                "Sector1Time_s": 26.0,
+                "SpeedI1": 280.0,
             },
         ]
     )
@@ -306,8 +332,11 @@ def test_driver_without_sector_laps_gets_the_bare_field_level() -> None:
             pd.DataFrame(
                 [
                     {
-                        "Driver": "GHOST", "roll_laptime_3": 90.0, "roll_laptime_5": 90.0,
-                        "Sector1Time_s": 30.0, "SpeedI1": 300.0,
+                        "Driver": "GHOST",
+                        "roll_laptime_3": 90.0,
+                        "roll_laptime_5": 90.0,
+                        "Sector1Time_s": 30.0,
+                        "SpeedI1": 300.0,
                     }
                 ]
             ),
@@ -316,7 +345,10 @@ def test_driver_without_sector_laps_gets_the_bare_field_level() -> None:
     )
     current = _laps_with_sectors()
     out = _apply_track_pace_normalization(
-        sim, "Canada Grand Prix", _gold("Canada Grand Prix", 78.0), current,
+        sim,
+        "Canada Grand Prix",
+        _gold("Canada Grand Prix", 78.0),
+        current,
         is_wet_race=False,
     ).set_index("Driver")
 
@@ -324,12 +356,12 @@ def test_driver_without_sector_laps_gets_the_bare_field_level() -> None:
     assert out.loc["GHOST", "Sector1Time_s"] == pytest.approx(
         float(sim["Sector1Time_s"].mean()) * scale
     )
-    assert out.loc["GHOST", "SpeedI1"] == pytest.approx(
-        float(sim["SpeedI1"].mean())
-    )
+    assert out.loc["GHOST", "SpeedI1"] == pytest.approx(float(sim["SpeedI1"].mean()))
 
 
-def test_dispersion_check_passes_a_spread_the_laps_support(caplog: pytest.LogCaptureFixture) -> None:
+def test_dispersion_check_passes_a_spread_the_laps_support(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """A 1.00x spread -- the corrected round -- raises nothing."""
     with caplog.at_level(logging.WARNING):
         ratio = check_published_dispersion(4.920, 4.897)
@@ -397,3 +429,114 @@ def test_real_window_sectors_are_mostly_track_mix() -> None:
         measured_spread = measured.max() - measured.min()
 
         assert measured_spread < pooled_spread / 4
+
+
+# ── The served lap must state its traffic situation ──────────────────────────
+
+
+def _driver_stats() -> pd.DataFrame:
+    """Two drivers holding the columns the scenario builder reads."""
+    return pd.DataFrame(
+        [
+            {
+                "Driver": "VER",
+                "Team": "Red Bull",
+                "SpeedI1": 300.0,
+                "SpeedI2": 250.0,
+                "SpeedFL": 310.0,
+                "SpeedST": 280.0,
+                "Sector1Time_s": 30.0,
+                "Sector2Time_s": 35.0,
+                "Sector3Time_s": 25.0,
+                "LapTime_s": 90.0,
+                "roll_std_3": 0.2,
+                "delta_roll_pace": -0.1,
+                "tyre_deg_slope": 0.05,
+                "tyre_life_norm": 0.5,
+                "DriverPointsPreRace": 250,
+                "TeamPointsPreRace": 400,
+            },
+            {
+                "Driver": "HAM",
+                "Team": "Ferrari",
+                "SpeedI1": 299.0,
+                "SpeedI2": 249.0,
+                "SpeedFL": 309.0,
+                "SpeedST": 279.0,
+                "Sector1Time_s": 30.1,
+                "Sector2Time_s": 35.1,
+                "Sector3Time_s": 25.1,
+                "LapTime_s": 90.2,
+                "roll_std_3": 0.3,
+                "delta_roll_pace": -0.05,
+                "tyre_deg_slope": 0.06,
+                "tyre_life_norm": 0.5,
+                "DriverPointsPreRace": 240,
+                "TeamPointsPreRace": 400,
+            },
+        ]
+    )
+
+
+def test_current_form_stats_collapses_laps_to_one_row_per_driver() -> None:
+    """Current form is one observation per driver, medians over their laps."""
+    laps = pd.DataFrame(
+        [
+            {
+                "Driver": driver,
+                "Team": "Red Bull" if driver == "VER" else "Ferrari",
+                "LapTime_s": time,
+                "SpeedI1": 300.0,
+                "SpeedI2": 250.0,
+                "SpeedFL": 310.0,
+                "SpeedST": 280.0,
+                "Sector1Time_s": 30.0,
+                "Sector2Time_s": 35.0,
+                "Sector3Time_s": 25.0,
+                "roll_std_3": 0.2,
+                "delta_roll_pace": -0.1,
+                "tyre_deg_slope": 0.05,
+                "tyre_life_norm": 0.5,
+                "DriverPointsPreRace": 100,
+                "TeamPointsPreRace": 200,
+            }
+            for driver, time in (("VER", 90.0), ("VER", 92.0), ("HAM", 91.0))
+        ]
+    )
+
+    stats = _current_form_stats(laps)
+
+    assert sorted(stats["Driver"]) == ["HAM", "VER"]
+    assert stats.loc[stats["Driver"] == "VER", "LapTime_s"].iloc[0] == pytest.approx(
+        91.0
+    )
+    assert stats.loc[stats["Driver"] == "VER", "Team"].iloc[0] == "Red Bull"
+
+
+def test_simulation_scenario_serves_the_clean_air_case() -> None:
+    """The unraced lap has to say it is a clean-air lap.
+
+    The model is trained on measured exposure labels, so a served row that omits
+    them would fall through to the trees' missing-value branch: the scenario has
+    to state where in the field it is driven.
+    """
+    scenario = _build_simulation_scenario(
+        _driver_stats(), 2026, 19, "Mexico City Grand Prix", 15
+    )
+
+    assert len(scenario) == 2
+    for column, value in CLEAN_AIR_SCENARIO.items():
+        assert (scenario[column] == value).all()
+    assert (scenario["traffic_nearest_s"] <= scenario["traffic_ahead_s"]).all()
+
+
+def test_served_feature_matrix_matches_the_trained_one() -> None:
+    """Whichever label columns training sees, serving must see the same set."""
+    scenario = _build_simulation_scenario(
+        _driver_stats(), 2026, 19, "Mexico City Grand Prix", 15
+    )
+
+    x, _ = prepare_feature_matrix(scenario, require_target=False)
+
+    assert {"traffic_ahead_s", "traffic_nearest_s"}.issubset(x.columns)
+    assert "in_clean_air" not in x.columns
