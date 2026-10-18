@@ -33,6 +33,20 @@ Expert-level race reporting powered by configurable **Gemini 3.1 Pro** primary g
 
 ---
 
+## [v6.6.0] - 2026-10-17
+
+### 🌬️ Traffic Exposure Measured from Every Race Lap
+
+- **Feature**: Every Gold lap now carries measured traffic-exposure labels — `traffic_ahead_s`, `traffic_nearest_s` and `in_clean_air` — reconstructed from all cars' on-track intervals (`features/traffic_exposure.py`, feature-pipeline step 7b) and backfilled across all 86 rounds. 77,659 of 77,696 laps (99.95%) are labelled, 44.0% of them clean. The two margins are model features; the flag stays in Gold as a measurement label and is excluded from every feature matrix.
+- **Feature**: The simulator serves its unraced lap as a clean-air lap, using the measured clean-air medians (5.0 s ahead, 3.0 s nearest), so scenario rows sit inside the region the trees were trained on instead of on their missing-value branch.
+- **Validated**: The estimator reproduces the dirty-air penalty it claims to measure, independently of the label definition: +0.571 s under 0.5 s behind, +0.291 s at 0.5–1.0 s, +0.092 s at 1.0–1.5 s, +0.013 s beyond 1.5 s (paired within driver-stint, tyre age matched). The penalty decays monotonically to the noise floor at the 2.0 s threshold, which is where clean air was set — measured, not assumed. A fixed 101 s reference would have misclassified 4,272 laps (5.5%), with 39 of 86 rounds above 5%; the session median moves labels by at most 0.0054 s against an independent estimator.
+- **Measured**: Ablated on three held-out seasons, paired across 10 seeds against a within-round placebo, the two margins reduce lap-time MAE in every season (2024 −0.0092 s, 2025 −0.0164 s, 2026 −0.0095 s; on clean-air laps −0.0059/−0.0121/−0.0058 s) while the placebo stays at zero. The gain is modest and concentrated on traffic-affected laps (−0.0120/−0.0195/−0.0116 s), the mechanism the labels encode. Walking the simulator forward over five completed rounds, rank agreement improved in all five against the pre-change model (mean Spearman +0.047) and centred error in four of five (+0.008 s).
+- **Refuted**: Measuring driver pace from clean-air laps only improved the average delta error (0.596 s vs 0.624 s) but degraded the ordering the product publishes (rank correlation 0.554 → 0.500, worse in 8 of 10 rounds).
+- **Why the flag is not a feature**: `in_clean_air` is exactly the two thresholds applied to the two margins, so it adds no information; ablated alongside them it made every season worse (2025: −0.0117 s with it vs −0.0164 s without).
+- **Changed**: Round 18 is regenerated with the shipped model: published spread 5.093 s against a lap-measured 4.897 s (1.04×, inside the 1.25 tripwire). The P50 path improves against both the all-lap and the clean-air references; the xgb path is unchanged against the clean-air reference (0.8859 → 0.8858) and slips slightly against the all-lap one, which is the mismatched benchmark for a clean-air lap.
+- **Verified**: Regenerating Gold through the new pipeline step reproduces the backfilled labels exactly (0 differing labels across rounds spanning 2022–2026), and the served feature set matches the trained one.
+- **Docs**: `ARCHITECTURE.md` §2.3 documents the labels, their validation and the ablation; chronological validation moves to §2.4.
+
 ## [v6.5.0] - 2026-10-17
 
 ### 📐 Model Dispersion Measured from Laps, and a Container That Actually Runs
