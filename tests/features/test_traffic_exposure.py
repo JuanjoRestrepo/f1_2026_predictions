@@ -9,11 +9,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from f1_predictions.features.pipeline import run_feature_pipeline
 from f1_predictions.features.traffic_exposure import (
     CLEAN_AIR_SCENARIO,
     TRAFFIC_COLUMNS,
     add_traffic_exposure,
 )
+from f1_predictions.ingestion.fastf1_client import SessionKey
 
 
 def _frame(
@@ -362,3 +364,29 @@ def test_real_laps_show_dirty_air_decaying_with_the_gap() -> None:
 
     assert close > 0.0
     assert close > far
+
+
+@pytest.mark.skipif(not _lap_files, reason="local lap data not ingested")
+def test_feature_pipeline_labels_the_rows_it_writes(tmp_path: Path) -> None:
+    """The labels must be computed on the Gold rows that get written.
+
+    Labelling an earlier row set and then dropping laps would place cars at
+    positions the model never sees, which is why the step runs last. This pins
+    the written artifact rather than an intermediate frame.
+    """
+    gold_path = _lap_files[0]
+    season = int(gold_path.parent.parent.name.partition("=")[2])
+    round_number = int(gold_path.parent.name.partition("=")[2])
+    event = str(pd.read_parquet(gold_path, columns=["EventName"])["EventName"].iloc[0])
+
+    df, _ = run_feature_pipeline(
+        SessionKey(season, round_number, "R", event),
+        overwrite=True,
+        outputs_base_dir=tmp_path / "outputs",
+        processed_base_dir=_DATA_DIR.parent.parent / "processed",
+    )
+
+    assert set(TRAFFIC_COLUMNS).issubset(df.columns)
+    assert df["in_clean_air"].notna().mean() > 0.95
+    assert df["in_clean_air"].isin([0.0, 1.0]).all()
+    assert (df["traffic_nearest_s"] <= df["traffic_ahead_s"]).all()
