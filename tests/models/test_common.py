@@ -53,6 +53,32 @@ def test_prepare_feature_matrix_without_target() -> None:
     assert len(y) == 0
 
 
+def test_prepare_feature_matrix_drops_the_clean_air_flag_only() -> None:
+    """The clean-air flag is a derived label; the margins are the features.
+
+    ``in_clean_air`` is exactly ``traffic_ahead_s >= 2.0`` and
+    ``traffic_nearest_s >= 1.2``, so it carries no information the trees cannot
+    recover by splitting on the margins themselves. Ablated on three held-out
+    seasons against a placebo control, adding it alongside the margins made
+    every split slightly worse, so the model paths drop it while the Gold frame
+    keeps it as a measurement label.
+    """
+    df = pd.DataFrame(
+        {
+            "Season": [2024],
+            "LapTime_s": [90.0],
+            "traffic_ahead_s": [3.5],
+            "traffic_nearest_s": [2.0],
+            "in_clean_air": [1.0],
+        }
+    )
+
+    x, _ = prepare_feature_matrix(df)
+
+    assert "in_clean_air" not in x.columns
+    assert {"traffic_ahead_s", "traffic_nearest_s"}.issubset(x.columns)
+
+
 def test_chronological_split_returns_expected_subsets() -> None:
     """chronological_split separates the requested seasons."""
 

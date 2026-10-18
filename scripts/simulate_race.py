@@ -12,6 +12,7 @@ from f1_predictions.features.external_weather import (
     simulation_weather_features,
 )
 from f1_predictions.features.historical_performance import add_ewma_form_features
+from f1_predictions.features.traffic_exposure import CLEAN_AIR_SCENARIO
 from f1_predictions.models import (
     LightGBMPaceRegressor,
     StackingPaceRegressor,
@@ -372,6 +373,117 @@ def _apply_weather_scenario_features(
     return df
 
 
+def _current_form_stats(df_current: pd.DataFrame) -> pd.DataFrame:
+    """Collapse the season-so-far laps into one form row per driver.
+
+    Args:
+        df_current: Every Gold lap of the season being simulated.
+
+    Returns:
+        One row per driver holding the median of each pace feature, the points
+        position going into the race, and the team.
+    """
+    return (
+        df_current.groupby("Driver")
+        .agg(
+            {
+                "SpeedI1": "median",
+                "SpeedI2": "median",
+                "SpeedFL": "median",
+                "SpeedST": "median",
+                "Sector1Time_s": "median",
+                "Sector2Time_s": "median",
+                "Sector3Time_s": "median",
+                "LapTime_s": "median",
+                "roll_std_3": "median",
+                "delta_roll_pace": "median",
+                "tyre_deg_slope": "median",
+                "tyre_life_norm": "median",
+                "DriverPointsPreRace": "max",
+                "TeamPointsPreRace": "max",
+                "Team": "first",
+            }
+        )
+        .reset_index()
+    )
+
+
+def _build_simulation_scenario(
+    driver_stats: pd.DataFrame,
+    year: int,
+    round_number: int,
+    event_name: str,
+    lap_number: int,
+) -> pd.DataFrame:
+    """Build the simulated clean-air lap, one row per driver.
+
+    The scenario describes a lap that has not been raced yet: mid-race point, ten
+    laps into a stint on the medium tyre, mid-field. Its traffic-exposure labels are
+    not an afterthought — they are what turns "a lap" into "a clean-air lap".
+
+    Args:
+        driver_stats: One row per driver holding the current-season form values.
+        year: Season year being simulated.
+        round_number: Round number being simulated.
+        event_name: Event name, stored for metadata and reporting.
+        lap_number: Hypothetical lap number to simulate.
+
+    Returns:
+        One row per driver, ready for enrichment and normalisation.
+    """
+    sim_data: list[dict[str, Any]] = []
+
+    for driver in driver_stats["Driver"].unique():
+        d_info = driver_stats[driver_stats["Driver"] == driver].iloc[0]
+        # NOTE: MADRID_PUBLISHED_PRIOR is deliberately *not* fed in as
+        # clean_air_pace_delta_s / clean_air_confidence. Those columns exist only in
+        # this scenario and in no training row, so the trees can never split on them
+        # and they changed nothing (verified: zeroing them leaves predictions
+        # byte-identical). A feature that is present at inference and absent in
+        # training is train/serve skew, not signal.
+        #
+        # The traffic-exposure labels are the opposite case and are fed in: every
+        # training row carries a measured value, so the trees *can* split on them,
+        # and this lap is by definition a clean-air lap. Serving the measured
+        # clean-air medians keeps the scenario row inside the region the model was
+        # trained on instead of at an extrapolated extreme.
+        sim_data.append(
+            {
+                "Season": year,
+                "RoundNumber": round_number,
+                "EventName": event_name,
+                "Driver": driver,
+                "Team": d_info["Team"],
+                "LapNumber": lap_number,
+                "Stint": 1,
+                "TyreLife": 10,
+                "Compound": "MEDIUM",
+                "Position": 5,
+                **CLEAN_AIR_SCENARIO,
+                "DriverPointsPreRace": d_info["DriverPointsPreRace"],
+                "TeamPointsPreRace": d_info["TeamPointsPreRace"],
+                "SpeedI1": d_info["SpeedI1"],
+                "SpeedI2": d_info["SpeedI2"],
+                "SpeedFL": d_info["SpeedFL"],
+                "SpeedST": d_info["SpeedST"],
+                "Sector1Time_s": d_info["Sector1Time_s"],
+                "Sector2Time_s": d_info["Sector2Time_s"],
+                "Sector3Time_s": d_info["Sector3Time_s"],
+                "roll_laptime_3": d_info["LapTime_s"],
+                "roll_laptime_5": d_info["LapTime_s"],
+                "roll_std_3": d_info["roll_std_3"],
+                "delta_roll_pace": d_info["delta_roll_pace"],
+                "tyre_deg_slope": d_info["tyre_deg_slope"],
+                "tyre_life_norm": d_info["tyre_life_norm"],
+                "PitInTime_s": 0,
+                "PitOutTime_s": 0,
+                "LapTime_s": 0,
+            }
+        )
+
+    return pd.DataFrame(sim_data)
+
+
 def run_race_simulation(
     year: int,
     round_number: int,
@@ -411,76 +523,13 @@ def run_race_simulation(
         year,
         round_number,
     )
-    driver_stats = (
-        df_current.groupby("Driver")
-        .agg(
-            {
-                "SpeedI1": "median",
-                "SpeedI2": "median",
-                "SpeedFL": "median",
-                "SpeedST": "median",
-                "Sector1Time_s": "median",
-                "Sector2Time_s": "median",
-                "Sector3Time_s": "median",
-                "LapTime_s": "median",
-                "roll_std_3": "median",
-                "delta_roll_pace": "median",
-                "tyre_deg_slope": "median",
-                "tyre_life_norm": "median",
-                "DriverPointsPreRace": "max",
-                "TeamPointsPreRace": "max",
-                "Team": "first",
-            }
-        )
-        .reset_index()
-    )
+    driver_stats = _current_form_stats(df_current)
 
     # 3. Build simulation scenario (Virtual Lap)
     drivers = driver_stats["Driver"].unique()
-    sim_data = []
-
-    for driver in drivers:
-        d_info = driver_stats[driver_stats["Driver"] == driver].iloc[0]
-        # NOTE: MADRID_PUBLISHED_PRIOR is deliberately *not* fed in as
-        # clean_air_pace_delta_s / clean_air_confidence. Those columns exist only in
-        # this scenario and in no training row, so the trees can never split on them
-        # and they changed nothing (verified: zeroing them leaves predictions
-        # byte-identical). A feature that is present at inference and absent in
-        # training is train/serve skew, not signal.
-        sim_data.append(
-            {
-                "Season": year,
-                "RoundNumber": round_number,
-                "EventName": event_name,
-                "Driver": driver,
-                "Team": d_info["Team"],
-                "LapNumber": lap_number,
-                "Stint": 1,
-                "TyreLife": 10,
-                "Compound": "MEDIUM",
-                "Position": 5,
-                "DriverPointsPreRace": d_info["DriverPointsPreRace"],
-                "TeamPointsPreRace": d_info["TeamPointsPreRace"],
-                "SpeedI1": d_info["SpeedI1"],
-                "SpeedI2": d_info["SpeedI2"],
-                "SpeedFL": d_info["SpeedFL"],
-                "SpeedST": d_info["SpeedST"],
-                "Sector1Time_s": d_info["Sector1Time_s"],
-                "Sector2Time_s": d_info["Sector2Time_s"],
-                "Sector3Time_s": d_info["Sector3Time_s"],
-                "roll_laptime_3": d_info["LapTime_s"],
-                "roll_laptime_5": d_info["LapTime_s"],
-                "roll_std_3": d_info["roll_std_3"],
-                "delta_roll_pace": d_info["delta_roll_pace"],
-                "tyre_deg_slope": d_info["tyre_deg_slope"],
-                "tyre_life_norm": d_info["tyre_life_norm"],
-                "PitInTime_s": 0,
-                "PitOutTime_s": 0,
-                "LapTime_s": 0,
-            }
-        )
-
-    df_sim = pd.DataFrame(sim_data)
+    df_sim = _build_simulation_scenario(
+        driver_stats, year, round_number, event_name, lap_number
+    )
 
     # 4. Train Models on Historical Data (2022 to year-1)
     train_years = list(range(2022, year))

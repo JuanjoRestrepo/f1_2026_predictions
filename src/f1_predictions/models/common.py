@@ -24,6 +24,14 @@ DEFAULT_SEASON_COLUMN: str = "Season"
 
 # Identifiers, raw categoricals, and target-like columns that should never be
 # passed directly into tree-based regressors.
+#
+# ``in_clean_air`` is dropped as well: it is a deterministic function of the two
+# traffic-margin features (``traffic_ahead_s >= 2.0`` and
+# ``traffic_nearest_s >= 1.2``), so it carries no information the trees cannot
+# recover by splitting on the margins themselves. Ablated on three held-out
+# seasons against a placebo control, adding it alongside the margins made every
+# split slightly worse (e.g. 2025 delta-MAE -0.0117 s with the flag vs -0.0164 s
+# without it). It stays in the Gold frame as a label for measurement.
 DEFAULT_DROP_COLS: list[str] = [
     "Driver",
     "Team",
@@ -39,6 +47,7 @@ DEFAULT_DROP_COLS: list[str] = [
     "Sector2Time",
     "Sector3Time",
     "Compound",
+    "in_clean_air",
 ]
 
 
