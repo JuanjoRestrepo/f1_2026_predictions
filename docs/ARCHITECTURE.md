@@ -150,7 +150,7 @@ Bold marks a change beyond two standard errors. The gain is consistent in direct
 **Serving the simulated lap.** The simulator's virtual lap is a clean-air lap by construction (the scenario builder in `scripts/simulate_race.py`). It is served with the measured clean-air medians (`CLEAN_AIR_SCENARIO`: 5.0 s ahead, 3.0 s nearest) so a scenario row sits where the trees were trained, instead of falling through their missing-value branch. The scenario builder is unit-tested against the trained feature set, because an untested serve contract is exactly how train/serve skew returns.
 
 ### 2.4 Chronological Validation (Leakage Prevention)
-Models are trained exclusively on historical seasons with known outcomes (e.g. 2022–2025) and tested on unseen future seasons (2026), preventing temporal data leakage.
+Models are trained exclusively on historical seasons with known outcomes (e.g. 2022–2025) and tested on unseen future seasons (2026), preventing *temporal* leakage between seasons. It does not address within-lap leakage: several lap-level features are derived from the current lap or the whole stint (recorded in §3.4), so the reported MAE is a reconstruction error rather than an out-of-sample race-prediction error.
 
 ---
 
@@ -185,7 +185,7 @@ Three model paths exist. They do not share a model, a feature set or a target, s
 |---|---|---|---|---|
 | **Registry champion** | `databricks_entrypoint.py --run-mode train` (task 3, Fri–Mon 06:00 UTC) | Unity Catalog `driver_features_gold` (per-driver aggregates); target `fastest_lap_seconds` | MLflow run + `@champion` / `@challenger` alias on `<catalog>.race_pace.xgb_race_pace_regressor` | **Yes** — 3-fold CV RMSE must beat the incumbent (`F1_PROMOTION_TOLERANCE`, default `0.0`) |
 | **Race simulation** | `scripts/simulate_race.py`, on every invocation | local per-lap Gold (`data/outputs/laps`), full engineered feature matrix | the published `reports/<season>/<Event>/results/{predictions,standings}.csv` | **No** — fresh deterministic fit; no registry lookup, no model comparison |
-| **Serving container** | baked at image build from an earlier run | `data/outputs/models/xgb_pace_model.joblib` (dict: `model`, `features` — 68 names, `random_state`) | FastAPI `/predict`; `GET /health` is the only automated check (§5.4) | **No** — frozen artifact, no retraining |
+| **Serving container** | baked at image build from `data/outputs/models/xgb_pace_model.joblib` (dict: `model`, `features` — 70 names, `random_state`), refreshed by `scripts/refresh_serving_artifact.py` | local per-lap Gold, 2022–2025, 77,696 laps; target `LapTime_s` | FastAPI `/predict`; `GET /health` is the only automated check (§5.4) | **No** — snapshot artifact, no runtime retraining; a sidecar records its provenance |
 
 **The dashboard does not read the registry.** The published race order and lap times come from the stacking fit inside `simulate_race.py`. The `@champion` alias is a separate model — three aggregate features after the filter described below, fastest-lap target — and never reaches the dashboard. "Best model by CV RMSE" is therefore a property of the registry lane, not of the numbers a reader sees on the site. What protects the published numbers instead is reproducibility, the dispersion tripwire (`MAX_SPREAD_INFLATION = 1.25`) and the measured ablations recorded in §2.
 
@@ -197,7 +197,7 @@ Three model paths exist. They do not share a model, a feature set or a target, s
 |---|---|---|
 | Code | `databricks/pipelines/f1_medallion_pipeline.py` | `features/pipeline.py::run_feature_pipeline` |
 | Grain | one row per (Season, EventName, Driver) | one row per lap |
-| Contents | `mean_pace_seconds`, `fastest_lap_seconds`, `pace_std_seconds`, `total_laps`, `tyre_degradation_corr`, `last_ingested_at` | engineered per-lap features: rolling pace, tyre state, circuit profile, traffic margins, … |
+| Contents | `mean_pace_seconds`, `fastest_lap_seconds`, `pace_std_seconds`, `total_laps`, `tyre_degradation_corr`, `tyre_degradation_slope`, `last_ingested_at` | engineered per-lap features: rolling pace, tyre state, circuit profile, traffic margins, … |
 
 The registry model never sees the per-lap features, and the traffic-exposure labels added in §2.3 exist only in the local pipeline — the DLT Gold does not carry them. Unifying the two is a separate, deliberate change.
 
@@ -214,11 +214,14 @@ The registry model never sees the per-lap features, and the traffic-exposure lab
 | Dashboard bundle | Supabase S3 `f1-cache`, `dashboard/<season>/…`, `manifest.json` written last | `reports/` (also the build fallback, §4.4) |
 | Credentials | Databricks secret scope `f1_secrets` | `.env` (untracked) |
 
-**Known gaps (recorded, not fixed).**
-- Task 3 names four features but only three exist in the DLT Gold: `tyre_degradation_slope` is silently dropped by the `available_features` filter because the table exposes `tyre_degradation_corr`. The champion is fitted on `total_laps`, `mean_pace_seconds` and `pace_std_seconds` only.
-- The serving artifact is frozen at 68 features (Aug 23, 2026) and predates the traffic-exposure work; it is not the model behind any published prediction.
-- `data/outputs/models/metrics.json` is stale: it has no `stacking` entry.
-- The local Gold predates fifteen columns the pipeline now emits (track evolution, grip, brake wear, PU strain, EWMA form, DNF rate, circuit profile, tyre stress). Published rounds are unaffected; a full regeneration would add them, which is why §2.3 used a surgical backfill instead.
+**Status of the gaps recorded here (2026-10-18).**
+
+- **Registry champion feature set — fixed in code, pending deploy.** The DLT Gold now exposes `tyre_degradation_slope` (`regr_slope(LapTimeSeconds, LapNumber)`), and `run_train` raises when a named feature is absent instead of silently training on the survivors. The next bundle deploy applies both to the scheduled job.
+- **Serving artifact — refreshed.** `scripts/refresh_serving_artifact.py` retrained `xgb_pace_model.joblib` on the 77,696-lap local Gold (2022–2025, 70 features including both traffic margins) and wrote `xgb_pace_model.metadata.json`; `tests/unit/test_serving_artifact.py` keeps the sidecar and the binary in agreement. The API now serves a current artifact, though it is still not the model behind any published prediction.
+- **`metrics.json` — regenerated.** The 2026 season, 2026 Japanese GP and 2024 Miami files now carry the `stacking` entry alongside `xgboost` and `lightgbm`.
+- **Fifteen-column Gold rebuild — measured, not adopted.** `scripts/rebuild_data.py` now recovers the real event name (so circuit profiles are event-specific), migrates results into the processed layer (so historical points and form are real rather than the neutral defaults), and rebuilds weather. A full regeneration adds 22 columns and drops 3,022 safety-car/VSC laps. On the common 74,601 laps, a paired 5-seed ablation found no robust gain: removing the four state columns lowered held-out MAE by 0.021 s (2024), 0.018 s (2025) and 0.025 s (2026); removing the seven circuit columns lowered it by 0.067/0.014/0.048 s; weather and form changed sign by season, and the old frame beat the rebuilt one in 2024, lost in 2025 and tied in 2026. The published Gold therefore stays at its original schema; the corrected rebuild is kept for a future, feature-by-feature adoption.
+- **One-hot serve skew — recorded, not fixed.** The simulator's scenario rows were all-NaN across every `Compound_*`, `Team_*` and `EventName_*` column because the Gold layer is pre-encoded and the scenario was not. A controlled replay of 2025 R22 with the skew corrected moved rank correlation from 0.709 to 0.728 and centred MAE from 0.322 s to 0.320 s — inside single-round noise. The fix was reverted rather than shipped on that evidence; it is the next serving-path item.
+- **Target leakage in lap-level features — recorded, not fixed.** `roll_laptime_3/5`, `delta_to_fastest_s`, `tyre_deg_slope` and the sector/speed columns use the current lap, the whole stint or the session minimum, so the ~0.2 s MAE is a reconstruction error, not an out-of-sample race-prediction error. The product-level evidence in §2.3 is the rank comparison, not the MAE. Untangling this requires a pre-lap feature contract and a fresh validation pass. The simulator now also filters each season's window to rounds strictly before the target, so a replay cannot read the round it predicts.
 
 ---
 

@@ -33,6 +33,18 @@ Expert-level race reporting powered by configurable **Gemini 3.1 Pro** primary g
 
 ---
 
+## [v6.6.1] - 2026-10-18
+
+### 🔧 Model-Lifecycle Gaps Closed — and a Rebuild Measured Rather Than Assumed
+
+- **Fix**: The registry champion no longer silently trains on three of its four named features. The DLT Gold table now emits `tyre_degradation_slope` (`regr_slope(LapTimeSeconds, LapNumber)`), and `run_train` raises when a named feature is absent instead of filtering the survivors and proceeding.
+- **Fix**: The FastAPI serving artifact is refreshed from the current Gold layer (2022–2025, 77,696 laps, 70 features including both traffic margins) and now ships with `xgb_pace_model.metadata.json`; `tests/unit/test_serving_artifact.py` keeps the sidecar and the binary in agreement. It remains a snapshot, and it is still not the model behind any published prediction.
+- **Fix**: The stale `metrics.json` files now carry the `stacking` entry alongside `xgboost` and `lightgbm` — 2026 season (stacking MAE 0.201 s), 2026 Japanese GP and 2024 Miami.
+- **Measured, not adopted**: A full local Gold rebuild now recovers real event names (circuit profiles), results-derived form and weather, adding 22 columns and dropping 3,022 safety-car/VSC laps. A paired 5-seed ablation on the 74,601 common laps found no robust gain: removing the four state columns *lowered* held-out MAE by 0.021/0.018/0.025 s across 2024–2026, and removing the seven circuit columns by 0.067/0.014/0.048 s; weather and form changed sign by season, and the old frame beat the rebuilt one in 2024, lost in 2025 and tied in 2026. The published Gold stays at its original schema; the corrected `scripts/rebuild_data.py` is kept for a future, feature-by-feature adoption.
+- **Recorded, not fixed**: The simulator's scenario rows were all-NaN across every encoded compound/team/event column. Correcting that skew was neutral in a controlled replay of 2025 R22 (rank correlation 0.709 → 0.728, centred MAE 0.322 → 0.320 s), so the change was reverted rather than shipped on single-round evidence.
+- **Recorded, not fixed**: `roll_laptime_3/5`, `delta_to_fastest_s`, `tyre_deg_slope` and the sector/speed columns are derived from the current lap, the whole stint or the session minimum, so the ~0.2 s MAE is a reconstruction error, not an out-of-sample race-prediction error. §2.4 and §3.4 now say so explicitly.
+- **Fix**: The simulator's backtest window now excludes the round being predicted (`_gold_files_before_round`), so a walk-forward replay cannot read the answer; a unit test pins the boundary.
+
 ## [v6.6.0] - 2026-10-17
 
 ### 🌬️ Traffic Exposure Measured from Every Race Lap
