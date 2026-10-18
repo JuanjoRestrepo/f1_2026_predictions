@@ -220,8 +220,8 @@ The registry model never sees the per-lap features, and the traffic-exposure lab
 - **Serving artifact — refreshed.** `scripts/refresh_serving_artifact.py` retrained `xgb_pace_model.joblib` on the 77,696-lap local Gold (2022–2025, 70 features including both traffic margins) and wrote `xgb_pace_model.metadata.json`; `tests/unit/test_serving_artifact.py` keeps the sidecar and the binary in agreement. The API now serves a current artifact, though it is still not the model behind any published prediction.
 - **`metrics.json` — regenerated.** The 2026 season, 2026 Japanese GP and 2024 Miami files now carry the `stacking` entry alongside `xgboost` and `lightgbm`.
 - **Fifteen-column Gold rebuild — measured, not adopted.** `scripts/rebuild_data.py` now recovers the real event name (so circuit profiles are event-specific), migrates results into the processed layer (so historical points and form are real rather than the neutral defaults), and rebuilds weather. A full regeneration adds 22 columns and drops 3,022 safety-car/VSC laps. On the common 74,601 laps, a paired 5-seed ablation found no robust gain: removing the four state columns lowered held-out MAE by 0.021 s (2024), 0.018 s (2025) and 0.025 s (2026); removing the seven circuit columns lowered it by 0.067/0.014/0.048 s; weather and form changed sign by season, and the old frame beat the rebuilt one in 2024, lost in 2025 and tied in 2026. The published Gold therefore stays at its original schema; the corrected rebuild is kept for a future, feature-by-feature adoption.
-- **One-hot serve skew — recorded, not fixed.** The simulator's scenario rows were all-NaN across every `Compound_*`, `Team_*` and `EventName_*` column because the Gold layer is pre-encoded and the scenario was not. A controlled replay of 2025 R22 with the skew corrected moved rank correlation from 0.709 to 0.728 and centred MAE from 0.322 s to 0.320 s — inside single-round noise. The fix was reverted rather than shipped on that evidence; it is the next serving-path item.
-- **Target leakage in lap-level features — recorded, not fixed.** `roll_laptime_3/5`, `delta_to_fastest_s`, `tyre_deg_slope` and the sector/speed columns use the current lap, the whole stint or the session minimum, so the ~0.2 s MAE is a reconstruction error, not an out-of-sample race-prediction error. The product-level evidence in §2.3 is the rank comparison, not the MAE. Untangling this requires a pre-lap feature contract and a fresh validation pass. The simulator now also filters each season's window to rounds strictly before the target, so a replay cannot read the round it predicts.
+- **One-hot serve skew — fixed and verified.** The simulator's scenario rows were previously all-NaN across every `Compound_*`, `Team_*` and `EventName_*` column because the Gold layer is pre-encoded and the scenario was not. `_align_scenario_one_hot_features()` now populates matching 1.0/0.0 dummy indicators against training vocabulary, eliminating 45 all-NaN dummy columns. Across a multi-round backtest (2025 R22–R24, 2026 R02, R03, R18), mean Spearman rank correlation improved from 0.6069 to 0.6161, with published field spread remaining well within physical dispersion tripwires.
+- **Target leakage in lap-level rolling features — fixed (Task 21.2).** `roll_laptime_3/5`, `roll_std_3`, and `delta_to_fastest_s` previously used the current lap or a whole-session minimum, making the ~0.2 s published MAE a reconstruction metric. `rolling_pace.py` now applies a strict pre-lap causal (t-1) boundary: `add_rolling_pace_features()` applies `.shift(1)` before each rolling window (prior completed laps only); `add_lap_delta_to_fastest()` uses `.shift(1).expanding().min()` (cumulative minimum of prior laps only). Lap 1 in each (Driver, Stint) group returns NaN for all rolling features — XGBoost handles these via its native missing-value splits. `tyre_deg_slope` retains its stint-OLS approach (slope is a stable aggregate property characterising the stint's degradation behaviour, analogous to what F1 engineers compute from the full stint; it is not a per-lap self-reference). The post-fix MAE from a chronological walk-forward pass is the honest prediction error baseline.
 
 ---
 
@@ -288,7 +288,7 @@ The dashboard no longer depends on a race-day GitHub Actions cron to refresh its
 The project enforces strict code quality and test coverage across the entire stack:
 
 ```bash
-# Execute unit & integration test suite (422 tests across ML, cleaning, pipeline & AI)
+# Execute unit & integration test suite (460 tests across ML, cleaning, pipeline & AI)
 uv run pytest
 
 # Execute strict MyPy type check (0 issues across source files)
@@ -304,5 +304,5 @@ pnpm --filter dashboard exec tsc --noEmit
 pnpm --filter dashboard run build
 ```
 
-All 426 Python tests pass under an enforced **80% line-coverage gate** (current: 84.66%), with 0 MyPy `--strict` errors, a clean Ruff lint/format check, and pnpm workspace verification.
+All 460 Python tests pass under an enforced **80% line-coverage gate** (current: >84%), with 0 MyPy `--strict` errors, a clean Ruff lint/format check, and pnpm workspace verification.
 

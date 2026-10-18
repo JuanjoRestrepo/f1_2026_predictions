@@ -116,8 +116,59 @@ This document outlines the strategic technical evolution of the F1 2026 Predicti
 - **✅ Honest Reporting**: Post-race verdicts emit explicit `preview` / `partial` / `unavailable` statuses instead of unmeasured accuracy claims.
 - **✅ Supply-Chain Hardening**: Every open CodeQL alert cleared, all GitHub Actions moved to Node 24 runtimes, and `CONTRIBUTING.md` added to document the trunk-based branch model.
 
+---
+
+## ✅ Phase 18: Pace & Telemetry Normalization, Availability Guard & DABs Structural CI [COMPLETED]
+- **✅ Circuit-Relative Pace Normalization**: Replaced pooled season medians with round-relative reduction so track mix no longer contaminates driver deltas (field spread reduced from 13.55s down to 4.90s physical baseline).
+- **✅ Sector & Speed Track Normalization**: Sector deviations scaled by the circuit lap-time ratio $r$ and speed deltas in km/h, preventing a 12–16× artificial spread inflation.
+- **✅ Dispersion Tripwire Check**: Added `check_published_dispersion()` with a 1.25× tripwire comparing published spread against lap-measured spread.
+- **✅ Calendar Availability Guard**: `scripts/check_next_race_coverage.py` mirrors the UI's availability rule in Python and fails loudly in `sync_calendar.yml` when an upcoming race cannot be rendered.
+- **✅ DABs Structural CI Validator**: Added `scripts/validate_bundle.py` verifying bundle syntax, task environments, and substitutions in PR CI without requiring Databricks credentials.
+- **✅ Manual Sync Credentials Hardening**: Repaired `scheduled_sync.yml` secrets mapping and added visible `::warning::` annotations for missing credentials.
+- **✅ Docker Cross-Build & Smoke Test**: Cross-compilation via `uv sync --python-platform` on `$BUILDPLATFORM` without QEMU emulation, non-root directory ownership fix, and digest `/health` smoke-testing.
+- **✅ Supabase S3 Key Rotation**: Added `scripts/rotate_supabase_s3_keys.py` and runbook documenting the two live credential locations.
+
+---
+
+## ✅ Phase 19: Physical Traffic Exposure Modeling & Clean-Air Serving Manifold [COMPLETED]
+- **✅ Measured Traffic Exposure Features**: Reconstructed on-track intervals across 77,696 laps (`features/traffic_exposure.py`) to label `traffic_ahead_s`, `traffic_nearest_s`, and `in_clean_air`.
+- **✅ Empirical Dirty Air Validation**: Measured the dirty-air penalty decay (+0.571s at <0.5s to noise floor at 2.0s) independently of label definitions.
+- **✅ Multi-Season Held-Out Ablation**: Demonstrated lap-level MAE reduction across 2024–2026 on traffic-affected laps while within-round placebo held at zero.
+- **✅ Clean-Air Virtual Scenario Serving**: Simulator serves virtual laps with measured clean-air medians (5.0s ahead, 3.0s nearest), sitting cleanly inside the trained feature manifold rather than the missing-value branch.
+- **✅ Refuted Sub-optimal Alternatives**: Refuted training pace solely on clean-air laps (which degraded published rank correlation from 0.554 to 0.500) and excluded redundant `in_clean_air` boolean from model features.
+
+---
+
+## ✅ Phase 20: Model-Lifecycle Governance & Honest Feature Ablation [COMPLETED]
+- **✅ Architecture Map & Model Clarification**: Documented the 3 model lanes (Registry champion, Race simulation, Serving container), the 2 Gold schemas, and the status of known gaps in `ARCHITECTURE.md` §3.4.
+- **✅ DLT Gold Feature Gap Closed**: Emitted `tyre_degradation_slope` (`regr_slope`) in `f1_medallion_pipeline.py` and made `run_train` raise `ValueError` on any missing named feature.
+- **✅ FastAPI Serving Artifact Refreshed**: Rebuilt `xgb_pace_model.joblib` with 70 features (including traffic margins) and sidecar `xgb_pace_model.metadata.json`, enforced by unit test.
+- **✅ Stacking Metric History Regenerated**: Added missing `stacking` entries to historical `metrics.json` files.
+- **✅ Walk-Forward Temporal Isolation**: Added `_gold_files_before_round` to `simulate_race.py` to prevent backtest replays from reading target-round answers.
+- **✅ Measured & Rejected 22-Column Rebuild**: Paired 5-seed ablation on 74,601 common laps showed extra circuit and state columns degraded generalization, keeping published Gold schema clean and intentional.
+
+---
+
+## 🚀 Phase 21: Pre-Lap Causal Modeling & Feature Parity [ACTIVE]
+- **✅ Task 21.1: Resolve One-Hot Simulation Skew [COMPLETED]**:
+  - Populated one-hot dummy columns (`Compound_*`, `Team_*`, `EventName_*`) in `simulate_race.py` via `_align_scenario_one_hot_features()`, eliminating 45 NaN dummy features (~1,000 NaN cells per scenario) from the simulation scenario vector.
+  - Benchmarked across multi-round backtests (2025 R22–R24, 2026 R02, R03, R18): mean rank correlation improved from 0.6069 to 0.6161 (Las Vegas: 0.6718 → 0.6904; Abu Dhabi: 0.4872 → 0.5113), with published field spread remaining within dispersion tripwires.
+- **✅ Task 21.2: Eliminate Lap-Level Target Leakage [COMPLETED]**:
+  - *Implementation*: Applied a strict pre-lap causal (t-1) boundary to `rolling_pace.py`. `add_rolling_pace_features()` now uses `.shift(1)` before each rolling window so `roll_laptime_3/5` and `roll_std_3` reflect only the *N* completed prior laps. `add_lap_delta_to_fastest()` replaced the full-group session minimum with `.shift(1).expanding().min()` so `delta_to_fastest_s` reflects the best *prior* lap.
+  - *Semantic consequence*: Lap 1 in each (Driver, Stint) group now returns NaN for rolling features — XGBoost routes these to its trained missing-value branch. `delta_to_fastest_s` for Lap 1 is also NaN. All 8 rolling-pace unit tests updated to encode the new causal contract (460 passing).
+  - *Metric context*: The ~0.2 s published MAE was a reconstruction metric. Post-fix MAE from a chronological walk-forward pass is the honest estimate; this is the baseline for all future model iterations.
+- **Task 21.3: Bridge DLT Gold and Local Feature Schemas [NEXT]**:
+  - *Context*: DLT Gold table in Unity Catalog holds per-driver session aggregates targeting fastest lap, while local Gold holds per-lap features targeting lap time.
+  - *Objective*: Define a shared or synchronized feature transformation pipeline enabling Unity Catalog registered models to optionally train and predict on lap-level telemetry.
+- **Task 21.4: Production DABs Bundle Deployment**:
+  - *Context*: Updated bundle definitions in `resources/` now include `tyre_degradation_slope`.
+  - *Objective*: Deploy the updated DABs bundle to the Databricks production/staging workspace and verify the automated Lakeflow run.
+
+---
+
 ## 📝 Strategic Technical Notes
 - **FastF1 vs. Formula-Timer**: The platform will continue using FastF1 as the "Ground Truth" for ML modeling and telemetry analysis. Formula-Timer is designated as a secondary-screen validation tool and UI reference to ensure professional-grade visualization and real-time trend benchmarking.
-- **Model Target**: Maintain a target MAE < 0.150s through iterative Stacking (Phase 12-16).
+- **Model Target**: Maintain a target MAE < 0.150s through iterative Stacking (Phase 12-16) and strict causal feature separation (Phase 21).
+
 
 

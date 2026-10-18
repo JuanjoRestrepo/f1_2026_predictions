@@ -27,6 +27,7 @@ import pytest
 from f1_predictions.features.traffic_exposure import CLEAN_AIR_SCENARIO
 from f1_predictions.models.common import prepare_feature_matrix
 from scripts.simulate_race import (
+    _align_scenario_one_hot_features,
     _apply_track_pace_normalization,
     _build_simulation_scenario,
     _current_form_stats,
@@ -555,3 +556,56 @@ def test_gold_files_before_round_excludes_the_target_and_later(
     files = _gold_files_before_round(tmp_path, 2026, 3)
 
     assert [path.parent.name for path in files] == ["round=01", "round=02"]
+
+
+def test_align_scenario_one_hot_features_populates_dummies_correctly() -> None:
+    """Populates 1.0 and 0.0 values matching raw string categoricals."""
+    df_sim = pd.DataFrame(
+        [
+            {"Compound": "MEDIUM", "Team": "Ferrari", "EventName": "Monaco Grand Prix"},
+            {"Compound": "HARD", "Team": "McLaren", "EventName": "Monaco Grand Prix"},
+        ]
+    )
+    df_train = pd.DataFrame(
+        {
+            "Compound_HARD": [1.0, 0.0],
+            "Compound_MEDIUM": [0.0, 1.0],
+            "Compound_SOFT": [0.0, 0.0],
+            "Team_Ferrari": [1.0, 0.0],
+            "Team_McLaren": [0.0, 1.0],
+            "Team_Red Bull": [0.0, 0.0],
+            "EventName_Monaco Grand Prix": [1.0, 1.0],
+            "EventName_Spanish Grand Prix": [0.0, 0.0],
+        }
+    )
+
+    aligned = _align_scenario_one_hot_features(df_sim, df_train)
+
+    assert aligned["Compound_MEDIUM"].tolist() == [1.0, 0.0]
+    assert aligned["Compound_HARD"].tolist() == [0.0, 1.0]
+    assert aligned["Compound_SOFT"].tolist() == [0.0, 0.0]
+    assert aligned["Team_Ferrari"].tolist() == [1.0, 0.0]
+    assert aligned["Team_McLaren"].tolist() == [0.0, 1.0]
+    assert aligned["Team_Red Bull"].tolist() == [0.0, 0.0]
+    assert aligned["EventName_Monaco Grand Prix"].tolist() == [1.0, 1.0]
+    assert aligned["EventName_Spanish Grand Prix"].tolist() == [0.0, 0.0]
+
+
+def test_align_scenario_one_hot_features_handles_unknown_circuit() -> None:
+    """An unraced circuit (e.g. Madrid) maps to all zeros without error."""
+    df_sim = pd.DataFrame(
+        [{"Compound": "MEDIUM", "Team": "Ferrari", "EventName": "Madrid Grand Prix"}]
+    )
+    df_train = pd.DataFrame(
+        {
+            "EventName_Monaco Grand Prix": [1.0],
+            "EventName_Spanish Grand Prix": [0.0],
+            "Team_Ferrari": [1.0],
+        }
+    )
+
+    aligned = _align_scenario_one_hot_features(df_sim, df_train)
+
+    assert aligned["EventName_Monaco Grand Prix"].iloc[0] == 0.0
+    assert aligned["EventName_Spanish Grand Prix"].iloc[0] == 0.0
+    assert aligned["Team_Ferrari"].iloc[0] == 1.0

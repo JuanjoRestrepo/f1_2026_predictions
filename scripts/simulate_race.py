@@ -373,6 +373,45 @@ def _apply_weather_scenario_features(
     return df
 
 
+def _align_scenario_one_hot_features(
+    df_sim: pd.DataFrame, df_train: pd.DataFrame
+) -> pd.DataFrame:
+    """Populate one-hot dummy columns in df_sim matching df_train.
+
+    In the Gold parquet dataset, categorical columns (Compound, Team, EventName)
+    are already one-hot encoded (e.g. ``Compound_MEDIUM``, ``Team_Ferrari``,
+    ``EventName_Monaco Grand Prix``). The simulation scenario builds raw string
+    columns, which on naive concatenation leaves all dummy columns as NaN for
+    the simulated rows, causing tree regressors to take missing-value branches.
+
+    This helper assigns 1.0/0.0 values to every dummy column present in
+    ``df_train`` by matching against the raw string column in ``df_sim``.
+    Unknown categories (e.g. a newly added circuit) naturally map to all zeros,
+    honouring ``handle_unknown="ignore"``.
+
+    Args:
+        df_sim: Simulation scenario DataFrame containing raw string columns.
+        df_train: Training DataFrame with pre-encoded dummy columns.
+
+    Returns:
+        DataFrame with aligned one-hot dummy columns.
+    """
+    df = df_sim.copy()
+    prefixes = [
+        ("Compound_", "Compound"),
+        ("Team_", "Team"),
+        ("EventName_", "EventName"),
+    ]
+    for prefix, raw_col in prefixes:
+        if raw_col not in df.columns:
+            continue
+        dummy_cols = [c for c in df_train.columns if c.startswith(prefix)]
+        for dc in dummy_cols:
+            val = dc[len(prefix) :]
+            df[dc] = (df[raw_col].astype(str) == val).astype(float)
+    return df
+
+
 def _round_number(path: Path) -> int | None:
     """Parse the round number from a ``round=NN`` partition path."""
     for part in path.parts:
@@ -593,6 +632,7 @@ def run_race_simulation(
         is_wet_race=is_wet_race,
         weather_intelligence=weather_intelligence,
     )
+    df_sim = _align_scenario_one_hot_features(df_sim, df_train_full)
 
     # Calculate Weights (Phase 2.2)
     sample_weights = _calculate_sample_weights(df_train_full, year, round_number)

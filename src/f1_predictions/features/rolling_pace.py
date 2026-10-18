@@ -16,9 +16,22 @@ Rationale:
     ``groupby + transform``. Rolling across stint boundaries would conflate
     different tyre and fuel conditions, introducing spurious correlations.
 
-    ``min_periods=1`` is used so drivers with fewer than N laps in a stint
-    still get a valid rolling value rather than NaN. This matters for short
-    opening stints and for drivers with early DNFs.
+Causal (pre-lap, t-1) boundary — Task 21.2:
+    To prevent target leakage, every rolling and cumulative feature is
+    computed on **shifted** data: ``.shift(1)`` is applied before the
+    rolling window so that a lap's feature value reflects only completed
+    prior laps, never the lap being predicted. This turns what would
+    otherwise be a reconstruction metric ("how fast was this lap given
+    all surrounding laps?") into a genuine out-of-sample predictor
+    ("how fast were the N preceding laps, and how fast will this one be?").
+
+    Consequences:
+    - The first lap in each stint/group gets NaN for all rolling features,
+      because no prior laps exist. XGBoost handles NaN natively via its
+      default direction split.
+    - ``delta_to_fastest_s`` uses the *cumulative minimum* of prior laps
+      (expanding window on shifted series) instead of the full-group
+      minimum, ensuring no future information leaks in.
 
 Design decisions:
     - Rolling is applied on already-sorted data (LapNumber ascending within
@@ -109,13 +122,24 @@ def add_rolling_pace_features(
 
     result = df.sort_values(DEFAULT_SORT_KEYS).copy()
 
-    def _rolling_mean(series: pd.Series, window: int) -> pd.Series:
-        """Apply rolling mean within group, preserving NaN semantics."""
-        return series.rolling(window=window, min_periods=1).mean()
+    def _causal_rolling_mean(series: pd.Series, window: int) -> pd.Series:
+        """Rolling mean on prior laps only (shift(1) enforces t-1 boundary).
 
-    def _rolling_std(series: pd.Series, window: int) -> pd.Series:
-        """Apply rolling std within group; NaN for single-lap groups."""
-        return series.rolling(window=window, min_periods=2).std()
+        The shift moves the target lap's value out of the window so the mean
+        reflects only completed laps. ``min_periods=1`` still applies to the
+        shifted series, so the second lap in a stint (which sees one prior
+        value after the shift) gets a valid estimate rather than NaN.
+        The first lap always returns NaN — correct, since no prior laps exist.
+        """
+        return series.shift(1).rolling(window=window, min_periods=1).mean()
+
+    def _causal_rolling_std(series: pd.Series, window: int) -> pd.Series:
+        """Rolling std on prior laps only (shift(1) enforces t-1 boundary).
+
+        ``min_periods=2`` so that at least two prior values are required for a
+        meaningful standard deviation; otherwise NaN is returned.
+        """
+        return series.shift(1).rolling(window=window, min_periods=2).std()
 
     short_col = f"roll_laptime_{window_short}"
     long_col = f"roll_laptime_{window_long}"
@@ -123,20 +147,21 @@ def add_rolling_pace_features(
 
     result[short_col] = result.groupby(groups, group_keys=False)[
         lap_time_col
-    ].transform(lambda s: _rolling_mean(s, window_short))
+    ].transform(lambda s: _causal_rolling_mean(s, window_short))
     result[long_col] = result.groupby(groups, group_keys=False)[lap_time_col].transform(
-        lambda s: _rolling_mean(s, window_long)
+        lambda s: _causal_rolling_mean(s, window_long)
     )
     result[std_col] = result.groupby(groups, group_keys=False)[lap_time_col].transform(
-        lambda s: _rolling_std(s, window_short)
+        lambda s: _causal_rolling_std(s, window_short)
     )
 
     # Delta: positive = slowing down (tyre cliff signal).
+    # Both components are already causal, so the delta is causal too.
     result["delta_roll_pace"] = result[short_col] - result[long_col]
 
     n_new_cols = 4
     logger.info(
-        "Rolling pace features added: %s | %d new columns "
+        "Rolling pace features added (causal t-1): %s | %d new columns "
         "(%s, %s, %s, delta_roll_pace)",
         short_col,
         n_new_cols,
@@ -152,14 +177,31 @@ def add_lap_delta_to_fastest(
     lap_time_col: str = "LapTime_s",
     group_cols: list[str] | None = None,
 ) -> pd.DataFrame:
-    """Add the gap between each lap and the session's fastest clean lap.
+    """Add the gap between each lap and the best *previously completed* lap.
 
-    ``delta_to_fastest_s``: signed gap in seconds to the minimum lap time
-    in the group context (Driver, EventName). Represents how far a given
-    lap is from the driver's best representative pace at this circuit.
+    ``delta_to_fastest_s``: signed gap in seconds to the fastest lap time
+    seen **before** the current lap within the group context (Driver,
+    EventName). This is the causal (t-1) analogue of the session-minimum
+    delta: it tells the model how far behind the driver's own prior best the
+    current lap is, without revealing what the driver will achieve later in
+    the session.
+
+    Implementation:
+        1. Sort by (Driver, EventName, LapNumber) to guarantee chronological
+           order within each group.
+        2. Shift the lap-time series by one position so each position reflects
+           the *previous* lap's time.
+        3. Take a cumulative minimum on the shifted series — this gives, for
+           each lap, the fastest time recorded in all *prior* laps.
+        4. Subtract that expanding minimum from the current lap time.
+
+    Consequence:
+        - The first lap in each group returns NaN (no prior lap exists).
+        - A driver who sets a new personal best has delta = 0 only from the
+          *next* lap onward, not the lap that set the record.
 
     Args:
-        df: Clean laps DataFrame.
+        df: Clean laps DataFrame. Must be sortable by LapNumber within groups.
         lap_time_col: Lap time column in decimal seconds.
         group_cols: Grouping context. Defaults to ``["Driver", "EventName"]``.
 
@@ -175,15 +217,26 @@ def add_lap_delta_to_fastest(
         raise TypeError(msg)
 
     groups = group_cols if group_cols is not None else ["Driver", "EventName"]
+    sort_keys = [*groups, "LapNumber"] if "LapNumber" in df.columns else groups
     _assert_columns_present(
         df, [lap_time_col, *groups], context="add_lap_delta_to_fastest"
     )
 
-    result = df.copy()
+    result = df.sort_values(sort_keys).copy()
+
+    def _causal_delta(series: pd.Series) -> pd.Series:
+        """Gap to the best *prior* lap (t-1 causal boundary).
+
+        shift(1) pushes the current lap value out of the cummin window so
+        the expanding minimum only covers completed laps.
+        """
+        prior_best = series.shift(1).expanding().min()
+        return series - prior_best
+
     result["delta_to_fastest_s"] = result.groupby(groups, group_keys=False)[
         lap_time_col
-    ].transform(lambda s: s - s.min())
-    logger.info("delta_to_fastest_s feature added.")
+    ].transform(_causal_delta)
+    logger.info("delta_to_fastest_s feature added (causal t-1 cumulative min).")
     return result
 
 
