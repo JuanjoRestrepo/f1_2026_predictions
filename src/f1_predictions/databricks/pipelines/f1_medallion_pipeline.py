@@ -166,6 +166,11 @@ def driver_features_gold() -> object:
             SF.count("LapNumber").alias("total_laps"),
             # Tyre degradation proxy: correlation of lap time with lap number
             SF.corr("LapNumber", "LapTimeSeconds").alias("tyre_degradation_corr"),
+            # Same signal expressed as a slope (s/lap) — this is the name the
+            # training task consumes; corr is unitless and cannot be substituted.
+            SF.regr_slope("LapTimeSeconds", "LapNumber").alias(
+                "tyre_degradation_slope"
+            ),
             SF.first("_ingested_at").alias("last_ingested_at"),
         )
     )

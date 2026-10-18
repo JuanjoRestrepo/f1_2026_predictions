@@ -373,6 +373,35 @@ def _apply_weather_scenario_features(
     return df
 
 
+def _round_number(path: Path) -> int | None:
+    """Parse the round number from a ``round=NN`` partition path."""
+    for part in path.parts:
+        if part.startswith("round="):
+            try:
+                return int(part.split("=", 1)[1])
+            except ValueError:
+                return None
+    return None
+
+
+def _gold_files_before_round(
+    data_dir: Path, year: int, round_number: int
+) -> list[Path]:
+    """Return the season's Gold files for rounds strictly before ``round_number``.
+
+    A pre-race prediction may use the current season's completed rounds, never
+    the round being predicted (or anything after it). The live path never sees
+    those files because they do not exist yet, but a backtest does — without
+    this filter a walk-forward run silently reads the answer.
+    """
+    files = sorted(data_dir.glob(f"season={year}/**/*.parquet"))
+    return [
+        path
+        for path in files
+        if (parsed := _round_number(path)) is None or parsed < round_number
+    ]
+
+
 def _current_form_stats(df_current: pd.DataFrame) -> pd.DataFrame:
     """Collapse the season-so-far laps into one form row per driver.
 
@@ -505,7 +534,7 @@ def run_race_simulation(
 
     # 1. Load historical/current season data
     data_dir = Path(settings.data_outputs_dir) / "laps"
-    gold_files = list(data_dir.glob(f"season={year}/**/*.parquet"))
+    gold_files = _gold_files_before_round(data_dir, year, round_number)
 
     if not gold_files:
         logger.error(

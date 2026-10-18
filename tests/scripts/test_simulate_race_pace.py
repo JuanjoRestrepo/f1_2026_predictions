@@ -31,6 +31,7 @@ from scripts.simulate_race import (
     _build_simulation_scenario,
     _current_form_stats,
     _driver_track_normalized_deltas,
+    _gold_files_before_round,
     check_published_dispersion,
 )
 
@@ -540,3 +541,17 @@ def test_served_feature_matrix_matches_the_trained_one() -> None:
 
     assert {"traffic_ahead_s", "traffic_nearest_s"}.issubset(x.columns)
     assert "in_clean_air" not in x.columns
+
+
+def test_gold_files_before_round_excludes_the_target_and_later(
+    tmp_path: Path,
+) -> None:
+    """A backtest must not read the round it is predicting."""
+    for season, rnd in ((2026, 1), (2026, 2), (2026, 3), (2025, 1)):
+        directory = tmp_path / f"season={season}" / f"round={rnd:02d}"
+        directory.mkdir(parents=True)
+        (directory / "race_laps.parquet").write_bytes(b"")
+
+    files = _gold_files_before_round(tmp_path, 2026, 3)
+
+    assert [path.parent.name for path in files] == ["round=01", "round=02"]

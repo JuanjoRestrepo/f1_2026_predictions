@@ -143,8 +143,15 @@ def run_train(season: int, catalog: str = CATALOG, schema: str = SCHEMA) -> None
     ]
     target_col = "fastest_lap_seconds"
 
-    available_features = [c for c in feature_cols if c in gold_df.columns]
-    X = gold_df[available_features].fillna(0.0)  # noqa: N806
+    missing_features = [c for c in feature_cols if c not in gold_df.columns]
+    if missing_features:
+        msg = (
+            f"Gold feature table '{target_tbl}' is missing required column(s): "
+            f"{missing_features}. Refusing to train a degraded model — deploy the "
+            f"DLT pipeline so driver_features_gold exposes them."
+        )
+        raise RuntimeError(msg)
+    X = gold_df[feature_cols].fillna(0.0)  # noqa: N806
     y = gold_df[target_col]
 
     params: dict[str, object] = {
