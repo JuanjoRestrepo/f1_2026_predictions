@@ -198,13 +198,11 @@ def test_delta_to_fastest_multi_driver_isolation() -> None:
 
     # VER: Lap1=NaN, Lap2=92-90=2.0
     assert np.isnan(result[result["Driver"] == "VER"].iloc[0]["delta_to_fastest_s"])
-    assert (
-        result[result["Driver"] == "VER"].iloc[1]["delta_to_fastest_s"]
-        == pytest.approx(2.0)
-    )
+    assert result[result["Driver"] == "VER"].iloc[1][
+        "delta_to_fastest_s"
+    ] == pytest.approx(2.0)
     # HAM: Lap1=NaN, Lap2=93-95=-2.0
     assert np.isnan(result[result["Driver"] == "HAM"].iloc[0]["delta_to_fastest_s"])
-    assert (
-        result[result["Driver"] == "HAM"].iloc[1]["delta_to_fastest_s"]
-        == pytest.approx(-2.0)
-    )
+    assert result[result["Driver"] == "HAM"].iloc[1][
+        "delta_to_fastest_s"
+    ] == pytest.approx(-2.0)
