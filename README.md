@@ -250,18 +250,43 @@ Left unset, the sync is a no-op and the dashboard uses the committed `reports/` 
 
 ### 🧱 Databricks Lakehouse Deployment (DABs)
 
-1. Validate bundle:
+Three targets share one workspace and are isolated by Unity Catalog schema:
+
+| Target | Unity Catalog location | Schedule | Purpose |
+|---|---|---|---|
+| `dev` | `main.race_pace` | paused | Developer iteration |
+| `staging` | `main.f1_2026_staging` | paused | Shared integration check |
+| `prod` | `main.f1_2026_prod` | Fri–Mon 06:00 UTC | Production run |
+
+The workspace metastore has no default storage root, so standalone catalogs
+cannot be created from the CLI. Each environment therefore uses a dedicated
+schema inside the existing `main` catalog, with its own `raw_telemetry` Volume.
+
+The Volume must contain the 12-column Bronze contract written by
+`volume_ingest.build_bronze_laps` (or by the job's `ingest_race_telemetry`
+task). Do not seed it with raw FastF1 frames: their `LapStartDate` is
+`TIMESTAMP(NANOS)`, which Spark's Parquet reader rejects before the Bronze
+select can project it away.
+
+1. Validate and deploy a target:
    ```bash
-   databricks bundle validate --target dev
+   databricks bundle validate --target staging
+   databricks bundle deploy --target staging
    ```
-2. Deploy to Databricks workspace:
+2. Run the race-weekend workflow:
    ```bash
-   databricks bundle deploy --target dev
+   databricks bundle run --target staging f1_2026_race_predictions_job
    ```
-3. Run the race-weekend workflow:
+3. Promote the same, validated commit to production:
    ```bash
-   databricks bundle run --target dev f1_2026_race_predictions_job
+   databricks bundle validate --target prod
+   databricks bundle deploy --target prod
    ```
+
+The production schedule is defined as `UNPAUSED` in `databricks.yml`. Do not
+activate it until the target's first pipeline full refresh and job run have
+succeeded; use `--var="schedule_pause_status=PAUSED"` for a controlled first
+deploy, then redeploy without the override.
 
 ### 🛠️ Core Engine Setup
 

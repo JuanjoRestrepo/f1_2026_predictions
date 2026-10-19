@@ -103,7 +103,9 @@ def telemetry_bronze() -> object:  # return type is SparkDataFrame at runtime
         .load(volume_path)
         .select(
             *[SF.col(column) for column in _BRONZE_COLUMNS],
-            SF.input_file_name().alias("_source_file"),
+            # Unity Catalog rejects `input_file_name()`; `_metadata.file_path`
+            # is the supported equivalent on cloudFiles reads.
+            SF.col("_metadata.file_path").alias("_source_file"),
             SF.current_timestamp().alias("_ingested_at"),
         )
     )

@@ -24,10 +24,10 @@ include:
 # ---------------------------------------------------------------------------
 variables:
   catalog:
-    description: Unity Catalog catalog name for this target environment.
-    default: f1_2026_dev
+    description: Unity Catalog catalog name. All targets use `main` here.
+    default: main
   schema:
-    description: Unity Catalog schema (layer) within the catalog.
+    description: Target-specific Unity Catalog schema within the catalog.
     default: race_pace
   schedule_pause_status:
     description: PAUSED for non-prod targets; UNPAUSED for prod.
@@ -40,7 +40,7 @@ variables:
 # Deployment Targets
 # dev      → individual developer workspace (mode: development adds [dev <user>] prefix)
 # staging  → shared integration environment (mirrors prod config, paused schedule)
-# prod     → production; run_as service principal; UNPAUSED schedule
+# prod     → production; deployed under the current user; UNPAUSED schedule
 # ---------------------------------------------------------------------------
 targets:
   dev:
@@ -52,11 +52,15 @@ targets:
       schedule_pause_status: PAUSED
       pipeline_development: true
 
+  # The workspace metastore has no default storage root, so the CLI cannot
+  # create standalone catalogs. Both environments therefore live as dedicated
+  # schemas inside the existing `main` catalog. This still gives each target
+  # isolated tables and a separate `raw_telemetry` Volume.
   staging:
     mode: development
     variables:
-      catalog: f1_2026_staging
-      schema: race_pace
+      catalog: main
+      schema: f1_2026_staging
       schedule_pause_status: PAUSED
       pipeline_development: true
 
@@ -65,8 +69,8 @@ targets:
     workspace:
       root_path: /Workspace/Users/restrepojuanjo@gmail.com/.bundle/${bundle.name}/${bundle.target}
     variables:
-      catalog: f1_2026_prod
-      schema: race_pace
+      catalog: main
+      schema: f1_2026_prod
       schedule_pause_status: UNPAUSED
       pipeline_development: false
 
