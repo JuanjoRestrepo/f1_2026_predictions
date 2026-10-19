@@ -173,7 +173,7 @@ The Databricks job is the **single scheduler** — the Trigger.dev orchestration
 - **Schedule**: Quartz cron `0 0 6 ? * FRI-MON` (race weekend + post-race Monday at 06:00 UTC).
 - **Task 1 (`ingest_race_telemetry`)**: pulls the newest completed round from FastF1 and writes per-round Parquet into the Unity Catalog `raw_telemetry` Volume (`--run-mode ingest`).
 - **Task 2 (`run_medallion_pipeline`)**: executes the DLT pipeline over that Volume (Bronze → Silver → Gold).
-- **Task 3 (`train_and_register_champion`)**: fits the pace regressors, infers the MLflow signature (`infer_signature`), sets the registry URI to `databricks-uc`, and re-tags `@champion` in Unity Catalog (`<catalog>.race_pace.xgb_race_pace_regressor`) — **only when the candidate beats the incumbent's cross-validated RMSE**.
+- **Task 3 (`train_and_register_champion`)**: fits the pace regressors, infers the MLflow signature (`infer_signature`), sets the registry URI to `databricks-uc`, and re-tags `@champion` in Unity Catalog (`<catalog>.<schema>.xgb_race_pace_regressor`) — **only when the candidate beats the incumbent's cross-validated RMSE**.
 - **Task 4 (`dispatch_notifications`)**: reads credentials from the Databricks Secrets scope `f1_secrets` (`F1_GMAIL_USER`, `F1_GMAIL_APP_PASSWORD`, and optionally `F1_DISCORD_WEBHOOK_URL`) and sends HTML email briefings and Discord alerts via SMTP/webhook.
 - **Task 5 (`export_dashboard_data`)**: runs in parallel with task 4 and publishes the season's `reports/<season>` bundle to object storage for the dashboard (see §4.4).
 
@@ -226,7 +226,7 @@ The contract lives in `features/contract.py` and stamps `feature_contract_versio
 | Raw telemetry | Unity Catalog Volume `raw_telemetry` (Auto Loader) | FastF1 cache (`.cache/fastf1`) + `data/raw` |
 | Silver | DLT table `laps_silver` | `data/processed/laps/season=*/round=*/race_laps.parquet` |
 | Gold | DLT tables `driver_features_gold` (aggregates) and `lap_features_gold` (opt-in per lap) | `data/outputs/laps/...` (per-lap features) |
-| Registry model | UC `<catalog>.race_pace.xgb_race_pace_regressor`; opt-in `xgb_lap_pace_regressor`; MLflow experiment `/Users/<user>/f1_2026_race_pace` | — |
+| Registry model | UC `<catalog>.<schema>.xgb_race_pace_regressor`; opt-in `xgb_lap_pace_regressor`; MLflow experiment `/Users/<user>/f1_2026_race_pace` | — |
 | Serving artifact | GHCR image (§5.4) | `data/outputs/models/xgb_pace_model.joblib` |
 | Predictions | `<table>_predictions` from the manual `--run-mode predict` (not scheduled) | `reports/<season>/<Event>/results/*.csv` |
 | Dashboard bundle | Supabase S3 `f1-cache`, `dashboard/<season>/…`, `manifest.json` written last | `reports/` (also the build fallback, §4.4) |
