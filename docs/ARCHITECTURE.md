@@ -17,14 +17,17 @@ flowchart TD
     subgraph Databricks [2. Databricks Lakehouse & Delta Medallion]
         Volume --> |Auto Loader cloudFiles| Bronze[(Bronze: telemetry_bronze)]
         Bronze --> Silver[(Silver: laps_silver)]
-        Silver --> Gold[(Gold: driver_features_gold)]
+        Silver --> GoldAgg[(Gold: driver_features_gold)]
+        Silver --> GoldLap[(Gold: lap_features_gold opt-in)]
     end
 
     subgraph ML Pipeline [3. Machine Learning & Stacking Suite]
-        Gold --> Train[XGBoost + LightGBM + ExtraTrees Stacking]
+        GoldAgg --> Train[XGBoost + LightGBM + ExtraTrees Stacking]
+        GoldLap -.->|opt-in lap registry| LapTrain[XGBoost lap model]
         Train --> Dynamic[Dynamic Form EWMA Priors & Circuit Similarity]
         Train --> SHAP[SHAP Tree Explainability]
         Train --> UC[Unity Catalog Model Registry @champion]
+        LapTrain -.->|separate @champion| UC
     end
 
     subgraph Orchestration [4. Orchestration & Pre-Race Gate]
@@ -56,9 +59,10 @@ flowchart TD
 ### 1.2 Delta Medallion Architecture (Databricks DLT)
 1. **Bronze Layer (`telemetry_bronze`)**: Raw, append-only lap telemetry, streamed out of the `raw_telemetry` Volume by Auto Loader (`cloudFiles`) so original data types are preserved.
 2. **Silver Layer (`laps_silver`)**: Cleaned and validated dataset with Delta Live Tables (DLT) quality expectations:
-   - `expect_or_drop("valid_laptime", "LapTime_s > 45 AND LapTime_s < 200")`: Removes pit-in/out out-laps and safety car anomalies.
-   - `expect_or_fail("valid_driver", "Driver IS NOT NULL")`: Ensures strict entity integrity.
-3. **Gold Layer (`driver_features_gold`)**: per-driver, per-session aggregates for the registry path — `mean_pace_seconds`, `fastest_lap_seconds`, `pace_std_seconds`, `total_laps`, `tyre_degradation_corr`, `last_ingested_at`. The per-lap engineered features the race simulator uses are built by the local pipeline, not by this DLT table; the two schemas are compared in §3.4.
+   - `expect_or_drop("valid_lap_time", "LapTimeSeconds >= 45.0 AND LapTimeSeconds <= 240.0")`: Removes pit-in/out out-laps and safety car anomalies.
+   - `expect_or_fail("driver_not_null", "Driver IS NOT NULL")`: Ensures strict entity integrity.
+3. **Gold Layer (`driver_features_gold`)**: per-driver, per-session aggregates for the registry path, race sessions only — `mean_pace_seconds`, `fastest_lap_seconds`, `pace_std_seconds`, `total_laps`, `tyre_degradation_corr`, `tyre_degradation_slope`, `last_ingested_at`.
+4. **Gold Layer (`lap_features_gold`, Task 21.3, opt-in)**: per-lap, pre-lap-safe features targeting `LapTime_s`, built by `databricks/pipelines/lap_features.py` from `laps_silver`. It feeds the separate `xgb_lap_pace_regressor` lane; neither the published simulator nor the aggregate champion reads it. The per-lap engineered features the race simulator uses are built by the local pipeline, and the schemas are compared in §3.4.
 
 ---
 
@@ -179,27 +183,41 @@ The Databricks job is the **single scheduler** — the Trigger.dev orchestration
 - **`sync_calendar.yml`** keeps its calendar cron so `calendar.json` continues to track the official FastF1/Ergast schedule.
 
 ### 3.4 Which Model Produces Which Number
-Three model paths exist. They do not share a model, a feature set or a target, so knowing which one produced an artifact is the difference between a defensible claim and reading a number for something it is not.
+Four model paths exist. They do not share a model, a feature set or a target, so knowing which one produced an artifact is the difference between a defensible claim and reading a number for something it is not.
 
 | Path | Trained by | Data & target | Produces | Metric-gated? |
 |---|---|---|---|---|
 | **Registry champion** | `databricks_entrypoint.py --run-mode train` (task 3, Fri–Mon 06:00 UTC) | Unity Catalog `driver_features_gold` (per-driver aggregates); target `fastest_lap_seconds` | MLflow run + `@champion` / `@challenger` alias on `<catalog>.race_pace.xgb_race_pace_regressor` | **Yes** — 3-fold CV RMSE must beat the incumbent (`F1_PROMOTION_TOLERANCE`, default `0.0`) |
+| **Lap registry model (opt-in, Task 21.3)** | `databricks_entrypoint.py --run-mode train --training-schema lap` | Unity Catalog `lap_features_gold` (per lap, race-only); target `LapTime_s` | MLflow run + `@champion` / `@challenger` on `<catalog>.race_pace.xgb_lap_pace_regressor`; prediction table via `--run-mode predict` | **Yes** — event-grouped CV RMSE vs its own incumbent; the alias is separate, so its RMSE is never compared with the aggregate lane |
 | **Race simulation** | `scripts/simulate_race.py`, on every invocation | local per-lap Gold (`data/outputs/laps`), full engineered feature matrix | the published `reports/<season>/<Event>/results/{predictions,standings}.csv` | **No** — fresh deterministic fit; no registry lookup, no model comparison |
 | **Serving container** | baked at image build from `data/outputs/models/xgb_pace_model.joblib` (dict: `model`, `features` — 70 names, `random_state`), refreshed by `scripts/refresh_serving_artifact.py` | local per-lap Gold, 2022–2025, 77,696 laps; target `LapTime_s` | FastAPI `/predict`; `GET /health` is the only automated check (§5.4) | **No** — snapshot artifact, no runtime retraining; a sidecar records its provenance |
 
-**The dashboard does not read the registry.** The published race order and lap times come from the stacking fit inside `simulate_race.py`. The `@champion` alias is a separate model — three aggregate features after the filter described below, fastest-lap target — and never reaches the dashboard. "Best model by CV RMSE" is therefore a property of the registry lane, not of the numbers a reader sees on the site. What protects the published numbers instead is reproducibility, the dispersion tripwire (`MAX_SPREAD_INFLATION = 1.25`) and the measured ablations recorded in §2.
+**The dashboard does not read the registry.** The published race order and lap times come from the stacking fit inside `simulate_race.py`. The `@champion` alias is a separate model — four aggregate features after the filter described below, fastest-lap target — and never reaches the dashboard. "Best model by CV RMSE" is therefore a property of the registry lane, not of the numbers a reader sees on the site. What protects the published numbers instead is reproducibility, the dispersion tripwire (`MAX_SPREAD_INFLATION = 1.25`) and the measured ablations recorded in §2.
 
 **The scheduled job exports, it does not predict.** Task 5 (`export_dashboard_data`) publishes `PROJECT_ROOT/reports` — the bundle committed to the repository — to object storage and triggers the Vercel rebuild (§4.4). New prediction CSVs are produced locally and committed; a scheduled run on its own can republish the checkout, but cannot produce a new round's prediction.
 
-**Two Gold schemas, one name.** The DLT table and the local Gold are different schemas produced by different code, and they are not interchangeable:
+**Three Gold schemas, one name.** The DLT aggregate table and the local Gold are different schemas produced by different code, and they are not interchangeable:
 
 | | Unity Catalog `driver_features_gold` | Local `data/outputs/laps` |
 |---|---|---|
 | Code | `databricks/pipelines/f1_medallion_pipeline.py` | `features/pipeline.py::run_feature_pipeline` |
-| Grain | one row per (Season, EventName, Driver) | one row per lap |
+| Grain | one row per (Season, EventName, Driver), race sessions only | one row per lap |
 | Contents | `mean_pace_seconds`, `fastest_lap_seconds`, `pace_std_seconds`, `total_laps`, `tyre_degradation_corr`, `tyre_degradation_slope`, `last_ingested_at` | engineered per-lap features: rolling pace, tyre state, circuit profile, traffic margins, … |
 
-The registry model never sees the per-lap features, and the traffic-exposure labels added in §2.3 exist only in the local pipeline — the DLT Gold does not carry them. Unifying the two is a separate, deliberate change.
+The aggregate registry model never sees the per-lap features, and the traffic-exposure labels added in §2.3 exist only in the local pipeline — the DLT aggregate Gold does not carry them. Task 21.3 adds a third, **opt-in** table rather than changing either of the first two:
+
+| | Unity Catalog `lap_features_gold` (Task 21.3) |
+|---|---|
+| Code | `databricks/pipelines/lap_features.py`, called from the DLT notebook |
+| Grain | one row per (Season, RoundNumber, EventName, Driver, LapNumber, Stint), race sessions only |
+| Target | `LapTime_s` (from Silver `LapTimeSeconds`) |
+| Features | 13 columns from the shared v1 contract: `LapNumber`, `Stint`, `TyreLife`, `roll_laptime_3/5`, `roll_std_3`, `delta_roll_pace`, `delta_to_fastest_s`, and five compound indicators |
+| Causal boundary | every rolling window ends at t−1; `delta_to_fastest_s` is the cumulative prior-best; the first lap of each stint is NaN |
+| Excluded on purpose | `Position` (end-of-lap), `tyre_deg_slope`/`tyre_life_norm` (full-stint, prospective), sector/speed/pit (post-lap), traffic/form/weather/team/event (local-only) |
+| Validation | local Spark 4.2 row-for-row parity with the Pandas reference; not yet materialised in the cloud |
+| Consumers | `--training-schema lap` (event-grouped CV, separate `xgb_lap_pace_regressor`) and `--run-mode predict` (`lap_features_gold_predictions`) |
+
+The contract lives in `features/contract.py` and stamps `feature_contract_version = 1`; training refuses a table with a different version. The bridge does **not** unify the first two schemas and does **not** change the local 70-feature model. The local Gold snapshot still predates the Task 21.2 causal fix, so the parity test validates the Spark transform against the Pandas reference, not a rebuilt local file.
 
 **Where each layer lives.**
 
@@ -207,10 +225,10 @@ The registry model never sees the per-lap features, and the traffic-exposure lab
 |---|---|---|
 | Raw telemetry | Unity Catalog Volume `raw_telemetry` (Auto Loader) | FastF1 cache (`.cache/fastf1`) + `data/raw` |
 | Silver | DLT table `laps_silver` | `data/processed/laps/season=*/round=*/race_laps.parquet` |
-| Gold | DLT table `driver_features_gold` (aggregates) | `data/outputs/laps/...` (per-lap features) |
-| Registry model | UC `<catalog>.race_pace.xgb_race_pace_regressor`; MLflow experiment `/Users/<user>/f1_2026_race_pace` | — |
+| Gold | DLT tables `driver_features_gold` (aggregates) and `lap_features_gold` (opt-in per lap) | `data/outputs/laps/...` (per-lap features) |
+| Registry model | UC `<catalog>.race_pace.xgb_race_pace_regressor`; opt-in `xgb_lap_pace_regressor`; MLflow experiment `/Users/<user>/f1_2026_race_pace` | — |
 | Serving artifact | GHCR image (§5.4) | `data/outputs/models/xgb_pace_model.joblib` |
-| Predictions | — (produced locally, then exported) | `reports/<season>/<Event>/results/*.csv` |
+| Predictions | `<table>_predictions` from the manual `--run-mode predict` (not scheduled) | `reports/<season>/<Event>/results/*.csv` |
 | Dashboard bundle | Supabase S3 `f1-cache`, `dashboard/<season>/…`, `manifest.json` written last | `reports/` (also the build fallback, §4.4) |
 | Credentials | Databricks secret scope `f1_secrets` | `.env` (untracked) |
 
@@ -221,7 +239,8 @@ The registry model never sees the per-lap features, and the traffic-exposure lab
 - **`metrics.json` — regenerated.** The 2026 season, 2026 Japanese GP and 2024 Miami files now carry the `stacking` entry alongside `xgboost` and `lightgbm`.
 - **Fifteen-column Gold rebuild — measured, not adopted.** `scripts/rebuild_data.py` now recovers the real event name (so circuit profiles are event-specific), migrates results into the processed layer (so historical points and form are real rather than the neutral defaults), and rebuilds weather. A full regeneration adds 22 columns and drops 3,022 safety-car/VSC laps. On the common 74,601 laps, a paired 5-seed ablation found no robust gain: removing the four state columns lowered held-out MAE by 0.021 s (2024), 0.018 s (2025) and 0.025 s (2026); removing the seven circuit columns lowered it by 0.067/0.014/0.048 s; weather and form changed sign by season, and the old frame beat the rebuilt one in 2024, lost in 2025 and tied in 2026. The published Gold therefore stays at its original schema; the corrected rebuild is kept for a future, feature-by-feature adoption.
 - **One-hot serve skew — fixed and verified.** The simulator's scenario rows were previously all-NaN across every `Compound_*`, `Team_*` and `EventName_*` column because the Gold layer is pre-encoded and the scenario was not. `_align_scenario_one_hot_features()` now populates matching 1.0/0.0 dummy indicators against training vocabulary, eliminating 45 all-NaN dummy columns. Across a multi-round backtest (2025 R22–R24, 2026 R02, R03, R18), mean Spearman rank correlation improved from 0.6069 to 0.6161, with published field spread remaining well within physical dispersion tripwires.
-- **Target leakage in lap-level rolling features — fixed (Task 21.2).** `roll_laptime_3/5`, `roll_std_3`, and `delta_to_fastest_s` previously used the current lap or a whole-session minimum, making the ~0.2 s published MAE a reconstruction metric. `rolling_pace.py` now applies a strict pre-lap causal (t-1) boundary: `add_rolling_pace_features()` applies `.shift(1)` before each rolling window (prior completed laps only); `add_lap_delta_to_fastest()` uses `.shift(1).expanding().min()` (cumulative minimum of prior laps only). Lap 1 in each (Driver, Stint) group returns NaN for all rolling features — XGBoost handles these via its native missing-value splits. `tyre_deg_slope` retains its stint-OLS approach (slope is a stable aggregate property characterising the stint's degradation behaviour, analogous to what F1 engineers compute from the full stint; it is not a per-lap self-reference). The post-fix MAE from a chronological walk-forward pass is the honest prediction error baseline.
+- **Target leakage in lap-level rolling features — fixed (Task 21.2).** `roll_laptime_3/5`, `roll_std_3`, and `delta_to_fastest_s` previously used the current lap or a whole-session minimum, making the ~0.2 s published MAE a reconstruction metric. `rolling_pace.py` now applies a strict pre-lap causal (t-1) boundary: `add_rolling_pace_features()` applies `.shift(1)` before each rolling window (prior completed laps only); `add_lap_delta_to_fastest()` uses `.shift(1).expanding().min()` (cumulative minimum of prior laps only). Lap 1 in each (Driver, Stint) group returns NaN for all rolling features — XGBoost handles these via its native missing-value splits. `tyre_deg_slope` retains its stint-OLS approach for the local model (a stable aggregate of the stint's degradation), but the Task 21.3 bridge excludes it and `tyre_life_norm` because both are computed from the whole stint, including laps after t. The post-fix MAE from a chronological walk-forward pass is the honest prediction error baseline.
+- **Lap-level bridge — implemented and locally validated, cloud deploy pending (Task 21.3).** A shared contract (`features/contract.py`, v1) defines the 13 pre-lap-safe lap features, the legacy aggregate preset and a version stamp; `features/training_data.py` enforces it and preserves the lanes' different NaN policies. The DLT pipeline adds `lap_features_gold`, built by `databricks/pipelines/lap_features.py` with the same causal windows as the Pandas reference; Bronze/Silver now carry `Stint`, `Team` and `Position`, Silver exposes `RoundNumber`, and both Gold tables filter to `SessionType == "Race"`. `--training-schema lap` trains `xgb_lap_pace_regressor` with event-grouped CV and a separate alias; `--run-mode predict` writes `<table>_predictions`. Locally, 484 tests pass and a Spark 4.2 test compares the Spark and Pandas features row for row on a two-event synthetic frame. **Not yet true:** Databricks run triggering is currently disabled, so `lap_features_gold` has not been materialised, no lap model is registered, and no published report or aggregate champion was changed.
 
 ---
 

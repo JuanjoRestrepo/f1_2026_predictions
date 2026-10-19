@@ -1,5 +1,17 @@
 # F1 2026 Predictions - Release Notes
 
+## [v6.7.0] - 2026-10-18
+### 🌉 A Versioned Lap-Level Bridge Between DLT and Local Features (Task 21.3)
+- **Feature**: `features/contract.py` defines a shared, versioned, pre-lap-safe feature set (v1, 13 columns) plus two training presets: the existing per-driver `aggregate` lane and a new `lap` lane targeting `LapTime_s`. The contract is the same object used by the DLT table and the local validation test — not a second copy of the feature names.
+- **Feature**: The DLT pipeline now emits `lap_features_gold` (per lap, race sessions only). `databricks/pipelines/lap_features.py` mirrors the local causal semantics with Spark windows: 3/5-lap rolling means ending at the previous lap, a 3-lap sample standard deviation with a two-prior-lap minimum, `delta_roll_pace`, a cumulative prior-best `delta_to_fastest_s`, and five compound indicators. The local Spark 4.2 test compares it row for row with the Pandas reference across two synthetic events, including first-lap NaNs and cross-event isolation.
+- **Feature**: `run_train --training-schema lap` trains `xgb_lap_pace_regressor` with event-grouped `GroupKFold`, leaves missing rolling features as NaN for XGBoost's native missing branch, and keeps its `@champion` alias separate from `xgb_race_pace_regressor`. The aggregate lane keeps its historical 3-fold CV and `fillna(0.0)` behaviour.
+- **Feature**: `run_predict --training-schema lap` scores a Gold table with the schema's `@champion` and writes `<table>_predictions` (keys, prediction, model name, UTC timestamp). It is a manual mode; the scheduled job still exports rather than predicts.
+- **Data**: Bronze/Silver now carry `Stint`, `Team` and `Position`, and Silver exposes `RoundNumber` (previously dropped before Gold). Both DLT Gold tables filter to `SessionType == "Race"` so sprint/qualifying laps cannot enter driver aggregates.
+- **Deliberately excluded**: `Position` (FastF1 assigns it after the lap is complete), `tyre_deg_slope` and `tyre_life_norm` (both fit the whole stint, including future laps), and sector/speed/pit/traffic/form/team/event columns that are post-lap or local-only. The local 70-feature model is unchanged; this contract does not endorse those columns as pre-lap features.
+- **Validated locally**: 484 tests pass, including the Spark/Pandas parity test; `ruff check`, `ruff format --check` and `mypy src/ --strict` are clean. **Not cloud-validated**: Databricks run triggering is currently disabled, so `lap_features_gold` has not been materialised, no lap model has been registered, and no published report or champion was touched. The local Gold snapshot still predates the 21.2 causal fix; the parity test validates the Spark transform against the Pandas reference, not a rebuilt local file.
+
+---
+
 ## [v6.6.1] - 2026-10-18
 ### 🔧 Model-Lifecycle Gaps Closed — and a Rebuild Measured Rather Than Assumed
 - **Fix**: The registry champion no longer silently trains on three of its four named features. The DLT Gold table now emits `tyre_degradation_slope` (`regr_slope(LapTimeSeconds, LapNumber)`), and `run_train` raises when a named feature is absent instead of filtering the survivors and proceeding.

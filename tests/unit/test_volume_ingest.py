@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import ast
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pandas as pd
 import pytest
@@ -28,6 +30,9 @@ def _fastf1_laps() -> pd.DataFrame:
             ),
             "Compound": ["SOFT", "SOFT", "MEDIUM"],
             "TyreLife": [1.0, 2.0, 1.0],
+            "Stint": [1.0, 1.0, 1.0],
+            "Team": ["Red Bull", "Red Bull", "McLaren"],
+            "Position": [1.0, 2.0, 1.0],
         }
     )
 
@@ -69,6 +74,9 @@ def test_build_bronze_laps_returns_exact_contract_sorted() -> None:
     # Sorted by Driver then LapNumber (NOR before VER).
     assert bronze["Driver"].tolist() == ["NOR", "VER", "VER"]
     assert bronze["LapNumber"].tolist() == [1, 1, 2]
+    assert bronze["Stint"].tolist() == [1, 1, 1]
+    assert bronze["Team"].tolist() == ["McLaren", "Red Bull", "Red Bull"]
+    assert bronze["Position"].tolist() == [1, 1, 2]
 
 
 def test_build_bronze_laps_drops_rows_without_valid_lap_or_driver() -> None:
@@ -102,7 +110,7 @@ def test_build_bronze_laps_accepts_numeric_laptime() -> None:
 
 
 def test_build_bronze_laps_fills_optional_columns_when_absent() -> None:
-    """Missing Compound/TyreLife are surfaced as NULL, not dropped."""
+    """Missing optional lap context is surfaced as NULL, not dropped."""
     source = pd.DataFrame(
         {
             "Driver": ["VER"],
@@ -117,6 +125,25 @@ def test_build_bronze_laps_fills_optional_columns_when_absent() -> None:
 
     assert bronze["Compound"].isna().all()
     assert bronze["TyreLife"].isna().all()
+    assert bronze["Stint"].isna().all()
+    assert bronze["Team"].isna().all()
+    assert bronze["Position"].isna().all()
+
+
+def test_dlt_bronze_columns_match_ingest_contract() -> None:
+    """The DLT notebook's select list must not drift from the writer contract."""
+    pipeline = Path("src/f1_predictions/databricks/pipelines/f1_medallion_pipeline.py")
+    tree = ast.parse(pipeline.read_text(encoding="utf-8"))
+
+    for node in tree.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        names = [target.id for target in node.targets if isinstance(target, ast.Name)]
+        if "_BRONZE_COLUMNS" in names:
+            assert tuple(ast.literal_eval(node.value)) == BRONZE_LAP_COLUMNS
+            return
+
+    pytest.fail("_BRONZE_COLUMNS not found in the DLT pipeline")
 
 
 def test_build_bronze_laps_raises_on_empty_input() -> None:
