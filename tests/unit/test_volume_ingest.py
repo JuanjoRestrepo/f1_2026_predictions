@@ -146,6 +146,26 @@ def test_dlt_bronze_columns_match_ingest_contract() -> None:
     pytest.fail("_BRONZE_COLUMNS not found in the DLT pipeline")
 
 
+def test_dlt_bronze_uses_uc_compatible_source_metadata() -> None:
+    """Unity Catalog rejects input_file_name(); use _metadata.file_path."""
+    pipeline = Path("src/f1_predictions/databricks/pipelines/f1_medallion_pipeline.py")
+    tree = ast.parse(pipeline.read_text(encoding="utf-8"))
+    calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)]
+
+    assert not any(
+        isinstance(call.func, ast.Attribute) and call.func.attr == "input_file_name"
+        for call in calls
+    )
+    assert any(
+        isinstance(call.func, ast.Attribute)
+        and call.func.attr == "col"
+        and call.args
+        and isinstance(call.args[0], ast.Constant)
+        and call.args[0].value == "_metadata.file_path"
+        for call in calls
+    )
+
+
 def test_build_bronze_laps_raises_on_empty_input() -> None:
     """An empty source frame is a programming error, not an empty result."""
     with pytest.raises(ValueError, match="empty DataFrame"):
