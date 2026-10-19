@@ -7,7 +7,8 @@ Design rationale:
     - `main.py` is a local orchestrator that calls `uv run scripts/...` via
       subprocess and expects `--round`/`--event` positional args. That interface
       is incompatible with Databricks job parameters.
-    - This file exposes a clean `--run-mode {train,notify}` + `--season` CLI
+    - This file exposes a clean `--run-mode {ingest,train,predict,notify,export}`
+      + `--season` CLI
       that maps directly to Databricks job task parameters in `resources/jobs.yml`.
     - Separating concerns prevents `main.py` from growing Databricks-specific
       branching logic that breaks local execution.
@@ -15,6 +16,10 @@ Design rationale:
 Usage (Databricks job):
     python databricks_entrypoint.py --run-mode ingest --season 2026
     python databricks_entrypoint.py --run-mode train  --season 2026
+    python databricks_entrypoint.py --run-mode train  --season 2026 \
+        --training-schema lap
+    python databricks_entrypoint.py --run-mode predict --season 2026 \
+        --training-schema lap
     python databricks_entrypoint.py --run-mode notify --season 2026
     python databricks_entrypoint.py --run-mode export --season 2026
 
@@ -25,6 +30,7 @@ Deployed via DABs:
 from __future__ import annotations
 
 import argparse
+import os
 import pathlib
 import sys
 
@@ -52,6 +58,15 @@ from f1_predictions.databricks.mlflow_utils import (  # noqa: E402
     should_promote,
     track_experiment,
 )
+from f1_predictions.features.contract import (  # noqa: E402
+    TRAINING_SCHEMAS,
+    resolve_training_schema,
+)
+from f1_predictions.features.training_data import (  # noqa: E402
+    build_prediction_frame,
+    prepare_feature_frame,
+    prepare_training_data,
+)
 from f1_predictions.utils.logging_setup import (  # noqa: E402
     configure_root_pipeline_logger,
     get_logger,
@@ -60,11 +75,9 @@ from f1_predictions.utils.logging_setup import (  # noqa: E402
 logger = get_logger(__name__)
 
 
-import os  # noqa: E402
-
 USER_EMAIL = os.environ.get("DATABRICKS_USER", "restrepojuanjo@gmail.com")
 EXPERIMENT_NAME = f"/Users/{USER_EMAIL}/f1_2026_race_pace"
-MODEL_NAME = "xgb_race_pace_regressor"
+TRAINING_SCHEMA_CHOICES = tuple(sorted(TRAINING_SCHEMAS))
 
 CATALOG = os.environ.get("F1_CATALOG", "main")
 SCHEMA = os.environ.get("F1_SCHEMA", "race_pace")
@@ -75,27 +88,44 @@ SCHEMA = os.environ.get("F1_SCHEMA", "race_pace")
 # ---------------------------------------------------------------------------
 
 
-def run_train(season: int, catalog: str = CATALOG, schema: str = SCHEMA) -> None:
-    """Train the XGBoost pace regressor and register @champion in Unity Catalog.
+def run_train(
+    season: int,
+    catalog: str = CATALOG,
+    schema: str = SCHEMA,
+    training_schema: str = "aggregate",
+) -> None:
+    """Train an XGBoost pace regressor and register @champion in Unity Catalog.
 
-    Pipeline:
-        1. Read DLT-materialized Gold Delta table in Unity Catalog.
-        2. Train XGBoost pace regressor and cross-validate.
-        3. Track training run in MLflow experiment with signature.
-        4. Promote registered model version to @champion alias in Unity Catalog.
+    Two opt-in lanes share one code path but never share a registered model:
+
+    * ``aggregate`` (default) — the historical per-driver Gold table targeting
+      ``fastest_lap_seconds``. Its 3-fold CV and ``fillna(0.0)`` behaviour are
+      unchanged.
+    * ``lap`` — the Task 21.3 per-lap table targeting ``LapTime_s``. It uses
+      event-grouped CV, leaves NaN rolling features intact and registers under
+      ``xgb_lap_pace_regressor`` so its RMSE is never compared with the
+      aggregate model's RMSE.
 
     Args:
-        season: F1 season year (e.g. 2026) used to tag the MLflow run.
+        season: F1 season year used to tag the MLflow run.
         catalog: Unity Catalog catalog name.
         schema: Unity Catalog schema name.
+        training_schema: ``aggregate`` or ``lap``.
     """
+    spec = resolve_training_schema(training_schema)
     logger.info("=" * 60)
-    logger.info("DATABRICKS TRAIN MODE — Season %d (%s.%s)", season, catalog, schema)
+    logger.info(
+        "DATABRICKS TRAIN MODE — Season %d (%s.%s, schema=%s)",
+        season,
+        catalog,
+        schema,
+        spec.name,
+    )
     logger.info("=" * 60)
 
-    # ── Step 1: Read Gold feature set ───────────────────────────────────────
+    # ── Step 1: Read the schema's Gold feature set ─────────────────────────
     gold_df = None
-    target_tbl = f"{catalog}.{schema}.driver_features_gold"
+    target_tbl = f"{catalog}.{schema}.{spec.table}"
     try:
         from pyspark.sql import SparkSession  # type: ignore[import-untyped]
 
@@ -105,18 +135,14 @@ def run_train(season: int, catalog: str = CATALOG, schema: str = SCHEMA) -> None
             target_tbl,
         )
         if spark.catalog.tableExists(target_tbl) or spark.catalog.tableExists(
-            "driver_features_gold"
+            spec.table
         ):
-            tbl = (
-                target_tbl
-                if spark.catalog.tableExists(target_tbl)
-                else "driver_features_gold"
-            )
+            tbl = target_tbl if spark.catalog.tableExists(target_tbl) else spec.table
             gold_spark_df = spark.table(tbl)
             if gold_spark_df.count() > 0:
                 gold_df = gold_spark_df.toPandas()
                 logger.info(
-                    "Successfully loaded %d real Gold feature rows from table '%s'",
+                    "Successfully loaded %d Gold rows from table '%s'",
                     len(gold_df),
                     tbl,
                 )
@@ -125,34 +151,34 @@ def run_train(season: int, catalog: str = CATALOG, schema: str = SCHEMA) -> None
 
     if gold_df is None or len(gold_df) == 0:
         msg = (
-            f"Gold feature table '{target_tbl}' was not found in Unity Catalog. "
-            f"Ensure the DLT medallion pipeline has completed "
-            f"successfully before running the train task."
+            f"Gold table '{target_tbl}' was not found or returned no rows. "
+            "Ensure the DLT medallion pipeline has completed successfully "
+            "before running the train task."
         )
         raise RuntimeError(msg)
 
-    # ── Step 2: Train XGBoost pace regressor ────────────────────────────────
-    from sklearn.model_selection import cross_val_score  # type: ignore[import-untyped]
+    # ── Step 2: Validate the shared contract and build the matrix ──────────
+    training_data = prepare_training_data(gold_df, spec)
+    X = training_data.X.reset_index(drop=True)  # noqa: N806
+    y = training_data.y.reset_index(drop=True)
+    groups = (
+        training_data.groups.reset_index(drop=True)
+        if training_data.groups is not None
+        else None
+    )
+    logger.info(
+        "Contract v%s accepted: %d rows x %d features (%d target row(s) dropped).",
+        spec.contract_version or "legacy",
+        len(X),
+        len(spec.features),
+        training_data.dropped_target_rows,
+    )
+
+    from sklearn.model_selection import (  # type: ignore[import-untyped]
+        GroupKFold,
+        cross_val_score,
+    )
     from xgboost import XGBRegressor  # type: ignore[import-untyped]
-
-    feature_cols = [
-        "total_laps",
-        "mean_pace_seconds",
-        "pace_std_seconds",
-        "tyre_degradation_slope",
-    ]
-    target_col = "fastest_lap_seconds"
-
-    missing_features = [c for c in feature_cols if c not in gold_df.columns]
-    if missing_features:
-        msg = (
-            f"Gold feature table '{target_tbl}' is missing required column(s): "
-            f"{missing_features}. Refusing to train a degraded model — deploy the "
-            f"DLT pipeline so driver_features_gold exposes them."
-        )
-        raise RuntimeError(msg)
-    X = gold_df[feature_cols].fillna(0.0)  # noqa: N806
-    y = gold_df[target_col]
 
     params: dict[str, object] = {
         "n_estimators": 200,
@@ -161,6 +187,9 @@ def run_train(season: int, catalog: str = CATALOG, schema: str = SCHEMA) -> None
         "subsample": 0.8,
         "random_state": 42,
         "season": season,
+        "training_schema": spec.name,
+        "contract_version": spec.contract_version or 0,
+        "feature_count": len(spec.features),
     }
     model = XGBRegressor(
         n_estimators=int(params["n_estimators"]),
@@ -171,46 +200,77 @@ def run_train(season: int, catalog: str = CATALOG, schema: str = SCHEMA) -> None
         tree_method="hist",
     )
 
-    # Cross-validate to get reliable RMSE estimate
-    cv_scores = cross_val_score(
-        model, X, y, cv=3, scoring="neg_root_mean_squared_error"
-    )
+    # Event-grouped CV for lap rows: laps from the same race are not independent.
+    if groups is not None:
+        n_groups = int(groups.nunique())
+        if n_groups < 2:
+            msg = (
+                f"Table '{target_tbl}' contains {n_groups} event group(s). "
+                "Event-grouped CV needs at least two races before it can "
+                "produce an honest out-of-event estimate."
+            )
+            raise RuntimeError(msg)
+        n_splits = min(5, n_groups)
+        cv = GroupKFold(n_splits=n_splits)
+        cv_scores = cross_val_score(
+            model,
+            X,
+            y,
+            cv=cv,
+            groups=groups,
+            scoring="neg_root_mean_squared_error",
+        )
+        cv_label = f"GroupKFold({n_splits}) by event, {n_groups} groups"
+    else:
+        cv_scores = cross_val_score(
+            model, X, y, cv=3, scoring="neg_root_mean_squared_error"
+        )
+        cv_label = "3-fold"
 
     rmse = float(-cv_scores.mean())
-    rmse_std = float((-cv_scores).std())  # fold-to-fold RMSE dispersion
+    rmse_std = float((-cv_scores).std())
 
     model.fit(X, y)
-    logger.info("XGBoost model trained — CV RMSE: %.4f (±%.4f)", rmse, rmse_std)
+    logger.info(
+        "XGBoost model trained — %s CV RMSE: %.4f (±%.4f)",
+        cv_label,
+        rmse,
+        rmse_std,
+    )
 
     from mlflow.models import infer_signature  # type: ignore[import-untyped]
 
     signature = infer_signature(X, model.predict(X))
-    uc_model_name = f"{catalog}.{schema}.{MODEL_NAME}"
+    uc_model_name = f"{catalog}.{schema}.{spec.model_name}"
     summary = track_experiment(
         experiment_name=EXPERIMENT_NAME,
         params={str(k): str(v) for k, v in params.items()},
         metrics={"rmse": rmse, "cv_std": rmse_std},
-        run_name=f"xgb_pace_{season}",
+        run_name=f"xgb_pace_{season}_{spec.name}",
         model=model,
         registered_model_name=uc_model_name,
         signature=signature,
     )
     logger.info("MLflow run tracked: %s", summary.get("run_id"))
 
-    # ── Step 4: Promote to @champion only if the candidate improves ─────────
-    # This closes the cloud learning loop: a retrain that fails to beat the
-    # incumbent is registered as @challenger and the running @champion is left
-    # untouched, so a noisy retrain can never degrade production. Set
-    # F1_PROMOTION_TOLERANCE to require a minimum improvement margin.
+    # ── Step 3: Promote to @champion only if the candidate improves ────────
+    # The alias is per model name, so a lap candidate can never displace the
+    # aggregate champion (their targets and RMSE scales are not comparable).
     tolerance = float(os.environ.get("F1_PROMOTION_TOLERANCE", "0.0"))
     incumbent_rmse = get_champion_metric(
-        catalog=catalog, schema=schema, model_name=MODEL_NAME, metric="rmse"
+        catalog=catalog,
+        schema=schema,
+        model_name=spec.model_name,
+        metric="rmse",
     )
     promote = should_promote(rmse, incumbent_rmse, tolerance=tolerance)
     alias = "champion" if promote else "challenger"
     if incumbent_rmse is None:
         logger.info(
-            "No incumbent champion found — promoting candidate (CV RMSE %.4f).", rmse
+            "No incumbent champion found for '%s' — promoting candidate "
+            "(CV RMSE %.4f).",
+            spec.model_name,
+            rmse,
         )
     elif promote:
         logger.info(
@@ -226,14 +286,87 @@ def run_train(season: int, catalog: str = CATALOG, schema: str = SCHEMA) -> None
             incumbent_rmse,
         )
     registered_path = register_champion_model(
-        model_name=MODEL_NAME,
+        model_name=spec.model_name,
         catalog=catalog,
         schema=schema,
         alias=alias,
     )
     logger.info("Model registered at: %s", registered_path)
     logger.info("=" * 60)
-    logger.info("TRAIN COMPLETE — Season %d", season)
+    logger.info("TRAIN COMPLETE — Season %d (schema=%s)", season, spec.name)
+    logger.info("=" * 60)
+
+
+def run_predict(
+    season: int,
+    catalog: str = CATALOG,
+    schema: str = SCHEMA,
+    training_schema: str = "aggregate",
+) -> None:
+    """Score a Gold table with the schema's ``@champion`` model.
+
+    The prediction table is ``<catalog>.<schema>.<source_table>_predictions``.
+    It carries the schema's identity keys, the prediction, the model name and a
+    UTC scoring timestamp. Scoring a table that was also used for training is
+    in-sample; this mode exists to exercise the serving contract, not to claim
+    an accuracy number.
+
+    Args:
+        season: F1 season year, used only for logging.
+        catalog: Unity Catalog catalog name.
+        schema: Unity Catalog schema name.
+        training_schema: ``aggregate`` or ``lap``.
+    """
+    spec = resolve_training_schema(training_schema)
+    logger.info("=" * 60)
+    logger.info(
+        "DATABRICKS PREDICT MODE — Season %d (%s.%s, schema=%s)",
+        season,
+        catalog,
+        schema,
+        spec.name,
+    )
+    logger.info("=" * 60)
+
+    from pyspark.sql import SparkSession  # type: ignore[import-untyped]
+
+    spark = SparkSession.builder.getOrCreate()
+    source_tbl = f"{catalog}.{schema}.{spec.table}"
+    if not spark.catalog.tableExists(source_tbl):
+        msg = f"Gold table '{source_tbl}' does not exist; run the DLT pipeline first."
+        raise RuntimeError(msg)
+
+    rows = spark.table(source_tbl).toPandas()
+    if rows.empty:
+        msg = f"Gold table '{source_tbl}' returned no rows to score."
+        raise RuntimeError(msg)
+
+    X = prepare_feature_frame(rows, spec)  # noqa: N806
+    model_uri = f"models:/{catalog}.{schema}.{spec.model_name}@champion"
+    logger.info("Loading champion model '%s'…", model_uri)
+
+    import mlflow.pyfunc  # type: ignore[import-untyped]
+
+    mlflow.set_registry_uri("databricks-uc")
+    model = mlflow.pyfunc.load_model(model_uri)
+    predictions = model.predict(X)
+
+    output = build_prediction_frame(
+        rows,
+        predictions,
+        spec,
+        model_name=spec.model_name,
+    )
+    target_tbl = f"{catalog}.{schema}.{spec.table}_predictions"
+    (
+        spark.createDataFrame(output)
+        .write.mode("overwrite")
+        .option("overwriteSchema", "true")
+        .saveAsTable(target_tbl)
+    )
+    logger.info("Wrote %d predictions to '%s'.", len(output), target_tbl)
+    logger.info("=" * 60)
+    logger.info("PREDICT COMPLETE — Season %d (schema=%s)", season, spec.name)
     logger.info("=" * 60)
 
 
@@ -876,18 +1009,19 @@ def main() -> None:
         prog="databricks_entrypoint",
         description=(
             "Databricks Lakeflow Job entry point for the F1 2026 Predictions "
-            "Pipeline. Dispatches to ingest, train or notify mode based on "
-            "--run-mode."
+            "Pipeline. Dispatches to ingest, train, predict, notify or export "
+            "mode based on --run-mode."
         ),
     )
     parser.add_argument(
         "--run-mode",
         required=True,
-        choices=["ingest", "train", "notify", "export"],
+        choices=["ingest", "train", "predict", "notify", "export"],
         help="Execution mode: 'ingest' lands FastF1 laps in the raw_telemetry "
         "Volume; 'train' trains XGBoost and promotes @champion on improvement; "
-        "'notify' dispatches race verdict to Gmail and Discord; 'export' "
-        "publishes the dashboard bundle to object storage.",
+        "'predict' scores a Gold table with the schema's @champion; 'notify' "
+        "dispatches the race verdict to Gmail and Discord; 'export' publishes "
+        "the dashboard bundle to object storage.",
     )
     parser.add_argument(
         "--season",
@@ -904,6 +1038,14 @@ def main() -> None:
         "--schema",
         default=os.environ.get("F1_SCHEMA", "race_pace"),
         help="Unity Catalog schema name.",
+    )
+    parser.add_argument(
+        "--training-schema",
+        choices=TRAINING_SCHEMA_CHOICES,
+        default="aggregate",
+        help="Feature contract to use for train/predict: 'aggregate' is the "
+        "historical per-driver fastest-lap table; 'lap' is the shared per-lap "
+        "LapTime_s table (Task 21.3).",
     )
     parser.add_argument(
         "--round",
@@ -924,11 +1066,13 @@ def main() -> None:
 
     args = parser.parse_args()
     logger.info(
-        "Databricks entrypoint: mode=%s, season=%d, catalog=%s, schema=%s, force=%s",
+        "Databricks entrypoint: mode=%s, season=%d, catalog=%s, schema=%s, "
+        "training_schema=%s, force=%s",
         args.run_mode,
         args.season,
         args.catalog,
         args.schema,
+        args.training_schema,
         args.force,
     )
 
@@ -948,7 +1092,19 @@ def main() -> None:
             all_completed=args.all_completed,
         )
     elif args.run_mode == "train":
-        run_train(season=args.season, catalog=args.catalog, schema=args.schema)
+        run_train(
+            season=args.season,
+            catalog=args.catalog,
+            schema=args.schema,
+            training_schema=args.training_schema,
+        )
+    elif args.run_mode == "predict":
+        run_predict(
+            season=args.season,
+            catalog=args.catalog,
+            schema=args.schema,
+            training_schema=args.training_schema,
+        )
     elif args.run_mode == "notify":
         run_notify(
             season=args.season,

@@ -10,14 +10,41 @@ Do NOT import this file locally — it is executed on a Databricks cluster where
 Pipeline layers:
   Bronze  — raw lap telemetry ingestion
   Silver  — cleaned laps with DLT data quality expectations
-  Gold    — driver feature aggregates with Liquid Clustering
+  Gold    — driver feature aggregates and opt-in lap features
 """
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 # DLT and Spark are runtime-injected on Databricks — do not import locally
 import dlt
 import pyspark.sql.functions as SF  # noqa: N812 (Spark convention)
+
+# DLT executes this file from its workspace directory. Add it explicitly so the
+# sibling `lap_features` module is importable on every runtime; the notebook
+# context lookup is a fallback for runtimes where cwd is the pipeline root.
+sys.path.insert(0, str(Path.cwd()))
+try:
+    _dbutils = dbutils  # type: ignore[name-defined]  # noqa: F821
+    _notebook_path = (
+        _dbutils.notebook.entry_point.getDbutils()
+        .notebook()
+        .getContext()
+        .notebookPath()
+        .get()
+    )
+    _notebook_dir = str(Path(_notebook_path).parent)
+    if not _notebook_dir.startswith("/Workspace"):
+        _notebook_dir = f"/Workspace{_notebook_dir}"
+    if _notebook_dir not in sys.path:
+        sys.path.insert(0, _notebook_dir)
+except Exception:  # noqa: S110
+    # Local static checks and older runtimes: cwd is the notebook directory.
+    pass
+
+from lap_features import build_lap_features_gold  # type: ignore[import-not-found]
 
 # ---------------------------------------------------------------------------
 # Bronze — raw telemetry ingestion layer
@@ -38,6 +65,9 @@ _BRONZE_COLUMNS = [
     "LapTime",
     "Compound",
     "TyreLife",
+    "Stint",
+    "Team",
+    "Position",
     "SessionType",
     "EventName",
     "Season",
@@ -125,26 +155,29 @@ def laps_silver() -> object:
             "LapTimeSeconds",
             "Compound",
             "TyreLife",
+            "Stint",
+            "Team",
+            "Position",
             "SessionType",
             "EventName",
             "Season",
+            "RoundNumber",
             "_ingested_at",
         )
     )
 
 
 # ---------------------------------------------------------------------------
-# Gold — driver feature aggregates stored with Liquid Clustering
-# Liquid Clustering on (Season, EventName, Driver) replaces traditional
-# partitioning + Z-Ordering.  Requires DBR 13.2+ with Delta 3.1+.
-# Cluster keys are set via table_properties (not CLUSTER BY DDL in DLT).
+# Gold — driver feature aggregates
+# One row per (Season, EventName, Driver). No clustering is configured for this
+# table; it is small enough that the registry query does not need it.
 # ---------------------------------------------------------------------------
 
 
 @dlt.table(
     comment=(
-        "Gold: per-driver race feature aggregates for Unity Catalog Feature Store. "
-        "Clustered on (Season, EventName, Driver) for sub-second query latency."
+        "Gold: per-driver race feature aggregates for the Unity Catalog registry. "
+        "One row per (Season, EventName, Driver)."
     ),
     table_properties={
         "quality": "gold",
@@ -158,6 +191,7 @@ def driver_features_gold() -> object:
     """
     return (
         dlt.read("laps_silver")
+        .filter(SF.col("SessionType") == "Race")
         .groupBy("Season", "EventName", "Driver")
         .agg(
             SF.avg("LapTimeSeconds").alias("mean_pace_seconds"),
@@ -174,3 +208,30 @@ def driver_features_gold() -> object:
             SF.first("_ingested_at").alias("last_ingested_at"),
         )
     )
+
+
+# ---------------------------------------------------------------------------
+# Gold — opt-in lap-level features shared with the local pipeline (Task 21.3)
+# The Spark implementation lives in `lap_features.py` beside this notebook so
+# the same code can be exercised by the local Spark parity test. The table is
+# additive: the aggregate champion above and the local simulator are unchanged.
+# ---------------------------------------------------------------------------
+
+
+@dlt.table(
+    comment=(
+        "Gold: per-lap pre-lap-safe features shared with the local pipeline "
+        "(feature contract v1). Target: LapTime_s. Opt-in training surface for "
+        "xgb_lap_pace_regressor; not the aggregate champion."
+    ),
+    table_properties={
+        "quality": "gold",
+    },
+)
+def lap_features_gold() -> object:
+    """Build the per-lap Gold feature table from Silver laps.
+
+    Returns:
+        Spark DataFrame matching the shared feature contract (v1).
+    """
+    return build_lap_features_gold(dlt.read("laps_silver"))

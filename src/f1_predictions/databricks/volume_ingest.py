@@ -40,6 +40,9 @@ BRONZE_LAP_COLUMNS: Final[tuple[str, ...]] = (
     "LapTime",
     "Compound",
     "TyreLife",
+    "Stint",
+    "Team",
+    "Position",
     "SessionType",
     "EventName",
     "Season",
@@ -237,6 +240,21 @@ def build_bronze_laps(
     else:
         compound = pd.Series([pd.NA] * len(frame), index=frame.index, dtype="string")
 
+    if "Stint" in frame.columns:
+        stint = pd.to_numeric(frame["Stint"], errors="coerce").astype("Int64")
+    else:
+        stint = pd.Series([pd.NA] * len(frame), index=frame.index, dtype="Int64")
+
+    if "Position" in frame.columns:
+        position = pd.to_numeric(frame["Position"], errors="coerce").astype("Int64")
+    else:
+        position = pd.Series([pd.NA] * len(frame), index=frame.index, dtype="Int64")
+
+    if "Team" in frame.columns:
+        team = frame["Team"].astype("string")
+    else:
+        team = pd.Series([pd.NA] * len(frame), index=frame.index, dtype="string")
+
     driver = frame["Driver"].astype("string")
 
     # A row is only valid if the DLT expectations can pass: Driver must be
@@ -250,6 +268,9 @@ def build_bronze_laps(
             "LapTime": lap_time[valid].astype("float64"),
             "Compound": compound[valid],
             "TyreLife": tyre_life[valid].astype("float64"),
+            "Stint": stint[valid],
+            "Team": team[valid],
+            "Position": position[valid],
             "SessionType": session_type,
             "EventName": event_name,
             "Season": int(season),
