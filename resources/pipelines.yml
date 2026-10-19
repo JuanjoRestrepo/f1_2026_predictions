@@ -7,7 +7,7 @@ resources:
   pipelines:
     f1_2026_medallion_pipeline:
       name: "[${bundle.target}] F1 2026 Medallion Pipeline"
-      # Unity Catalog target (catalog.schema = f1_2026_<env>.race_pace)
+      # Unity Catalog target (catalog.schema = <var.catalog>.<var.schema>)
       catalog: ${var.catalog}
       target: ${var.schema}
 

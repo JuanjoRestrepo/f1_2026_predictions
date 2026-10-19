@@ -24,10 +24,10 @@ include:
 # ---------------------------------------------------------------------------
 variables:
   catalog:
-    description: Unity Catalog catalog name for this target environment.
-    default: f1_2026_dev
+    description: Unity Catalog catalog name. All targets use `main` here.
+    default: main
   schema:
-    description: Unity Catalog schema (layer) within the catalog.
+    description: Target-specific Unity Catalog schema within the catalog.
     default: race_pace
   schedule_pause_status:
     description: PAUSED for non-prod targets; UNPAUSED for prod.
