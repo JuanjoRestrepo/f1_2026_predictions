@@ -175,6 +175,16 @@ This document outlines the strategic technical evolution of the F1 2026 Predicti
 
 ---
 
+## 🚧 Phase 22: Cloud-Native Serving, Race-Weekend Reliability & Free-Tier Operations [PLANNED]
+- **Status**: Proposed. This entry authorizes no implementation, deployment, R18 regeneration, or production schedule change. The detailed plan and task tracker are in [docs/PLAN_CLOUD_NATIVE_SERVING.md](docs/PLAN_CLOUD_NATIVE_SERVING.md); operations are in [docs/RUNBOOK_RACE_WEEKEND.md](docs/RUNBOOK_RACE_WEEKEND.md).
+- **Problem**: The lakehouse is cloud-native, but the serving path is not. Production Delta has 2026 data through R17; local `data/outputs/laps` has only R1–3, and `scripts/simulate_race.py` writes the published reports locally. The scheduled job’s dashboard export publishes committed reports; it does not predict. The dashboard does not read the registry.
+- **Decision (proposed)**: Databricks Delta/Unity Catalog remains the source of truth; batch inference runs in Databricks; a versioned compact bundle is published to Supabase; Vercel consumes it with strict validation. Preserve the current 70-feature published model until a shadow comparison validates any replacement.
+- **Workstreams**: cloud inference and serving contract; dashboard strict consumption; explicit schedule plus post-race retry; HTTPS notification relay; freshness/health checks; runbook and rollback.
+- **Exit criteria**: no production read of local `data/outputs`; a new round appears in the manifest and site within the agreed SLO; missing/failed runs and zero-channel notifications are visible; a previous release can be restored; no unvalidated model or R18 change.
+- **Out of scope**: paid services, real-time timing, UI redesign, registry replacement without validation, and R18 regeneration without explicit approval.
+
+---
+
 ## 📝 Strategic Technical Notes
 - **FastF1 vs. Formula-Timer**: The platform will continue using FastF1 as the "Ground Truth" for ML modeling and telemetry analysis. Formula-Timer is designated as a secondary-screen validation tool and UI reference to ensure professional-grade visualization and real-time trend benchmarking.
 - **Model Target**: Maintain a target MAE < 0.150s through iterative Stacking (Phase 12-16) and strict causal feature separation (Phase 21).

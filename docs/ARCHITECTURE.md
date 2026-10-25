@@ -219,6 +219,8 @@ The aggregate registry model never sees the per-lap features, and the traffic-ex
 
 The contract lives in `features/contract.py` and stamps `feature_contract_version = 1`; training refuses a table with a different version. The bridge does **not** unify the first two schemas and does **not** change the local 70-feature model. The local Gold snapshot still predates the Task 21.2 causal fix, so the parity test validates the Spark transform against the Pandas reference, not a rebuilt local file.
 
+> **Planned remediation (Phase 22).** The local producer described above is not the target architecture. [PLAN_CLOUD_NATIVE_SERVING.md](PLAN_CLOUD_NATIVE_SERVING.md) tracks moving the current 70-feature inference and dashboard export into Databricks, using Delta as the source of truth and a versioned Supabase bundle for serving. Until that work lands, this section remains the current behavior. No R18 report or model is changed by the plan.
+
 **Where each layer lives.**
 
 | Layer | Production | Local |
@@ -273,6 +275,8 @@ The dashboard no longer depends on a race-day GitHub Actions cron to refresh its
 - **Fallback**: the committed `reports/**` tree remains the source of truth whenever the base URL is unset, so the build works with no cloud configuration at all.
 - **Rebuild trigger**: because the round list is baked in at build time (§4.1), the export task POSTs `F1_VERCEL_DEPLOY_HOOK_URL` after a successful publish so Vercel rebuilds and the new round becomes reachable. Best-effort by design: an unset hook, a missing `requests`, or a failed request is logged rather than raised, so a flaky deploy hook can never fail the export task.
 - **Coverage guard**: `scripts/check_next_race_coverage.py` asserts the same availability rule the UI uses and fails when the calendar's next race has no artifacts — the failure mode where the home page looks healthy while the next Grand Prix is unreachable.
+
+> **Planned migration (Phase 22):** strict cloud-only consumption, manifest/schema validation, versioned release prefixes, and a cloud-generated bundle are tracked in [PLAN_CLOUD_NATIVE_SERVING.md](PLAN_CLOUD_NATIVE_SERVING.md). This section describes the current path; the local report producer and the committed-reports fallback remain until that work lands.
 
 ---
 
