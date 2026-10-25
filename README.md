@@ -8,6 +8,10 @@ A production-grade, end-to-end MLOps platform designed to predict Formula 1 race
 
 📖 **Detailed System Architecture**: For a comprehensive technical deep-dive into the Databricks Lakehouse, DLT Medallion layers, Quantile Regressors, LLM Fallback Chain, and Next.js ISR architecture, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+📋 **Cloud-Native Serving Plan**: The Phase 22 work to remove the local prediction producer from the serving path, harden the schedule, and fix notifications is tracked in [docs/PLAN_CLOUD_NATIVE_SERVING.md](docs/PLAN_CLOUD_NATIVE_SERVING.md).
+
+🧭 **Race-Weekend Runbook**: Pre-race, post-race, failure, and rollback procedures are in [docs/RUNBOOK_RACE_WEEKEND.md](docs/RUNBOOK_RACE_WEEKEND.md).
+
 ---
 
 ## 📸 Platform Interface Preview
@@ -247,6 +251,8 @@ F1_DASHBOARD_DATA_BASE_URL=https://<project>.supabase.co/storage/v1/object/publi
 ```
 
 Left unset, the sync is a no-op and the dashboard uses the committed `reports/` files — so local development and existing deployments are unaffected.
+
+> **Current limitation / planned migration:** `export_dashboard_data` publishes the committed `reports/` tree; it does **not** generate a new prediction. The local Gold and `scripts/simulate_race.py` are still the producer. The Phase 22 plan in [docs/PLAN_CLOUD_NATIVE_SERVING.md](docs/PLAN_CLOUD_NATIVE_SERVING.md) tracks moving inference and export into Databricks, with the current 70-feature model preserved until a shadow comparison validates any replacement.
 
 ### 🧱 Databricks Lakehouse Deployment (DABs)
 
