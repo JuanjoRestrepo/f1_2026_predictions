@@ -401,6 +401,12 @@ def run_ingest(
     logger.info("DATABRICKS INGEST MODE — Season %d (%s.%s)", season, catalog, schema)
     logger.info("=" * 60)
 
+    # FastF1 refuses anonymous loads for the current season: the round still
+    # resolves from the public schedule, but session timing stays empty and
+    # ``build_bronze_laps`` raises ``DataNotLoadedError``. Pull the F1 account
+    # pair from the secret scope before any session is loaded.
+    _load_secrets_from_databricks(_FASTF1_CREDENTIAL_ENV_VARS, "FastF1 credentials")
+
     from f1_predictions.databricks.volume_ingest import volume_root
 
     rounds = _resolve_ingest_rounds(season, round_number, all_completed)
@@ -841,6 +847,13 @@ _S3_CONFIG_ENV_VARS = (
     "SUPABASE_S3_SECRET_KEY",
     "SUPABASE_S3_BUCKET_NAME",
 )
+
+# FastF1 signs in to Formula 1's live-timing API with an F1 account. Since the
+# 2026 season the API refuses anonymous session loads, so ingestion without
+# this pair fails with ``DataNotLoadedError`` even though the schedule and the
+# driver list resolve fine. Resolved from ``f1_secrets`` like every other
+# runtime credential.
+_FASTF1_CREDENTIAL_ENV_VARS = ("F1_USERNAME", "F1_PASSWORD")
 
 # Optional Vercel Deploy Hook, resolved from the same scope when set. Publishing
 # new artifacts is not enough on its own: the dashboard pulls reports/ at build
