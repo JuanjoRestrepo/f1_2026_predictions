@@ -85,6 +85,22 @@ class TestFindLastCompletedRace:
 
         assert result is None
 
+    def test_ignores_race_scheduled_later_today(self) -> None:
+        """A same-day race has not run yet at the 06:00 UTC job time.
+
+        2026 Mexico: the 06:00 UTC run treated the 20:00 UTC race as
+        completed and ingested a 21-lap pre-race stub.
+        """
+        now = datetime(2026, 11, 1, 6, 0, tzinfo=UTC)
+        schedule = _make_schedule(
+            [
+                ("Mexico City Grand Prix", "2026-11-01T20:00:00+00:00", 19),
+            ]
+        )
+        result = find_last_completed_race(schedule, now_utc=now, days_back=7)
+
+        assert result is None
+
     def test_ignores_testing_events(self) -> None:
         """Should not match pre-season testing events."""
         now = datetime(2026, 3, 2, 9, 0, tzinfo=UTC)
