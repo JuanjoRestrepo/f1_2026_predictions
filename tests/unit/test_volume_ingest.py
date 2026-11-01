@@ -166,6 +166,32 @@ def test_dlt_bronze_uses_uc_compatible_source_metadata() -> None:
     )
 
 
+def test_dlt_silver_dedupes_reingested_laps() -> None:
+    """Bronze appends on re-ingest, so Silver must collapse duplicate laps."""
+    pipeline = Path("src/f1_predictions/databricks/pipelines/f1_medallion_pipeline.py")
+    tree = ast.parse(pipeline.read_text(encoding="utf-8"))
+
+    imported = {
+        alias.name
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ImportFrom)
+        for alias in node.names
+    }
+    assert "dedupe_laps" in imported
+
+    silver = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == "laps_silver"
+    )
+    called = {
+        call.func.id
+        for call in ast.walk(silver)
+        if isinstance(call, ast.Call) and isinstance(call.func, ast.Name)
+    }
+    assert "dedupe_laps" in called
+
+
 def test_build_bronze_laps_raises_on_empty_input() -> None:
     """An empty source frame is a programming error, not an empty result."""
     with pytest.raises(ValueError, match="empty DataFrame"):

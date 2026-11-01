@@ -50,8 +50,12 @@ def find_last_completed_race(
 ) -> dict[str, Any] | None:
     """Determine if a race was completed within the last N days.
 
-    Compares each race event's date against the current UTC date. Returns
-    the most recently completed event metadata if found, otherwise None.
+    A race counts as completed only once its calendar day is over: the window
+    is ``[today - days_back, today)``. The upper bound is strict because the
+    scheduled job runs at 06:00 UTC, hours before a Sunday race starts; using
+    ``<= today`` made it ingest a race that had not happened yet (2026 Mexico:
+    a 21-lap stub written 14 hours before lights out). Same-day sessions are
+    picked up by the next run, which lands on Monday.
 
     Args:
         schedule: FastF1 event schedule DataFrame from `get_event_schedule`.
@@ -78,7 +82,7 @@ def find_last_completed_race(
     event_dates = schedule["EventDate"].dt.date
     mask = (
         (event_dates >= cutoff_date)
-        & (event_dates <= today_date)
+        & (event_dates < today_date)
         & (schedule["EventFormat"] != "testing")
     )
     recent = schedule.loc[mask]

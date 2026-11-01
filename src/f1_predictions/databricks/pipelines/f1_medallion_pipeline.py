@@ -45,6 +45,7 @@ except Exception:  # noqa: S110
     pass
 
 from lap_features import build_lap_features_gold  # type: ignore[import-not-found]
+from silver import dedupe_laps  # type: ignore[import-not-found]
 
 # ---------------------------------------------------------------------------
 # Bronze — raw telemetry ingestion layer
@@ -141,7 +142,7 @@ def laps_silver() -> object:
     Returns:
         Spark DataFrame with validated, cleaned lap data.
     """
-    return (
+    return dedupe_laps(
         dlt.read("telemetry_bronze")
         .withColumn(
             "LapTimeSeconds",
@@ -151,21 +152,20 @@ def laps_silver() -> object:
             ).otherwise(SF.lit(None)),
         )
         .filter(SF.col("LapNumber").isNotNull())
-        .select(
-            "Driver",
-            "LapNumber",
-            "LapTimeSeconds",
-            "Compound",
-            "TyreLife",
-            "Stint",
-            "Team",
-            "Position",
-            "SessionType",
-            "EventName",
-            "Season",
-            "RoundNumber",
-            "_ingested_at",
-        )
+    ).select(
+        "Driver",
+        "LapNumber",
+        "LapTimeSeconds",
+        "Compound",
+        "TyreLife",
+        "Stint",
+        "Team",
+        "Position",
+        "SessionType",
+        "EventName",
+        "Season",
+        "RoundNumber",
+        "_ingested_at",
     )
 
 
