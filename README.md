@@ -12,6 +12,8 @@ A production-grade, end-to-end MLOps platform designed to predict Formula 1 race
 
 🧭 **Race-Weekend Runbook**: Pre-race, post-race, failure, and rollback procedures are in [docs/RUNBOOK_RACE_WEEKEND.md](docs/RUNBOOK_RACE_WEEKEND.md).
 
+🔬 **Season Rollover and Features (ADR-002)**: The feasibility review of advanced telemetry features, the cross-season prior model, and the ordered enrichment roadmap are in [docs/ADR-002_SEASON_ROLLOVER_AND_FEATURES.md](docs/ADR-002_SEASON_ROLLOVER_AND_FEATURES.md). Proposed; authorizes no implementation.
+
 ---
 
 ## 📸 Platform Interface Preview

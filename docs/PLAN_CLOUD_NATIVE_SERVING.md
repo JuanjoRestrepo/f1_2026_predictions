@@ -74,25 +74,28 @@ These are technically independent and do not change the published model or R18 n
 
 ### 2.3 Verified run history
 
-As of **2026-10-25 02:10 UTC**:
+As of **2026-11-01 22:15 UTC**:
 
 | Time (UTC) | Run | State | Notes |
 |---|---|---|---|
-| 2026-10-19 | `1044964739853858` | `SUCCESS` | Manual full-job verification; exact start time not captured in this snapshot |
 | 2026-10-19 06:00 | `250475189931822` | `SUCCESS` | Periodic |
 | 2026-10-23 06:00 | `465431627319411` | `SUCCESS` | Periodic; no completed race; Gmail failed; export succeeded |
-| 2026-10-24 06:00 | — | **No run record** | Expected by `FRI-MON`; skipped, not failed |
-| 2026-10-25 06:00 | — | Not yet due at the time of this audit | Next pre-race window |
-| 2026-10-26 06:00 | — | Not yet due at the time of this audit | Post-race window |
+| 2026-10-24 → 2026-10-30 | — | **No run record** | Workspace compute was `INACTIVE` for eight days; it resumed only after a user login on 2026-10-31 |
+| 2026-10-31 16:35 | `556562294073340` | `SUCCESS` | Manual verification run |
+| 2026-10-31 17:04 | `675450519495425` | `SUCCESS` | Manual ingest of R18 (Austin): 1,163 laps |
+| 2026-11-01 06:00 | `957016537359610` | `SUCCESS` | Periodic; ingested a **race-day stub** for R19 (Mexico) at 06:00 UTC, 14 hours before lights out; see below |
 
-Pipeline state: `IDLE`; latest update `d155e561-b4b5-44f8-bed8-60b3a3ec5576` completed at `2026-10-23T06:01:09Z`.
+Pipeline state: `IDLE`; latest update `1e30f66c-c523-4222-97ca-1f040af05e66` completed at `2026-11-01T06:01:28Z`.
 
-The Oct 23 run:
-- ingested no completed race (the job reported no new round);
-- ran the DLT pipeline successfully;
-- trained successfully;
+The 2026-11-01 run:
+- ingested R19 instead of R18 because the race’s calendar date was “today” (fixed in `d6e0785`);
+- wrote 21 stub laps (21 drivers, all `LapNumber=2`, placeholder IDs 236–247) to `round=19`;
+- propagated the stub to `telemetry_bronze` (21 rows) and `driver_features_gold` (Mexico: 21 drivers / 21 laps);
+- trained successfully, kept `@champion` (candidate CV RMSE 1.7439 vs incumbent 1.6566) and registered v4 as `@challenger`;
 - logged `SMTPServerDisconnected` for Gmail and reported `0/1 channels succeeded`;
-- published 194 dashboard artifacts and `manifest.json`.
+- published 194 dashboard artifacts and a manifest with rounds 1–18; `/race/19` stayed 404.
+
+R18 is intact: 1,163 laps and 22 drivers in Bronze and Gold. The challenger is tainted by the stub and must not be promoted.
 
 An earlier audit note, “no run after 2026-10-19,” was stale: the Oct 23 run exists.
 
@@ -104,11 +107,14 @@ An earlier audit note, “no run after 2026-10-19,” was stale: the Oct 23 run 
 | G2 | Registry is not connected to the dashboard | P0 | Published numbers cannot be traced to the registered model; docs say the dashboard does not read the registry |
 | G3 | No automated post-race website update | P0 | The Monday job can ingest data but cannot produce a new round’s prediction; its export republishes the committed bundle |
 | G4 | Gmail SMTP fails in production | P1 | No race verdict email is delivered; the job still looks green |
-| G5 | Oct 24 scheduled run is missing | P1 | Race-weekend pre-race coverage is not guaranteed; a skipped run has no alert |
+| G5 | Workspace compute went `INACTIVE` for eight days (2026-10-23 → 2026-10-31) | P1 | No scheduled run fired during the gap and nothing alerted; compute resumed only after a user login |
 | G6 | No freshness/health alert | P1 | A green job does not prove that a new round, a new bundle, or a working notification exists |
 | G7 | Dashboard silently falls back to committed reports | P1 | A failed cloud sync can serve stale data without failing the build |
 | G8 | Austin has only predictions/standings | P2 | No markdown, tyre, weather, or lap-position artifacts for the upcoming race |
 | G9 | Free-tier constraints are not in the runbook | P2 | Restricted egress, quotas, and non-commercial limits can break operations unexpectedly |
+| G10 | Race-day stub ingestion (scheduled path mitigated 2026-11-01 in `d6e0785`) | P0 | The Sunday 06:00 UTC run ingested a race that started 14 hours later; the detection window is now half-open, but the stub must still be purged and `completed_round_numbers` (`--all-completed`) still compares the midnight event date |
+| G11 | Re-ingested rounds duplicated laps (mitigated 2026-11-01 in `d6e0785`) | P1 | Bronze is append-only while ingest overwrites the Volume; `laps_silver` now dedupes on the lap natural key |
+| G12 | FastF1 credentials live in `f1_secrets` | P2 | `F1_USERNAME` / `F1_PASSWORD` are required for live session data; a missing secret yields partial or empty timing data |
 
 ---
 
@@ -138,7 +144,7 @@ An earlier audit note, “no run after 2026-10-19,” was stale: the Oct 23 run 
 ### Constraints and assumptions
 
 - Databricks **Free Edition** remains the compute/lakehouse: serverless-only, one `2X-Small` SQL warehouse, max 5 concurrent job tasks, one active pipeline per pipeline type, no GPUs, restricted outbound internet, non-commercial use, no SLA.
-- Supabase free storage (1 GB) remains the object store for the dashboard bundle and FastF1 cache.
+- Supabase free storage (1 GB) remains the object store for the dashboard bundle. The FastF1 cache is **not** in Supabase: it lives on the workspace bundle path (`.bundle/.../files/.cache/fastf1`) and must be cleared when it holds a partial session.
 - Vercel Hobby remains the frontend.
 - The current 70-feature local pipeline is the product model to preserve for the first cloud cutover.
 - The cloud `lap_features_gold` table exposes 13 features; it is **not** interchangeable with the local 70-feature frame.
@@ -303,6 +309,8 @@ The first cloud cutover must preserve the current published model. Do not silent
 | P22-C3 | Add a freshness/heartbeat check: expected round vs latest public manifest (extend to Delta after P22-A4) | P22-B1 | Missing round raises an alert within the SLO | Planned |
 | P22-C4 | Document and test the manual `bundle run` fallback | — | Runbook command works; no claim that it predicts post-race before P22-A3 | Planned |
 | P22-C5 | Verify the Databricks failure email path and add an external heartbeat if needed | — | A failed or skipped run is visible outside the job UI | Planned |
+
+Pre-work landed outside this plan (approved separately, `d6e0785`, 2026-11-01): the race-detection window is now half-open (`[today − days_back, today)`) and `laps_silver` dedupes on `(Season, RoundNumber, Driver, LapNumber)`. P22-C2 must assume both: same-day auto-detection returns nothing (manual ingestion needs `--round`), and a repeated ingest is idempotent in Silver but still appends rows to Bronze.
 
 ### Workstream D — Notifications
 
@@ -626,12 +634,13 @@ Phase 22 is done only when all of the following are true:
 - [ARCHITECTURE.md](ARCHITECTURE.md) §3.4 — model lanes, dashboard/registry separation, “the scheduled job exports, it does not predict.”
 - [ARCHITECTURE.md](ARCHITECTURE.md) §4.4 — Databricks → object storage → Vercel serving path.
 - [RUNBOOK_RACE_WEEKEND.md](RUNBOOK_RACE_WEEKEND.md) — operational checklist and failure matrix.
+- [ADR-002_SEASON_ROLLOVER_AND_FEATURES.md](ADR-002_SEASON_ROLLOVER_AND_FEATURES.md) — feature feasibility, season rollover prior, and the ordered roadmap.
 - [ROADMAP.md](../ROADMAP.md) — Phase 22 entry.
 - [RELEASES.md](../RELEASES.md) — v6.7.0 verified state and known notification issue.
 - [CONTRIBUTING.md](../CONTRIBUTING.md) — branch/PR/pre-push rules.
 - [README.md](../README.md) — deployment and dashboard environment variables.
-- Production pipeline: `ee5ef64c-e347-41db-9d2d-2c6be421aadc`; latest update `d155e561-b4b5-44f8-bed8-60b3a3ec5576`.
-- Production job: `849873932739477`; runs `250475189931822` (2026-10-19), `465431627319411` (2026-10-23), manual `1044964739853858`.
+- Production pipeline: `ee5ef64c-e347-41db-9d2d-2c6be421aadc`; latest update `1e30f66c-c523-4222-97ca-1f040af05e66` (2026-11-01T06:01:28Z).
+- Production job: `849873932739477`; runs `250475189931822` (2026-10-19), `465431627319411` (2026-10-23), manual `675450519495425` (2026-10-31), `957016537359610` (2026-11-01, race-day stub — see RUNBOOK §4.9).
 - Public dashboard manifest: `https://wjwqjmecefgyypkqnabe.supabase.co/storage/v1/object/public/f1-cache/dashboard/2026/manifest.json`.
 - Live dashboard: `https://f1-2026-predictions-beta.vercel.app/race/18`.
 - Databricks Free Edition limitations: `https://docs.databricks.com/aws/en/getting-started/free-edition-limitations`.

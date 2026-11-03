@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | Current operational runbook; reflects the system as of 2026-10-25 |
+| Status | Current operational runbook; reflects the system as of 2026-11-01 |
 | Applies to | Production job `849873932739477` and pipeline `ee5ef64c-e347-41db-9d2d-2c6be421aadc` |
 | Plan | [PLAN_CLOUD_NATIVE_SERVING.md](PLAN_CLOUD_NATIVE_SERVING.md) |
 | Scope | Pre-race checks, post-race checks, failure handling, rollback, evidence capture |
@@ -22,9 +22,9 @@
 | Cron | `0 0 6 ? * FRI-MON` (UTC) |
 | Pause status | `UNPAUSED` |
 | Intended days | Friday, Saturday, Sunday, Monday at 06:00 UTC |
-| Next scheduled windows | Sunday 06:00 UTC (pre-race), Monday 06:00 UTC (post-race) |
-| Latest verified run | `465431627319411` — 2026-10-23 06:00 UTC — `SUCCESS` |
-| Missing run observed | 2026-10-24 06:00 UTC — no run record |
+| Next scheduled windows | Monday 2026-11-02 06:00 UTC (post-race), then São Paulo 2026-11-06 → 2026-11-09 |
+| Latest verified run | `957016537359610` — 2026-11-01 06:00 UTC — `SUCCESS` (all five tasks; ingested a race-day stub — see §4.9) |
+| Missing run observed | 2026-10-24 → 2026-10-30 — no run records (compute `INACTIVE`) |
 | Dashboard bundle | Supabase `f1-cache`, prefix `dashboard/2026`, manifest written last |
 | Dashboard URL | `https://f1-2026-predictions-beta.vercel.app` |
 | Public manifest | `https://wjwqjmecefgyypkqnabe.supabase.co/storage/v1/object/public/f1-cache/dashboard/2026/manifest.json` |
@@ -33,9 +33,13 @@ Current limitations:
 
 1. **No cloud prediction yet.** The export task publishes `PROJECT_ROOT/reports`, which is produced locally. The Monday job cannot create a new round’s predictions.
 2. **Gmail SMTP fails.** The notification task reports `0/1 channels`; no production email is delivered. The job remains green because notifications are non-fatal.
-3. **Oct 24 was skipped.** There is no failed run. The 2026-10-25 06:00 UTC and 2026-10-26 06:00 UTC runs are the next windows.
+3. **Oct 24–30 had no runs.** There is no failed run: the workspace compute was `INACTIVE` (see item 8 and §4.7).
 4. **The dashboard may use committed reports.** `F1_DASHBOARD_DATA_BASE_URL` is not set in the repository; if it is also absent in Vercel, the build uses committed `reports/`.
 5. **The Austin prediction is pre-race and local.** It was generated 2026-10-18 from local 2026 rounds 01–03. Do not claim it uses the full R1–17 Delta window.
+6. **Race-day stub (fixed in `d6e0785`).** Before the fix, the Sunday 06:00 UTC run treated a race whose calendar date was “today” as completed and ingested a pre-race stub. See §4.9 for the recovery procedure and for the 2026 Mexico incident record.
+7. **Re-ingest duplicates (fixed in `d6e0785`).** Bronze is an append-only streaming table while the ingest overwrites the round’s Volume directory, so re-ingesting a round appended a second copy of every lap. `laps_silver` now dedupes on `(Season, RoundNumber, Driver, LapNumber)`, keeping the newest `_ingested_at`.
+8. **Compute can go `INACTIVE`.** The workspace compute was `INACTIVE` for eight days (2026-10-23 → 2026-10-31) and only resumed after a user login. A scheduled run during that window cannot fire; see §4.7.
+9. **FastF1 credentials are required for live sessions.** `F1_USERNAME` and `F1_PASSWORD` are read from the `f1_secrets` scope by `run_ingest()`. Without them FastF1 can return partial or empty timing data even when the race has finished.
 
 ---
 
@@ -239,12 +243,13 @@ Expected: at least one channel reports success.
 
 ### 4.2 Ingest says “No completed race to ingest”
 
-This is expected when the last race is outside the 7-day lookback or FastF1 has not published the round yet.
+This is expected when the last race is outside the 7-day lookback, FastF1 has not published the round yet, or the race is scheduled **today** (the detection window is `[today − days_back, today)`).
 
 1. Confirm the race has actually finished and FastF1 has data.
 2. Check the next scheduled window (or the planned post-race retry after Phase 22).
 3. Do not fabricate lap times or duplicate an older round.
-4. If this is the Monday post-race run and the data is late, record “ingest deferred”; the next retry/manual run is required.
+4. On race day, the run intentionally ingests nothing; the next window is Monday 06:00 UTC. If the round must land sooner, re-ingest it explicitly with `--round <n>` (see §4.9) once the session is complete.
+5. If this is the Monday post-race run and the data is late, record “ingest deferred”; the next retry/manual run is required.
 
 ### 4.3 DLT pipeline failed
 
@@ -290,6 +295,8 @@ This is expected when the last race is outside the 7-day lookback or FastF1 has 
 3. Wait for the quota reset; use the next scheduled window.
 4. If the race-weekend update is urgent, use the manual fallback only after confirming compute is available.
 
+Observed 2026-10-23 → 2026-10-31: the workspace compute was `INACTIVE` for eight days and no scheduled run fired. Compute resumed only after a user login. A scheduled run does not wake an `INACTIVE` workspace by itself, so a silent gap in run history should be treated as this failure mode first — open the workspace and confirm the compute state before assuming a job or cron defect.
+
 ### 4.8 Unexpected or wrong data
 
 1. Stop the release; do not publish a manifest over the last good one.
@@ -297,6 +304,78 @@ This is expected when the last race is outside the 7-day lookback or FastF1 has 
 3. Check the feature contract version and model provenance.
 4. If a model or feature change caused it, restore the previous release/model alias and open an incident.
 5. Do not “fix” published numbers by hand.
+
+### 4.9 Race-day stub ingested (race had not finished)
+
+**Symptom.** The Sunday 06:00 UTC run is green, but the new round has a suspiciously small row count: a few dozen laps, every row at the same `LapNumber`, and placeholder driver IDs. Gold shows the new event with a handful of “drivers” and a tiny `total_laps`.
+
+**Cause.** Before `d6e0785`, `find_last_completed_race` used `EventDate <= today`, so a race scheduled later the same day counted as completed. FastF1 returned a pre-race session snapshot; the ingest wrote it and DLT propagated it. The same defect made `notify` report a verdict for an unrun race.
+
+**Do not** retry the ingest immediately. FastF1 caches the stub on the workspace, so a naive re-run reloads the same partial snapshot. Wait until the race has actually finished and FastF1 has published timing data.
+
+**Do not** use `--all-completed` on race day either. `completed_round_numbers` still compares `EventDate` (midnight UTC in the FastF1 schedule) against the reference time, so on race morning it includes the unrun round. The scheduled job never passes that flag, but a manual backfill would reproduce the stub. Until this path is fixed, backfill with explicit `--round` values or wait for the next day.
+
+**Recovery (approved per incident; no training, no promotion, no republish):**
+
+1. Confirm the race is over and timing data is available. A quick probe with a throwaway cache is safe:
+   ```bash
+   uv run python - <<'PY'
+   import tempfile, fastf1
+   fastf1.Cache.enable_cache(tempfile.mkdtemp())
+   s = fastf1.get_session(2026, 19, "R")
+   s.load(laps=True, telemetry=False, weather=False, messages=False)
+   print(len(s.laps), s.laps["Driver"].nunique(), int(s.laps["LapNumber"].max()))
+   PY
+   ```
+   Expect ~1,000+ laps, ~20 drivers and a max lap near the race distance. If it still reports 0 laps or a stub, the session is not published yet; wait and retry.
+2. Delete the FastF1 cache for that event so the workspace cannot serve the stub:
+   ```bash
+   databricks workspace delete --recursive \
+     '/Workspace/Users/<user>/.bundle/f1_2026_predictions/prod/files/.cache/fastf1/2026/<date>_<Event_Name>'
+   databricks workspace delete \
+     '/Workspace/Users/<user>/.bundle/f1_2026_predictions/prod/files/.cache/fastf1/fastf1_http_cache.sqlite'
+   ```
+3. Re-ingest that round explicitly. Same-day auto-detection intentionally returns nothing, so pass `--round`:
+   ```bash
+   databricks jobs run-now --json '{
+     "job_id": 849873932739477,
+     "only": ["ingest_race_telemetry"],
+     "notebook_params": {},
+     "python_params": ["--season","2026","--run-mode","ingest","--round","19",
+                       "--catalog","main","--schema","f1_2026_prod","--force"]
+   }'
+   ```
+   Verify the log says `Landed <n> laps for 2026 R19` with a full-race count.
+4. Confirm the Volume:
+   ```sql
+   SELECT COUNT(*) AS rows, COUNT(DISTINCT Driver) AS drivers,
+          MIN(LapNumber) AS min_lap, MAX(LapNumber) AS max_lap
+   FROM read_files('/Volumes/main/f1_2026_prod/raw_telemetry/season=2026/round=19',
+                   format => 'parquet');
+   ```
+5. Full-refresh the pipeline to purge the stub from Bronze/Silver/Gold. Bronze is streaming, so a normal update keeps the stale rows:
+   ```bash
+   databricks pipelines start-update ee5ef64c-e347-41db-9d2d-2c6be421aadc --full-refresh
+   ```
+6. Verify 2026 Gold has both rounds correct and no duplicated laps:
+   ```sql
+   SELECT EventName, COUNT(*) AS drivers, SUM(total_laps) AS laps
+   FROM main.f1_2026_prod.driver_features_gold
+   WHERE Season = 2026 GROUP BY EventName ORDER BY EventName;
+   ```
+   Compare against Bronze per-round counts; a round whose Gold `total_laps` is roughly double Bronze is a dedupe failure.
+7. Do **not** train, promote a model, or republish the dashboard as part of this recovery. The candidate trained on the stub must not become `@champion`.
+
+**Incident record — 2026 Mexico City GP (R19), 2026-11-01:**
+
+- `957016537359610` fired at 06:00 UTC; the race started at 20:00 UTC.
+- Ingest logged `Landed 21 laps for 2026 R19`; the Volume had 21 rows, 21 drivers, all `LapNumber=2`.
+- DLT propagated it: `telemetry_bronze` R19 = 21 rows; `driver_features_gold` Mexico = 21 drivers / 21 laps.
+- R18 was unaffected: 1,163 laps and 22 drivers in Bronze and Gold.
+- Training kept `@champion` (candidate CV RMSE 1.7439 vs incumbent 1.6566) and registered v4 as `@challenger`. The challenger is tainted by the stub and must not be promoted.
+- Export republished 194 files, manifest `2026-11-01T06:07:18Z`, rounds 1–18. `/race/19` stayed 404, so no false post-race page was published.
+- Notification failed again: `SMTPServerDisconnected`, `0/1 channels`.
+- The race was interrupted by a red flag; a same-day re-ingest before the chequered flag would only have refreshed the stub.
 
 ---
 
