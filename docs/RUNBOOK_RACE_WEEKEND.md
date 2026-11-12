@@ -20,11 +20,12 @@
 | Job ID | `849873932739477` |
 | Pipeline | `ee5ef64c-e347-41db-9d2d-2c6be421aadc` |
 | Cron | `0 0 6 ? * FRI-MON` (UTC) |
-| Pause status | `UNPAUSED` |
+| Pause status | `UNPAUSED` — restored 2026-11-12 after the R19/R20 backfill and Gold verification (see §4.9) |
 | Intended days | Friday, Saturday, Sunday, Monday at 06:00 UTC |
-| Next scheduled windows | Monday 2026-11-02 06:00 UTC (post-race), then São Paulo 2026-11-06 → 2026-11-09 |
+| Next scheduled windows | Friday 2026-11-13 06:00 UTC, then Las Vegas 2026-11-20 → 2026-11-23 |
 | Latest verified run | `957016537359610` — 2026-11-01 06:00 UTC — `SUCCESS` (all five tasks; ingested a race-day stub — see §4.9) |
-| Missing run observed | 2026-10-24 → 2026-10-30 — no run records (compute `INACTIVE`) |
+| Latest manual backfill | 2026-11-12 — R19 `310152296089` (1,084 laps), R20 `234559857240873` (1,435 laps); full refresh `f4df2afb-b437-49c1-891f-093e870a45cd` |
+| Missing run observed | 2026-10-24 → 2026-10-30 — no run records (compute `INACTIVE`); 2026-11-02 → 2026-11-12 — job intentionally `PAUSED` |
 | Dashboard bundle | Supabase `f1-cache`, prefix `dashboard/2026`, manifest written last |
 | Dashboard URL | `https://f1-2026-predictions-beta.vercel.app` |
 | Public manifest | `https://wjwqjmecefgyypkqnabe.supabase.co/storage/v1/object/public/f1-cache/dashboard/2026/manifest.json` |
@@ -297,6 +298,21 @@ This is expected when the last race is outside the 7-day lookback, FastF1 has no
 
 Observed 2026-10-23 → 2026-10-31: the workspace compute was `INACTIVE` for eight days and no scheduled run fired. Compute resumed only after a user login. A scheduled run does not wake an `INACTIVE` workspace by itself, so a silent gap in run history should be treated as this failure mode first — open the workspace and confirm the compute state before assuming a job or cron defect.
 
+Observed 2026-11-12: the Jobs API rejected every trigger with:
+
+```text
+Error: Triggering new runs for organization <org-id> is currently disabled temporarily.
+```
+
+Read and write APIs (`jobs get`, `workspace list/delete`) kept working; only new run triggering was blocked. This is an organization-level restriction, not a job, credential or bundle problem. Do not rebuild the bundle or rotate secrets.
+
+Databricks confirms this is the **Free Edition compute-time quota per organization**. There is **no quota visibility** in Free Edition: no dashboard, CLI or API reports the remaining budget, and a rejected trigger consumes no compute. The practical rules are:
+
+1. Retry at most once per hour. Polling faster adds nothing and makes the incident harder to read.
+2. Consolidate work into one window: ingest every missing round, then refresh once. Do not spread backfills across days.
+3. Budget the normal load: the scheduled job is ~7 minutes per run, four days a week. Manual retries are what exhaust the quota — thirteen manual runs between 2026-11-03 and 2026-11-05 triggered the block.
+4. Wait for the next-day reset. If the block lasts more than 48 hours, open a case in **Databricks Free Edition Help** with the first-failure timestamp; creating a second Free Edition workspace is a last resort because it fragments the catalog.
+
 ### 4.8 Unexpected or wrong data
 
 1. Stop the release; do not publish a manifest over the last good one.
@@ -376,6 +392,19 @@ Observed 2026-10-23 → 2026-10-31: the workspace compute was `INACTIVE` for eig
 - Export republished 194 files, manifest `2026-11-01T06:07:18Z`, rounds 1–18. `/race/19` stayed 404, so no false post-race page was published.
 - Notification failed again: `SMTPServerDisconnected`, `0/1 channels`.
 - The race was interrupted by a red flag; a same-day re-ingest before the chequered flag would only have refreshed the stub.
+
+**Resolution — 2026-11-12:**
+
+- The job was held `PAUSED` from 2026-11-02 to 2026-11-12 so no scheduled run could train on the stub. No run fired on 2026-11-06/08/09, so São Paulo (R20) was not ingested either.
+- R19 was re-ingested as run `310152296089` → `Landed 1084 laps for 2026 R19`. R20 was ingested in the same window as run `234559857240873` → `Landed 1435 laps for 2026 R20`.
+- Volume check: R19 = 1,084 rows, 22 drivers, laps 1–56 (red-flag shortened race); R20 = 1,435 rows, 21 drivers, laps 1–71. Zero numeric/placeholder driver IDs in both.
+- Full refresh `f4df2afb-b437-49c1-891f-093e870a45cd` completed in ~1m30s. The Mexico stub is gone from all three layers.
+- Bronze and Silver now agree per round: R1 1,000 · R2 904 · R3 1,086 · R4 203 · R18 1,163 · R19 1,084 · R20 1,435. Gold 2026: Australia 20/1,000 · China 18/904 · Japan 22/1,086 · USA 22/1,163 · Mexico 22/1,084 · São Paulo 21/1,435.
+- `laps_silver` has **0** duplicate `(Season, RoundNumber, Driver, LapNumber)` keys for 2026, so the `d6e0785` dedupe guard works on real re-ingested data.
+- Job restored to `UNPAUSED` with all five tasks intact; next window Friday 2026-11-13 06:00 UTC, then Las Vegas.
+- Not done, by design: no training, no model promotion, no dashboard republish. `@challenger` v4 is still stub-tainted and must not be promoted; the published manifest stays at rounds 1–18.
+- Two platform-level blockers were hit during recovery and are documented in §4.7: FastF1 published no R19 timing data until ~2026-11-12, and Databricks temporarily rejected all run triggers for the organization (Free Edition compute quota).
+- Side note: FastF1 now reports 1,164 laps for R18 while Volume/Gold hold 1,163. That is an upstream revision, not a dedupe or ingest defect; it is left as-is pending a decision.
 
 ---
 
