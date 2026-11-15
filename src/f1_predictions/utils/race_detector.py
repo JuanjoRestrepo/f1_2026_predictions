@@ -57,6 +57,10 @@ def find_last_completed_race(
     a 21-lap stub written 14 hours before lights out). Same-day sessions are
     picked up by the next run, which lands on Monday.
 
+    ``completed_round_numbers`` in
+    :mod:`f1_predictions.databricks.volume_ingest` applies the same rule for
+    ``--all-completed`` backfills; keep the two in sync.
+
     Args:
         schedule: FastF1 event schedule DataFrame from `get_event_schedule`.
         now_utc: The reference timestamp. Defaults to `datetime.now(tz=UTC)`.

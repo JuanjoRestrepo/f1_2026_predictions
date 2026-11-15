@@ -329,7 +329,7 @@ Databricks confirms this is the **Free Edition compute-time quota per organizati
 
 **Do not** retry the ingest immediately. FastF1 caches the stub on the workspace, so a naive re-run reloads the same partial snapshot. Wait until the race has actually finished and FastF1 has published timing data.
 
-**Do not** use `--all-completed` on race day either. `completed_round_numbers` still compares `EventDate` (midnight UTC in the FastF1 schedule) against the reference time, so on race morning it includes the unrun round. The scheduled job never passes that flag, but a manual backfill would reproduce the stub. Until this path is fixed, backfill with explicit `--round` values or wait for the next day.
+**Do not** use `--all-completed` on race day either. `completed_round_numbers` now uses the same half-open calendar-day rule as `find_last_completed_race`: a round counts only once its UTC race day is over (`EventDate.date() < now.date()`), and rounds with a TBC (`NaT`) date are excluded. This was fixed after the 2026 Mexico incident — before it, the comparison was `<= now`, so a 20:00 UTC race looked completed at 06:00. The scheduled job never passes that flag; when backfilling, `--round` remains the most explicit option and is still preferred for a single known round.
 
 **Recovery (approved per incident; no training, no promotion, no republish):**
 

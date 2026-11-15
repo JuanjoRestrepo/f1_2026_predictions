@@ -112,7 +112,7 @@ An earlier audit note, “no run after 2026-10-19,” was stale: the Oct 23 run 
 | G7 | Dashboard silently falls back to committed reports | P1 | A failed cloud sync can serve stale data without failing the build |
 | G8 | Austin has only predictions/standings | P2 | No markdown, tyre, weather, or lap-position artifacts for the upcoming race |
 | G9 | Free-tier constraints are not in the runbook | P2 | Restricted egress, quotas, and non-commercial limits can break operations unexpectedly |
-| G10 | Race-day stub ingestion (scheduled path mitigated 2026-11-01 in `d6e0785`) | P0 | The Sunday 06:00 UTC run ingested a race that started 14 hours later; the detection window is now half-open, but the stub must still be purged and `completed_round_numbers` (`--all-completed`) still compares the midnight event date |
+| G10 | Race-day stub ingestion (scheduled path mitigated 2026-11-01 in `d6e0785`; `--all-completed` path fixed 2026-11-14) | P0 | The Sunday 06:00 UTC run ingested a race that started 14 hours later. The detection window is half-open, and `completed_round_numbers` (`--all-completed`) now applies the same calendar-day rule instead of comparing the midnight event date with `<= now` |
 | G11 | Re-ingested rounds duplicated laps (mitigated 2026-11-01 in `d6e0785`) | P1 | Bronze is append-only while ingest overwrites the Volume; `laps_silver` now dedupes on the lap natural key |
 | G12 | FastF1 credentials live in `f1_secrets` | P2 | `F1_USERNAME` / `F1_PASSWORD` are required for live session data; a missing secret yields partial or empty timing data |
 
