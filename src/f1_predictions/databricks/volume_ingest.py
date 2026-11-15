@@ -117,10 +117,19 @@ def completed_round_numbers(
     schedule: pd.DataFrame,
     now_utc: datetime | None = None,
 ) -> list[int]:
-    """Return every round already raced (event date on/before ``now_utc``).
+    """Return every round whose UTC race day is already over.
 
     Pure function over a FastF1 schedule DataFrame — no network access — so the
     ingest task can backfill a whole season deterministically.
+
+    The comparison is a strict calendar-day one: ``EventDate`` carries midnight
+    UTC of race day, so ``<= now`` counted a race that had not started yet.
+    On 2026-11-01 the 06:00 UTC job ingested a 21-lap Mexico stub 14 hours
+    before lights out because of that comparison. Using
+    ``EventDate.date() < now.date()`` matches the half-open window already used
+    by :func:`f1_predictions.utils.race_detector.find_last_completed_race`, so
+    both code paths agree on what "completed" means. Rounds with a TBC date
+    (``NaT``) are excluded until the calendar is confirmed.
 
     Args:
         schedule: Schedule frame with ``EventDate``, ``RoundNumber`` and
@@ -139,9 +148,10 @@ def completed_round_numbers(
     frame = pd.DataFrame(schedule).copy()
     frame["EventDate"] = pd.to_datetime(frame["EventDate"], utc=True)
 
-    mask = (frame["EventDate"] <= pd.Timestamp(reference)) & (
-        frame["EventFormat"] != "testing"
-    )
+    # ``.dt.date`` yields ``NaT`` for TBC rounds; comparing it is False, which
+    # is what we want — an unconfirmed date must never look completed.
+    event_days = frame["EventDate"].dt.date
+    mask = (event_days < reference.date()) & (frame["EventFormat"] != "testing")
     raced = frame.loc[mask, "RoundNumber"].dropna().astype(int)
     return sorted({int(r) for r in raced})
 

@@ -260,3 +260,46 @@ def test_completed_round_numbers_filters_future_and_testing() -> None:
 def test_completed_round_numbers_handles_empty_schedule() -> None:
     """An empty schedule yields no rounds rather than raising."""
     assert completed_round_numbers(pd.DataFrame()) == []
+
+
+def test_completed_round_numbers_excludes_same_day_race() -> None:
+    """A race scheduled later today is not completed yet (2026 Mexico regression).
+
+    ``EventDate`` is midnight UTC of race day. The 06:00 UTC job must not treat
+    a 20:00 UTC race as finished, which is exactly how the 21-lap stub was
+    ingested on 2026-11-01.
+    """
+    schedule = pd.DataFrame(
+        {
+            "RoundNumber": [18, 19],
+            "EventDate": pd.to_datetime(["2026-10-25", "2026-11-01"], utc=True),
+            "EventFormat": ["Race", "Race"],
+        }
+    )
+
+    race_morning = completed_round_numbers(
+        schedule, now_utc=datetime(2026, 11, 1, 6, 0, tzinfo=UTC)
+    )
+    next_day = completed_round_numbers(
+        schedule, now_utc=datetime(2026, 11, 2, 6, 0, tzinfo=UTC)
+    )
+
+    assert race_morning == [18]
+    assert next_day == [18, 19]
+
+
+def test_completed_round_numbers_excludes_tbc_dates() -> None:
+    """Rounds without a confirmed date are never reported as completed."""
+    schedule = pd.DataFrame(
+        {
+            "RoundNumber": [1, 2],
+            "EventDate": pd.to_datetime(["2026-03-01", None], utc=True),
+            "EventFormat": ["Race", "Race"],
+        }
+    )
+
+    rounds = completed_round_numbers(
+        schedule, now_utc=datetime(2026, 12, 31, tzinfo=UTC)
+    )
+
+    assert rounds == [1]
