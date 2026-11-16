@@ -65,6 +65,11 @@ def _get_s3_client() -> "botocore.client.S3":  # type: ignore[name-defined]  # n
     endpoint_url = os.environ.get("SUPABASE_S3_ENDPOINT_URL")
     access_key = os.environ.get("SUPABASE_S3_ACCESS_KEY")
     secret_key = os.environ.get("SUPABASE_S3_SECRET_KEY")
+    # Signing region. AWS defaults are fine for AWS and for most S3-compatible
+    # providers, but Cloudflare R2 documents ``auto`` as its region and rejects
+    # some presigned requests otherwise. Optional so existing deployments do not
+    # need to change anything.
+    region_name = os.environ.get("SUPABASE_S3_REGION") or "us-east-1"
 
     missing = [
         name
@@ -89,8 +94,9 @@ def _get_s3_client() -> "botocore.client.S3":  # type: ignore[name-defined]  # n
         aws_access_key_id=access_key,
         aws_secret_access_key=secret_key,
         # region_name is required by boto3 even for non-AWS endpoints.
-        # "us-east-1" is a universally accepted placeholder for S3-compatible APIs.
-        region_name="us-east-1",
+        # "us-east-1" is the default placeholder for S3-compatible APIs; set
+        # SUPABASE_S3_REGION=auto for Cloudflare R2.
+        region_name=region_name,
     )
 
 
