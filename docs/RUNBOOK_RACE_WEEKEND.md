@@ -27,7 +27,7 @@
 | Previous scheduled run | `452413799810251` — 2026-11-13 06:00 UTC — `SUCCESS` (all five tasks, 4m45s) |
 | Latest manual backfill | 2026-11-12 — R19 `310152296089` (1,084 laps), R20 `234559857240873` (1,435 laps); full refresh `f4df2afb-b437-49c1-891f-093e870a45cd` |
 | Missing run observed | 2026-10-24 → 2026-10-30 — no run records (compute `INACTIVE`); 2026-11-02 → 2026-11-12 — job intentionally `PAUSED` |
-| Dashboard bundle | Supabase `f1-cache`, prefix `dashboard/2026`, manifest written last — **project deleted, see §4.10** |
+| Dashboard bundle | Supabase `f1-cache`, prefix `dashboard/2026`, manifest written last (project restored 2026-11-17, see §4.10) |
 | Dashboard URL | `https://f1-2026-predictions-beta.vercel.app` |
 | Public manifest | `https://wjwqjmecefgyypkqnabe.supabase.co/storage/v1/object/public/f1-cache/dashboard/2026/manifest.json` |
 
@@ -42,7 +42,7 @@ Current limitations:
 7. **Re-ingest duplicates (fixed in `d6e0785`).** Bronze is an append-only streaming table while the ingest overwrites the round’s Volume directory, so re-ingesting a round appended a second copy of every lap. `laps_silver` now dedupes on `(Season, RoundNumber, Driver, LapNumber)`, keeping the newest `_ingested_at`.
 8. **Compute can go `INACTIVE`.** The workspace compute was `INACTIVE` for eight days (2026-10-23 → 2026-10-31) and only resumed after a user login. A scheduled run during that window cannot fire; see §4.7.
 9. **FastF1 credentials are required for live sessions.** `F1_USERNAME` and `F1_PASSWORD` are read from the `f1_secrets` scope by `run_ingest()`. Without them FastF1 can return partial or empty timing data even when the race has finished.
-10. **Dashboard object storage is gone.** The Supabase project behind `SUPABASE_S3_*` no longer resolves (`NXDOMAIN`), so `export_dashboard_data` skips publishing and the live bundle stays frozen at its last successful upload. See §4.10.
+10. **Dashboard object storage (restored 2026-11-17).** The Supabase project behind `SUPABASE_S3_*` was deleted and later restored from the dashboard. Publishing works again; see §4.10 for the symptom and the check that separates "deleted project" from "rotated key".
 
 ---
 
@@ -427,7 +427,7 @@ Diagnosis that never prints a secret: read both keys inside a Databricks noteboo
 
 Do not "fix" this by adding a fallback to the legacy key in code — that cements a duplicate credential. Repair the canonical key and delete the legacy one once the GitHub Actions secrets are confirmed to be independent.
 
-**Dashboard publishing — `Could not connect to the endpoint URL` (open).**
+**Dashboard publishing — `Could not connect to the endpoint URL` (resolved 2026-11-17).**
 
 Symptom in `export_dashboard_data`:
 
@@ -436,13 +436,22 @@ Dashboard publish skipped for season 2026 (Could not connect to the endpoint URL
 "[REDACTED]/[REDACTED]/dashboard/2026/Australian_Grand_Prix/results/predictions.csv")
 ```
 
-The Supabase project in `SUPABASE_S3_ENDPOINT_URL` no longer resolves:
+The Supabase project in `SUPABASE_S3_ENDPOINT_URL` had stopped resolving:
 
 ```bash
-host wjwqjmecefgyypkqnabe.supabase.co   # NXDOMAIN
+host wjwqjmecefgyypkqnabe.supabase.co   # NXDOMAIN on 2026-11-14
 ```
 
-This is a deleted project, not a credential rotation: DNS never reaches the storage API. The published bundle therefore stays frozen at the last successful upload (2026-11-01, rounds 1–18) and `/race/19` keeps returning 404. Do not retry the export expecting a different result, and do not "repair" it by committing the bundle to git — that reintroduces the coupling the cloud-native plan removes. Point `SUPABASE_S3_*` at a live S3-compatible bucket, update `F1_DASHBOARD_DATA_BASE_URL` in Vercel, and republish.
+That is a deleted project, not a credential rotation: DNS never reached the storage API, so the keys were never exercised. The bundle stayed frozen at the last successful upload (2026-11-01, rounds 1–18) and `/race/19` returned 404.
+
+**Recovery.** The project was restored from the Supabase dashboard under the same ref, so the endpoint, bucket and access keys all stayed valid — no secret rotation was needed. Verify in this order:
+
+1. `host <ref>.supabase.co` resolves.
+2. The public manifest returns `200` and lists the expected rounds.
+3. `list_objects_v2` with the stored keys succeeds — this proves the keys survived the restore.
+4. `put_object` + public `GET` + `delete_object` on a throwaway key under `dashboard/2026/.publish-check.json`.
+
+All four passed on 2026-11-17. Do not "repair" a publishing outage by committing the bundle to git — that reintroduces the coupling the cloud-native plan removes. If a future project is deleted rather than paused, point `SUPABASE_S3_*` at a live S3-compatible bucket (R2 needs `SUPABASE_S3_REGION=auto`) and update `F1_DASHBOARD_DATA_BASE_URL` in Vercel.
 
 ---
 
