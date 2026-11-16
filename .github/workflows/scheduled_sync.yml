@@ -205,8 +205,7 @@ jobs:
             --auto
 
       - name: Compute post-race verdict
-        if: steps.resolve.outputs.race_found == 'true' && steps.resolve.outputs.mode == 'post-race'
-        # Non-fatal: if ground truth (FastF1) or predictions are unavailable,
+        if: steps.resolve.outputs.race_found == 'true' && steps.resolve.outputs.mode == 'post-race'        # Non-fatal: if ground truth (FastF1) or predictions are unavailable,
         # the notification step degrades to an honest prediction preview.
         continue-on-error: true
         env:
@@ -316,3 +315,20 @@ jobs:
           else:
               print("No notification channels configured (credentials absent). Skipping dispatch.")
           "
+
+      - name: Upload report artifacts
+        # The pipeline writes into the runner's workspace, which is discarded when
+        # the job ends. Without this step a manual replay produces a green run and
+        # nothing else: the round's CSVs and verdict never leave the runner, so
+        # there is nothing to publish to object storage. Artifacts are the handoff
+        # between generation (here) and publishing (the Databricks export task or
+        # an explicit upload).
+        if: steps.resolve.outputs.race_found == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: reports-${{ inputs.season || '2026' }}-round-${{ steps.resolve.outputs.round }}
+          path: |
+            reports/${{ inputs.season || '2026' }}/**
+            data/outputs/verdict_round_*.json
+          if-no-files-found: warn
+          retention-days: 14
