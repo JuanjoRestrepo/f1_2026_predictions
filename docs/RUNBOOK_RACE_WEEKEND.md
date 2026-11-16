@@ -22,25 +22,27 @@
 | Cron | `0 0 6 ? * FRI-MON` (UTC) |
 | Pause status | `UNPAUSED` — restored 2026-11-12 after the R19/R20 backfill and Gold verification (see §4.9) |
 | Intended days | Friday, Saturday, Sunday, Monday at 06:00 UTC |
-| Next scheduled windows | Friday 2026-11-13 06:00 UTC, then Las Vegas 2026-11-20 → 2026-11-23 |
-| Latest verified run | `957016537359610` — 2026-11-01 06:00 UTC — `SUCCESS` (all five tasks; ingested a race-day stub — see §4.9) |
+| Next scheduled windows | Las Vegas 2026-11-20 → 2026-11-23 |
+| Latest verified run | `922153016042740` — 2026-11-14 06:00 UTC — `SUCCESS` (all five tasks, 4m24s) |
+| Previous scheduled run | `452413799810251` — 2026-11-13 06:00 UTC — `SUCCESS` (all five tasks, 4m45s) |
 | Latest manual backfill | 2026-11-12 — R19 `310152296089` (1,084 laps), R20 `234559857240873` (1,435 laps); full refresh `f4df2afb-b437-49c1-891f-093e870a45cd` |
 | Missing run observed | 2026-10-24 → 2026-10-30 — no run records (compute `INACTIVE`); 2026-11-02 → 2026-11-12 — job intentionally `PAUSED` |
-| Dashboard bundle | Supabase `f1-cache`, prefix `dashboard/2026`, manifest written last |
+| Dashboard bundle | Supabase `f1-cache`, prefix `dashboard/2026`, manifest written last — **project deleted, see §4.10** |
 | Dashboard URL | `https://f1-2026-predictions-beta.vercel.app` |
 | Public manifest | `https://wjwqjmecefgyypkqnabe.supabase.co/storage/v1/object/public/f1-cache/dashboard/2026/manifest.json` |
 
 Current limitations:
 
 1. **No cloud prediction yet.** The export task publishes `PROJECT_ROOT/reports`, which is produced locally. The Monday job cannot create a new round’s predictions.
-2. **Gmail SMTP fails.** The notification task reports `0/1 channels`; no production email is delivered. The job remains green because notifications are non-fatal.
+2. **Gmail SMTP (fixed 2026-11-15).** The canonical secret `F1_GMAIL_APP_PASSWORD` held a stale app password while the legacy `gmail_app_password` key still worked. The canonical key was repaired in place and delivery is verified (`1/1 channels`). See §4.10.
 3. **Oct 24–30 had no runs.** There is no failed run: the workspace compute was `INACTIVE` (see item 8 and §4.7).
 4. **The dashboard may use committed reports.** `F1_DASHBOARD_DATA_BASE_URL` is not set in the repository; if it is also absent in Vercel, the build uses committed `reports/`.
 5. **The Austin prediction is pre-race and local.** It was generated 2026-10-18 from local 2026 rounds 01–03. Do not claim it uses the full R1–17 Delta window.
-6. **Race-day stub (fixed in `d6e0785`).** Before the fix, the Sunday 06:00 UTC run treated a race whose calendar date was “today” as completed and ingested a pre-race stub. See §4.9 for the recovery procedure and for the 2026 Mexico incident record.
+6. **Race-day stub (fixed in `d6e0785`; `--all-completed` path fixed in `f12e354`).** Before the fix, the Sunday 06:00 UTC run treated a race whose calendar date was “today” as completed and ingested a pre-race stub. See §4.9 for the recovery procedure and for the 2026 Mexico incident record.
 7. **Re-ingest duplicates (fixed in `d6e0785`).** Bronze is an append-only streaming table while the ingest overwrites the round’s Volume directory, so re-ingesting a round appended a second copy of every lap. `laps_silver` now dedupes on `(Season, RoundNumber, Driver, LapNumber)`, keeping the newest `_ingested_at`.
 8. **Compute can go `INACTIVE`.** The workspace compute was `INACTIVE` for eight days (2026-10-23 → 2026-10-31) and only resumed after a user login. A scheduled run during that window cannot fire; see §4.7.
 9. **FastF1 credentials are required for live sessions.** `F1_USERNAME` and `F1_PASSWORD` are read from the `f1_secrets` scope by `run_ingest()`. Without them FastF1 can return partial or empty timing data even when the race has finished.
+10. **Dashboard object storage is gone.** The Supabase project behind `SUPABASE_S3_*` no longer resolves (`NXDOMAIN`), so `export_dashboard_data` skips publishing and the live bundle stays frozen at its last successful upload. See §4.10.
 
 ---
 
@@ -283,10 +285,10 @@ This is expected when the last race is outside the 7-day lookback, FastF1 has no
 
 ### 4.6 Notification failed (`0/N channels`)
 
-1. Read the notify task output. `SMTPServerDisconnected` at login is not an authentication error.
-2. On Databricks Free Edition, outbound internet is restricted; do not assume Gmail SMTP or port 587 will work.
-3. Do not spend race weekend rotating the app password first; test egress before credentials.
-4. Use the documented HTTPS relay once Phase 22 D2 is implemented.
+1. Read the notify task output. `SMTPServerDisconnected` raised inside `server.login()` happens **after** the TLS handshake, so it is an authentication failure, not an egress failure. Measured on 2026-11-15: the same host, port and network authenticated successfully with the other credential in the scope.
+2. Egress to `smtp.gmail.com` works on both 465 (implicit TLS) and 587 (STARTTLS) from the job's serverless compute. Do not assume Free Edition blocks SMTP; test before blaming the network.
+3. Test the credentials without printing them: read every Gmail key in `f1_secrets`, log only `len()` and `has_space`, and attempt a login with each. See §4.10 for the exact procedure.
+4. Repair the canonical key rather than adding a code fallback to a legacy key. Then verify end to end by running only the notify task and looking for `Email sent successfully` and `1/1 channels`.
 5. If no channel works, record that no notification was delivered; the website remains the primary surface.
 
 ### 4.7 Free Edition quota / workspace shutdown
@@ -404,7 +406,43 @@ Databricks confirms this is the **Free Edition compute-time quota per organizati
 - Job restored to `UNPAUSED` with all five tasks intact; next window Friday 2026-11-13 06:00 UTC, then Las Vegas.
 - Not done, by design: no training, no model promotion, no dashboard republish. `@challenger` v4 is still stub-tainted and must not be promoted; the published manifest stays at rounds 1–18.
 - Two platform-level blockers were hit during recovery and are documented in §4.7: FastF1 published no R19 timing data until ~2026-11-12, and Databricks temporarily rejected all run triggers for the organization (Free Edition compute quota).
-- Side note: FastF1 now reports 1,164 laps for R18 while Volume/Gold hold 1,163. That is an upstream revision, not a dedupe or ingest defect; it is left as-is pending a decision.
+- Side note: the 1,164-lap R18 reading seen on 2026-11-03 was transient. A forced re-ingest on 2026-11-15 landed 1,163 laps again, so the Volume was always correct; the extra lap came from a partially refreshed FastF1 cache, not an upstream revision.
+
+### 4.10 Notification and publishing outages
+
+Both tasks fail non-fatally, so a green run does **not** mean the email was delivered or the bundle was published. Always read the task log.
+
+**Gmail SMTP — `SMTPServerDisconnected` during `login` (fixed 2026-11-15).**
+
+Symptom in `dispatch_notifications`:
+
+```text
+smtplib.SMTPServerDisconnected: Connection unexpectedly closed
+Notification dispatch complete: 0/1 channels succeeded.
+```
+
+The failure happens inside `server.login()`, after the TLS handshake, so it is an authentication problem — not DNS, not egress, not the message body. The scope had two keys: `F1_GMAIL_APP_PASSWORD` (canonical, read by the code) and `gmail_app_password` (legacy). The canonical value was stale; the legacy value authenticated on both 465 and 587.
+
+Diagnosis that never prints a secret: read both keys inside a Databricks notebook, log only `len()` and `has_space`, and attempt a login with each. The repair copies the working value into the canonical key through the Secrets REST API (`dbutils.secrets.put` is not available in this runtime) and re-verifies the login.
+
+Do not "fix" this by adding a fallback to the legacy key in code — that cements a duplicate credential. Repair the canonical key and delete the legacy one once the GitHub Actions secrets are confirmed to be independent.
+
+**Dashboard publishing — `Could not connect to the endpoint URL` (open).**
+
+Symptom in `export_dashboard_data`:
+
+```text
+Dashboard publish skipped for season 2026 (Could not connect to the endpoint URL:
+"[REDACTED]/[REDACTED]/dashboard/2026/Australian_Grand_Prix/results/predictions.csv")
+```
+
+The Supabase project in `SUPABASE_S3_ENDPOINT_URL` no longer resolves:
+
+```bash
+host wjwqjmecefgyypkqnabe.supabase.co   # NXDOMAIN
+```
+
+This is a deleted project, not a credential rotation: DNS never reaches the storage API. The published bundle therefore stays frozen at the last successful upload (2026-11-01, rounds 1–18) and `/race/19` keeps returning 404. Do not retry the export expecting a different result, and do not "repair" it by committing the bundle to git — that reintroduces the coupling the cloud-native plan removes. Point `SUPABASE_S3_*` at a live S3-compatible bucket, update `F1_DASHBOARD_DATA_BASE_URL` in Vercel, and republish.
 
 ---
 
