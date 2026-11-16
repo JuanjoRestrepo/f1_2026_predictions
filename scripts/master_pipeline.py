@@ -22,6 +22,7 @@ from f1_predictions.ingestion.weather_api import get_forecast
 from f1_predictions.utils.circuit_config import get_circuit_config
 from f1_predictions.utils.cloud_cache import download_cache, upload_cache
 from f1_predictions.utils.config import Settings, get_settings
+from f1_predictions.utils.event_slug import event_slug
 from f1_predictions.utils.logging_setup import (
     configure_root_pipeline_logger,
     get_logger,
@@ -86,7 +87,7 @@ def get_race_info(year: int, round_num: int) -> dict[str, str]:
         return {"name": f"Round {round_num}", "dir": f"Round_{round_num}"}
 
     event_name = event["EventName"].iloc[0]
-    safe_name = event_name.replace(" ", "_")
+    safe_name = event_slug(event_name)
     event_date = event["EventDate"].iloc[0]
     return {
         "name": event_name,

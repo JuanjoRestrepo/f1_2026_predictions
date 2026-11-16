@@ -21,6 +21,7 @@ from f1_predictions.models.common import prepare_feature_matrix
 from f1_predictions.utils.analysis import build_driver_standings, build_predictions_df
 from f1_predictions.utils.circuit_config import get_circuit_config
 from f1_predictions.utils.config import get_settings
+from f1_predictions.utils.event_slug import event_slug
 from f1_predictions.utils.logging_setup import (
     configure_root_pipeline_logger,
     get_logger,
@@ -569,7 +570,7 @@ def run_race_simulation(
         lap_number: The hypothetical lap number to simulate (default 15).
     """
     settings = get_settings()
-    safe_event = event_name.replace(" ", "_")
+    safe_event = event_slug(event_name)
 
     # 1. Load historical/current season data
     data_dir = Path(settings.data_outputs_dir) / "laps"

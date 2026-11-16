@@ -101,9 +101,21 @@ jobs:
       - name: Set round (manual override)
         id: set-round
         if: ${{ inputs.round }}
+        env:
+          SEASON: ${{ inputs.season || '2026' }}
         run: |
           echo "race_found=true" >> $GITHUB_OUTPUT
           echo "round=${{ inputs.round }}" >> $GITHUB_OUTPUT
+          # Resolve the real event name from the schedule. Hardcoding
+          # "Grand Prix" made simulate_race.py write to reports/<season>/Grand_Prix
+          # instead of the round's actual directory, which the dashboard cannot read.
+          EVENT=$(uv run python -c "
+          from f1_predictions.utils.race_detector import get_event_schedule
+          schedule = get_event_schedule(int('$SEASON'))
+          row = schedule[schedule['RoundNumber'] == int('${{ inputs.round }}')]
+          print(row['EventName'].iloc[0] if not row.empty else 'Grand Prix')
+          ")
+          echo "event=$EVENT" >> $GITHUB_OUTPUT
 
       - name: Resolve final round number
         id: resolve
@@ -119,7 +131,7 @@ jobs:
             echo "race_found=true" >> $GITHUB_OUTPUT
             echo "round=${{ steps.set-round.outputs.round }}" >> $GITHUB_OUTPUT
             echo "mode=${{ inputs.mode || 'post-race' }}" >> $GITHUB_OUTPUT
-            echo "event=Grand Prix" >> $GITHUB_OUTPUT
+            echo "event=${{ steps.set-round.outputs.event }}" >> $GITHUB_OUTPUT
           else
             echo "race_found=false" >> $GITHUB_OUTPUT
           fi
@@ -212,7 +224,8 @@ jobs:
             --auto
 
       - name: Compute post-race verdict
-        if: steps.resolve.outputs.race_found == 'true' && steps.resolve.outputs.mode == 'post-race'        # Non-fatal: if ground truth (FastF1) or predictions are unavailable,
+        if: steps.resolve.outputs.race_found == 'true' && steps.resolve.outputs.mode == 'post-race'
+        # Non-fatal: if ground truth (FastF1) or predictions are unavailable,
         # the notification step degrades to an honest prediction preview.
         continue-on-error: true
         env:

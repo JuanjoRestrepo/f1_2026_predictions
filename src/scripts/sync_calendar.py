@@ -25,12 +25,13 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import re
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
 import fastf1
+
+from f1_predictions.utils.event_slug import event_slug
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -44,53 +45,13 @@ logger = logging.getLogger(__name__)
 
 
 def _slugify(name: str) -> str:
-    """Convert an event name to a title-cased underscore slug.
+    """Deprecated shim. Use :func:`f1_predictions.utils.event_slug.event_slug`.
 
-    Example:
-        "Canadian Grand Prix" -> "Canadian_Grand_Prix"
-        "São Paulo Grand Prix" -> "Sao_Paulo_Grand_Prix"
-
-    Args:
-        name: The human-readable GP name from FastF1.
-
-    Returns:
-        A filesystem-safe slug string.
+    Kept so older call sites and muscle memory keep working; the calendar and
+    the report writers must share one implementation or the dashboard will look
+    for a directory that does not exist.
     """
-    # Normalise common unicode substitutions that appear in F1 calendars.
-    replacements: dict[str, str] = {
-        "ã": "a",
-        "â": "a",
-        "à": "a",
-        "á": "a",
-        "ä": "a",
-        "ç": "c",
-        "é": "e",
-        "è": "e",
-        "ê": "e",
-        "ë": "e",
-        "í": "i",
-        "ì": "i",
-        "ï": "i",
-        "ó": "o",
-        "ò": "o",
-        "ô": "o",
-        "ö": "o",
-        "ú": "u",
-        "ù": "u",
-        "û": "u",
-        "ü": "u",
-        "ñ": "n",
-    }
-    result = name
-    for char, replacement in replacements.items():
-        result = result.replace(char, replacement)
-        result = result.replace(char.upper(), replacement.upper())
-
-    # Replace non-alphanumeric characters (except underscores) with underscores,
-    # then collapse any multiple consecutive underscores.
-    result = re.sub(r"[^\w]", "_", result)
-    result = re.sub(r"_+", "_", result).strip("_")
-    return result
+    return event_slug(name)
 
 
 def fetch_schedule(season: int) -> list[dict[str, str | int]]:
