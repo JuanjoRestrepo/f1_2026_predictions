@@ -37,6 +37,13 @@ permissions:
 
 env:
   PYTHON_VERSION: '3.14'
+  # FastF1 requires a Formula 1 account to load current-season sessions. These
+  # are the same credentials the Databricks job reads from the `f1_secrets`
+  # scope; without them `get_session(...).load()` raises DataNotLoadedError for
+  # every 2026 round. Job-level so ingest, simulation and the master pipeline
+  # all see them.
+  F1_USERNAME: ${{ secrets.F1_USERNAME }}
+  F1_PASSWORD: ${{ secrets.F1_PASSWORD }}
 
 jobs:
   detect-and-run:
