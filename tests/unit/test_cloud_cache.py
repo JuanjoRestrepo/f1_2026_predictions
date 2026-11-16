@@ -266,3 +266,64 @@ def _zip_directory_helper(tmp_path: Path) -> bytes:
     if not cache.exists():
         _create_cache_dir(tmp_path)
     return _zip_directory(cache)
+
+
+# ---------------------------------------------------------------------------
+# Client factory — signing region
+# ---------------------------------------------------------------------------
+
+_CREDENTIALS = {
+    "SUPABASE_S3_ENDPOINT_URL": "https://example.r2.cloudflarestorage.com",
+    "SUPABASE_S3_ACCESS_KEY": "key",
+    "SUPABASE_S3_SECRET_KEY": "secret",
+}
+
+
+class TestS3ClientRegion:
+    """The signing region must be configurable for S3-compatible providers."""
+
+    def test_defaults_to_us_east_1(self) -> None:
+        """AWS-style default keeps existing deployments working unchanged."""
+        with (
+            patch.dict("os.environ", _CREDENTIALS, clear=True),
+            patch("boto3.client") as client,
+        ):
+            from f1_predictions.utils.cloud_cache import get_s3_client
+
+            get_s3_client()
+
+        assert client.call_args.kwargs["region_name"] == "us-east-1"
+
+    def test_honours_explicit_region(self) -> None:
+        """Cloudflare R2 signs with `auto`; the env var must reach boto3."""
+        env = {**_CREDENTIALS, "SUPABASE_S3_REGION": "auto"}
+        with (
+            patch.dict("os.environ", env, clear=True),
+            patch("boto3.client") as client,
+        ):
+            from f1_predictions.utils.cloud_cache import get_s3_client
+
+            get_s3_client()
+
+        assert client.call_args.kwargs["region_name"] == "auto"
+
+    def test_empty_region_falls_back_to_default(self) -> None:
+        """An empty secret resolves to an empty string, which must not reach boto3."""
+        env = {**_CREDENTIALS, "SUPABASE_S3_REGION": ""}
+        with (
+            patch.dict("os.environ", env, clear=True),
+            patch("boto3.client") as client,
+        ):
+            from f1_predictions.utils.cloud_cache import get_s3_client
+
+            get_s3_client()
+
+        assert client.call_args.kwargs["region_name"] == "us-east-1"
+
+    def test_missing_credentials_raise(self) -> None:
+        """An endpoint without keys is a misconfiguration, not a silent no-op."""
+        with patch.dict("os.environ", {}, clear=True):
+            from f1_predictions.utils.cloud_cache import get_s3_client
+
+            with pytest.raises(ValueError, match="SUPABASE_S3_ENDPOINT_URL"):
+                get_s3_client()
