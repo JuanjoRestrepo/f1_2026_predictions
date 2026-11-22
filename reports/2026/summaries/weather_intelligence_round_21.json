@@ -1,0 +1,17 @@
+{
+  "provider": "unavailable",
+  "event_name": "Las Vegas Grand Prix",
+  "generated_at_utc": "2026-11-22T03:50:52.386287+00:00",
+  "latitude": 36.1147,
+  "longitude": -115.1728,
+  "target_date": "2026-11-21",
+  "race_day": null,
+  "forecast_days": [],
+  "rain_probability": null,
+  "risk_level": "unknown",
+  "confidence": "unavailable",
+  "summary": "No external weather forecast is available for Las Vegas Grand Prix; Friday forecast keeps conservative dry-weather assumptions.",
+  "warnings": [
+    "No external weather API key configured."
+  ]
+}

@@ -1,0 +1,445 @@
+{
+  "gp": "Las Vegas Grand Prix",
+  "year": 2026,
+  "total_laps": 50,
+  "winning_strategy": "AI Optimal (M\u2192H)",
+  "avg_pit_stop": "21.5s (Est.)",
+  "weather_intelligence": {
+    "provider": "unavailable",
+    "event_name": "Las Vegas Grand Prix",
+    "generated_at_utc": "2026-11-22T03:50:52.386287+00:00",
+    "latitude": 36.1147,
+    "longitude": -115.1728,
+    "target_date": "2026-11-21",
+    "race_day": null,
+    "forecast_days": [],
+    "rain_probability": null,
+    "risk_level": "unknown",
+    "confidence": "unavailable",
+    "summary": "No external weather forecast is available for Las Vegas Grand Prix; Friday forecast keeps conservative dry-weather assumptions.",
+    "warnings": [
+      "No external weather API key configured."
+    ]
+  },
+  "proven_strategy_insight": "Predictive strategy models establish a unified one-stop Medium-to-Hard (M-H) baseline across the top five contenders (ANT, LEC, VER, HAM, RUS) under conservative dry-weather assumptions for the Las Vegas street layout. Given a 21.0-second green-flag pit loss, mechanical tyre wear mode, and a 30% overtake difficulty metric, track position remains paramount, forcing pit walls to optimize thermal management while preparing to leverage the 60% Safety Car probability for a discounted pit stop window.",
+  "drivers": [
+    {
+      "driver": "ANT",
+      "fullName": "ANT",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 25,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 25,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "LEC",
+      "fullName": "LEC",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 25,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 25,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "VER",
+      "fullName": "VER",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 25,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 25,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "HAM",
+      "fullName": "HAM",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 25,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 25,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "RUS",
+      "fullName": "RUS",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 25,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 25,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "NOR",
+      "fullName": "NOR",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 25,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 25,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "PIA",
+      "fullName": "PIA",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 25,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 25,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "HAD",
+      "fullName": "HAD",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 25,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 25,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "GAS",
+      "fullName": "GAS",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 25,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 25,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "LAW",
+      "fullName": "LAW",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 25,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 25,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "HUL",
+      "fullName": "HUL",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 25,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 25,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "LIN",
+      "fullName": "LIN",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 25,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 25,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "COL",
+      "fullName": "COL",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 25,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 25,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "BOR",
+      "fullName": "BOR",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 25,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 25,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "BEA",
+      "fullName": "BEA",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 25,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 25,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "SAI",
+      "fullName": "SAI",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 25,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 25,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "CAM",
+      "fullName": "CAM",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 25,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 25,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "ALB",
+      "fullName": "ALB",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 25,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 25,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "ALO",
+      "fullName": "ALO",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 25,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 25,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "PER",
+      "fullName": "PER",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 25,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 25,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "STR",
+      "fullName": "STR",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 25,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 25,
+          "color": "#f8fafc"
+        }
+      ]
+    },
+    {
+      "driver": "BOT",
+      "fullName": "BOT",
+      "team": "TBD",
+      "stints": [
+        {
+          "stint": 1,
+          "compound": "MEDIUM",
+          "laps": 25,
+          "color": "#facc15"
+        },
+        {
+          "stint": 2,
+          "compound": "HARD",
+          "laps": 25,
+          "color": "#f8fafc"
+        }
+      ]
+    }
+  ]
+}
