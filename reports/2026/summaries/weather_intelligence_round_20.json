@@ -1,0 +1,17 @@
+{
+  "provider": "unavailable",
+  "event_name": "S\u00e3o Paulo Grand Prix",
+  "generated_at_utc": "2026-11-22T02:48:55.614498+00:00",
+  "latitude": null,
+  "longitude": null,
+  "target_date": "2026-11-08",
+  "race_day": null,
+  "forecast_days": [],
+  "rain_probability": null,
+  "risk_level": "unknown",
+  "confidence": "unavailable",
+  "summary": "No external weather forecast is available for S\u00e3o Paulo Grand Prix; Friday forecast keeps conservative dry-weather assumptions.",
+  "warnings": [
+    "No circuit coordinates configured for S\u00e3o Paulo Grand Prix."
+  ]
+}
