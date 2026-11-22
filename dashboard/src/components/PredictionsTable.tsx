@@ -1,4 +1,5 @@
 import type { PredictionRow, ActualResult } from "../utils/fileReader";
+import { TeamLogo } from "./TeamLogo";
 
 interface PredictionsTableProps {
   data: (PredictionRow | ActualResult)[];
@@ -85,16 +86,16 @@ export function PredictionsTable({ data, view }: PredictionsTableProps) {
                 </td>
 
                 <td className="px-4 py-4 whitespace-nowrap">
-                  <span className="text-sm md:text-base font-bold text-white group-hover:text-red-400 transition-colors">
-                    {driver}
-                  </span>
+                  <div className="flex items-center gap-2.5">
+                    <TeamLogo team={team} size={20} />
+                    <span className="text-sm md:text-base font-bold text-white group-hover:text-red-400 transition-colors">
+                      {driver}
+                    </span>
+                  </div>
                 </td>
 
                 <td className="px-4 py-4 whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                    <span className={`h-2 w-2 flex-shrink-0 rounded-full ${getTeamColor(team)}`} />
-                    <span className="text-gray-400 text-xs md:text-sm truncate">{team}</span>
-                  </div>
+                  <span className="text-gray-400 text-xs md:text-sm truncate">{team}</span>
                 </td>
 
                 <td className="px-4 py-4 whitespace-nowrap text-right">
