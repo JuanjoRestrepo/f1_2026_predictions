@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v6.8.1] - 2026-11-21
+
+### Fixed
+- **Dashboard Hero Card CTA**: Resolved bug where clicking "View AI Intelligence Report" in the Next Grand Prix card (Las Vegas GP) redirected to the previous race (São Paulo GP). The button and status line now dynamically link to `nextRace` whenever pre-race intelligence and predictions are available (`isNextRaceAvailable`), with clear fallback to `latestAvailableRace`.
+
+### Added
+- **Round 21 (Las Vegas Grand Prix) Pre-Race Intelligence**:
+  - Full virtual race simulation executed with Quantile Regression (P05/P50/P95) and LightGBM pace models.
+  - Pre-race weather fetched via Open-Meteo for Las Vegas (AirTemp 9.4°C, TrackTemp 21.4°C, 0% rain).
+  - Generated `predictions.csv`, `standings.csv`, `predicted_report_round_21.md`, `predicted_lap_positions_round_21.json`, `predicted_tyre_intelligence_round_21.json`, and `weather_intelligence_round_21.json`.
+  - Synced all 10 artifacts to Supabase S3 bucket (`f1-cache/dashboard/2026/`) and triggered production rebuild on Vercel (26 static pages generated).
+
+---
+
 ## [v6.8.0] - 2026-11-21
 
 ### Added
