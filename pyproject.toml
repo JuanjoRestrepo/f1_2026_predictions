@@ -80,7 +80,12 @@ classifiers = [
 
 dependencies = [
     # --- F1 data source ---
-    "fastf1>=3.4.0",
+    # 3.9.0 is the first release that sends F1TV credentials to the static
+    # timing archive. On 2026-10-15 Formula 1 put that archive behind an F1TV
+    # login; 3.8.x does not read F1_USERNAME/F1_PASSWORD, gets a 401 and
+    # silently returns a session with no laps (it logs a warning instead of
+    # raising), which looks like "session not published yet".
+    "fastf1>=3.9.0",
     # --- Core data stack ---
     "pandas>=2.2.0",
     "numpy>=2.0.0",
