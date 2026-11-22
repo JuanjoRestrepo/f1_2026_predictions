@@ -114,6 +114,7 @@ export default function RacePage({
   const currentTableData = tableView === "predicted" ? (predictions ?? []) : (actualResults ?? []);
   const currentTyreData = tyreView === "predicted" ? (predictedTyreData ?? null) : (tyreData ?? null);
   const currentReport = reportView === "predicted" ? (predictedMarkdownReport ?? null) : (markdownReport ?? null);
+  const totalLaps = lapPositions?.total_laps ?? predictedLapPositions?.total_laps ?? null;
   
   // Logic for Metric Cards
   const winner = headerView === "actual" 
@@ -186,7 +187,7 @@ export default function RacePage({
                   {race.name}
                 </h2>
                 <p className="text-red-100 text-sm sm:text-base font-medium tracking-wide">
-                  Season 2026 · Round {race.round} · {race.round === 4 ? '57 laps' : '70 laps'}
+                  Season 2026 · Round {race.round}{totalLaps ? ` · ${totalLaps} laps` : ""}
                 </p>
                 <p className="text-red-200/80 text-[11px] sm:text-xs uppercase tracking-[0.2em] font-bold mt-1">
                   {race.date}
