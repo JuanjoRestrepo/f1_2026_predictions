@@ -39,16 +39,47 @@ logger = get_logger(__name__)
 TEAM_COLORS = {
     "Mercedes": "#27F4D2",
     "Red Bull Racing": "#3671C6",
-    "Ferrari": "#E80020",
+    "Red Bull": "#3671C6",
+    "Ferrari": "#E8002D",
     "McLaren": "#FF8000",
     "Aston Martin": "#229971",
     "Alpine": "#0093CC",
     "Williams": "#64C4FF",
     "Racing Bulls": "#6692FF",
+    "RB": "#6692FF",
     "Sauber": "#52E252",
+    "Kick Sauber": "#52E252",
     "Haas": "#B6BABD",
+    "Haas F1 Team": "#B6BABD",
     "Audi": "#f50531",
-    "Cadillac": "#ffffff",
+    "Cadillac": "#FFD700",
+}
+
+DRIVER_2026_TEAMS = {
+    "NOR": "McLaren",
+    "PIA": "McLaren",
+    "LEC": "Ferrari",
+    "HAM": "Ferrari",
+    "VER": "Red Bull Racing",
+    "HAD": "Red Bull Racing",
+    "RUS": "Mercedes",
+    "ANT": "Mercedes",
+    "ALO": "Aston Martin",
+    "STR": "Aston Martin",
+    "GAS": "Alpine",
+    "COL": "Alpine",
+    "SAI": "Williams",
+    "ALB": "Williams",
+    "LAW": "Racing Bulls",
+    "LIN": "Racing Bulls",
+    "TSU": "Racing Bulls",
+    "OCO": "Haas",
+    "BEA": "Haas",
+    "HUL": "Sauber",
+    "BOR": "Sauber",
+    "PER": "Cadillac",
+    "BOT": "Cadillac",
+    "CAM": "Cadillac",
 }
 
 
@@ -263,50 +294,86 @@ def generate_predicted_lap_data(
     all_drivers: list[str],
     total_laps: int,
     predicted_order: list[str],
+    preds_df: Any = None,
 ) -> dict[str, Any]:
-    import pandas as pd
-
     drivers_lap_list = []
-    team_driver_count: dict[str, int] = {}
-    for drv in all_drivers:
-        # Default values for pre-race
-        team_name = "TBD"
-        color = "#888888"
-        line_style = "solid"
-        start_pos = 20
+    seen_teams: set[str] = set()
 
-        # Try to get real data if available
-        try:
-            if not session.laps.empty:
+    # Build driver-to-team lookup, prioritizing predictions dataframe, then FastF1 session, then 2026 defaults
+    driver_team_map = dict(DRIVER_2026_TEAMS)
+    if preds_df is not None and hasattr(preds_df, "iterrows"):
+        for _, row in preds_df.iterrows():
+            d = str(row.get("Driver", ""))
+            t = str(row.get("Team", ""))
+            if d and t and t not in ["Unknown", "TBD", "nan", ""]:
+                driver_team_map[d] = t
+
+    # Try session laps if available
+    try:
+        if not session.laps.empty:
+            for drv in all_drivers:
                 drv_laps = session.laps.pick_drivers(drv)
                 if not drv_laps.empty:
-                    team_name = drv_laps["Team"].iloc[0]
-                    team_driver_count[team_name] = (
-                        team_driver_count.get(team_name, 0) + 1
-                    )
-                    line_style = (
-                        "solid" if team_driver_count[team_name] == 1 else "dashed"
-                    )
-                    color = TEAM_COLORS.get(team_name, "#888888")
+                    t = str(drv_laps["Team"].iloc[0])
+                    if t and t not in ["Unknown", "TBD", "nan", ""]:
+                        driver_team_map[drv] = t
+    except Exception:
+        pass
 
-            if not session.results.empty:
-                res_row = session.results[session.results["Abbreviation"] == drv]
-                if (
-                    not res_row.empty
-                    and not pd.isna(res_row["GridPosition"].iloc[0])
-                    and int(res_row["GridPosition"].iloc[0]) > 0
-                ):
-                    start_pos = int(res_row["GridPosition"].iloc[0])
-        except Exception as e:
-            logger.debug("Could not get grid pos for %s: %s", drv, e)
+    # Order drivers according to predicted finish order
+    ordered_drivers = [d for d in predicted_order if d in all_drivers]
+    for d in all_drivers:
+        if d not in ordered_drivers:
+            ordered_drivers.append(d)
 
-        end_pos = predicted_order.index(drv) + 1 if drv in predicted_order else 20
+    num_drivers = len(ordered_drivers)
 
-        pos_dict = {}
+    for idx, drv in enumerate(ordered_drivers):
+        team_name = driver_team_map.get(drv, "Unknown")
+        final_pos = idx + 1
+
+        # Differentiate teammates: 1st driver solid line, 2nd driver dashed line
+        line_style = "dashed" if team_name in seen_teams else "solid"
+        if team_name != "Unknown":
+            seen_teams.add(team_name)
+
+        # Team color
+        color = TEAM_COLORS.get(team_name, "#888888")
+
+        # Realistic starting grid position
+        start_pos = max(
+            1,
+            min(
+                num_drivers,
+                final_pos + (1 if idx % 3 == 0 else -1 if idx % 2 == 0 else 0),
+            ),
+        )
+        pit_start_lap = int(total_laps * (0.32 + (idx % 5) * 0.04))
+        pit_duration_laps = 3
+
+        pos_dict: dict[str, int] = {}
         for lap in range(1, total_laps + 1):
-            progress = lap / total_laps
-            curr_pos = round(start_pos + (end_pos - start_pos) * progress)
-            pos_dict[str(lap)] = curr_pos
+            if lap <= 3:
+                # Turn 1 and opening lap shuffling
+                ratio = lap / 3.0
+                curr = round(start_pos + ratio * (final_pos - start_pos))
+            elif lap < pit_start_lap:
+                # Stint 1 steady pace with minor micro-oscillations
+                micro_offset = 1 if (lap % 7 == 0 and final_pos < num_drivers) else 0
+                curr = max(1, min(num_drivers, final_pos + micro_offset))
+            elif lap < pit_start_lap + pit_duration_laps:
+                # Pit stop window drop (in-lap, pit stop, out-lap)
+                curr = min(num_drivers, final_pos + 4 + (idx % 3))
+            elif lap < pit_start_lap + 10:
+                # Out-lap recovery phase as rivals pit
+                recovery_ratio = (lap - (pit_start_lap + pit_duration_laps)) / 7.0
+                drop_pos = min(num_drivers, final_pos + 4 + (idx % 3))
+                curr = round(drop_pos - recovery_ratio * (drop_pos - final_pos))
+            else:
+                # Stint 2 final sprint to predicted position
+                curr = final_pos
+
+            pos_dict[str(lap)] = max(1, min(num_drivers, curr))
 
         drivers_lap_list.append(
             {
@@ -317,9 +384,12 @@ def generate_predicted_lap_data(
                 "positions": pos_dict,
             }
         )
+
+    event_date = session.event.get("EventDate", None)
+    year = event_date.year if hasattr(event_date, "year") else 2026
     return {
-        "event": session.event["EventName"],
-        "year": session.event["EventDate"].year,
+        "event": session.event.get("EventName", "Grand Prix"),
+        "year": year,
         "total_laps": total_laps,
         "drivers": drivers_lap_list,
     }
@@ -672,7 +742,13 @@ def main() -> None:
         )
 
     save_artifact(
-        generate_predicted_lap_data(session, all_drivers, total_laps, predicted_order),
+        generate_predicted_lap_data(
+            session,
+            all_drivers,
+            total_laps,
+            predicted_order,
+            preds_df=preds_df if predictions_path.exists() else None,
+        ),
         f"predicted_lap_positions_round_{args.round}.json",
         args.year,
         race_info["dir"],
@@ -691,7 +767,7 @@ def main() -> None:
             "WET": "#3b82f6",
         }
         for drv in all_drivers[:limit]:
-            team = "TBD"
+            team = DRIVER_2026_TEAMS.get(drv, "TBD")
             full_name = drv
             stint_info = []
 

@@ -30,6 +30,52 @@ interface RaceTimelineProps {
   data: LapPositionData;
 }
 
+const OFFICIAL_TEAM_COLORS: Record<string, string> = {
+  "McLaren": "#FF8000",
+  "Ferrari": "#E8002D",
+  "Red Bull": "#3671C6",
+  "Red Bull Racing": "#3671C6",
+  "Mercedes": "#27F4D2",
+  "Aston Martin": "#229971",
+  "Alpine": "#0093CC",
+  "Williams": "#64C4FF",
+  "Racing Bulls": "#6692FF",
+  "RB": "#6692FF",
+  "Haas": "#B6BABD",
+  "Haas F1 Team": "#B6BABD",
+  "Sauber": "#52E252",
+  "Kick Sauber": "#52E252",
+  "Audi": "#f50531",
+  "Cadillac": "#FFD700",
+};
+
+const OFFICIAL_DRIVER_TEAMS: Record<string, string> = {
+  NOR: "McLaren",
+  PIA: "McLaren",
+  LEC: "Ferrari",
+  HAM: "Ferrari",
+  VER: "Red Bull Racing",
+  HAD: "Red Bull Racing",
+  RUS: "Mercedes",
+  ANT: "Mercedes",
+  ALO: "Aston Martin",
+  STR: "Aston Martin",
+  GAS: "Alpine",
+  COL: "Alpine",
+  SAI: "Williams",
+  ALB: "Williams",
+  LAW: "Racing Bulls",
+  LIN: "Racing Bulls",
+  TSU: "Racing Bulls",
+  OCO: "Haas",
+  BEA: "Haas",
+  HUL: "Sauber",
+  BOR: "Sauber",
+  PER: "Cadillac",
+  BOT: "Cadillac",
+  CAM: "Cadillac",
+};
+
 // Build per-lap rows: [{ lap: 1, RUS: 1, ANT: 3, ... }, ...]
 function buildChartData(drivers: DriverData[], totalLaps: number) {
   const rows = [];
@@ -81,7 +127,37 @@ const CustomTooltip = ({
 
 export function RaceTimeline({ data }: RaceTimelineProps) {
   const [activeDriver, setActiveDriver] = useState<string | null>(null);
-  const chartData = buildChartData(data.drivers, data.total_laps);
+
+  // Normalize drivers: resolve team colors, correct teammate dashed/solid distinction
+  const seenTeams = new Set<string>();
+  const resolvedDrivers: DriverData[] = data.drivers.map((d) => {
+    const team = (d.team && d.team !== "TBD" && d.team !== "Unknown")
+      ? d.team
+      : (OFFICIAL_DRIVER_TEAMS[d.driver] ?? "Unknown");
+
+    const isGenericGray = !d.color || d.color.toLowerCase() === "#888888" || d.color.toLowerCase() === "#888";
+    const color = isGenericGray
+      ? (OFFICIAL_TEAM_COLORS[team] ?? "#888888")
+      : d.color;
+
+    const isSecondDriver = seenTeams.has(team);
+    if (team !== "Unknown") {
+      seenTeams.add(team);
+    }
+
+    const lineStyle = (d.lineStyle && d.lineStyle !== "solid")
+      ? d.lineStyle
+      : (isSecondDriver ? "dashed" : "solid");
+
+    return {
+      ...d,
+      team,
+      color,
+      lineStyle,
+    };
+  });
+
+  const chartData = buildChartData(resolvedDrivers, data.total_laps);
 
   return (
     <div className="w-full space-y-4">
@@ -130,7 +206,7 @@ export function RaceTimeline({ data }: RaceTimelineProps) {
               cursor={{ stroke: "rgba(255,255,255,0.1)", strokeWidth: 1 }}
             />
 
-            {data.drivers.map((d) => {
+            {resolvedDrivers.map((d) => {
               const lastLapPos = d.positions[data.total_laps.toString()] || 22;
               const isTop10 = lastLapPos <= 10;
               const isHovered = activeDriver === d.driver;
@@ -166,7 +242,7 @@ export function RaceTimeline({ data }: RaceTimelineProps) {
 
         {/* Dedicated Non-Overlapping Legend Container */}
         <div className="mt-4 pt-3 border-t border-white/5 flex flex-wrap justify-center gap-x-4 gap-y-2 max-h-28 overflow-y-auto custom-scrollbar">
-          {data.drivers.map((d) => (
+          {resolvedDrivers.map((d) => (
             <div
               key={d.driver}
               className="flex items-center gap-1.5 cursor-pointer group"

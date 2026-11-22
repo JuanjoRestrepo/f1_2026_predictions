@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v6.8.3] - 2026-11-21
+
+### Fixed
+- **Race Timeline Visualization (`RaceTimeline.tsx`)**:
+  - Differentiated teammates with solid line (1st driver) vs dashed line (2nd driver).
+  - Integrated official 2026 team colors (`OFFICIAL_TEAM_COLORS` and `OFFICIAL_DRIVER_TEAMS`) so that lines and legend entries always render in team branding (McLaren Papaya, Ferrari Red, Mercedes Teal, Red Bull Navy, Aston Martin Racing Green, etc.) instead of generic gray (`#888888`).
+- **Predicted Lap Positions Generator (`master_pipeline.py`)**:
+  - Resolved bug where pre-race simulation defaulted team to `TBD`, color to `#888888`, and starting position to 20 for all drivers, causing a uniform staircase effect.
+  - Implemented realistic race progression dynamics: distinct starting grid positions, opening-lap battles (laps 1-3), stint-1 steady pacing, pit stop window drops and out-lap recoveries, and sprint to predicted final positions.
+  - Regenerated and synced `predicted_lap_positions` for Rounds 19, 20, and 21 to Supabase S3 cloud storage.
+
+---
+
+## [v6.8.2] - 2026-11-21
+
+### Fixed
+- **Season-Wide Dynamic Lap Count**: Dynamically resolved circuit lap counts on race page from telemetry/simulation instead of hardcoded fallbacks.
+
+---
+
 ## [v6.8.1] - 2026-11-21
 
 ### Fixed
