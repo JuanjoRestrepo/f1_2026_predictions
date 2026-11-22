@@ -1,0 +1,17 @@
+{
+  "provider": "unavailable",
+  "event_name": "Mexico City Grand Prix",
+  "generated_at_utc": "2026-11-22T02:44:44.378732+00:00",
+  "latitude": 19.4042,
+  "longitude": -99.0907,
+  "target_date": "2026-11-01",
+  "race_day": null,
+  "forecast_days": [],
+  "rain_probability": null,
+  "risk_level": "unknown",
+  "confidence": "unavailable",
+  "summary": "No external weather forecast is available for Mexico City Grand Prix; Friday forecast keeps conservative dry-weather assumptions.",
+  "warnings": [
+    "No external weather API key configured."
+  ]
+}

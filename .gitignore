@@ -299,3 +299,7 @@ scratch/
 node_modules/
 .agent/
 .tmp_tests/
+# =============================================================================
+# 13. External reference projects (vendored / downloaded, not part of codebase)
+# =============================================================================
+f1-strategy-sim-main/

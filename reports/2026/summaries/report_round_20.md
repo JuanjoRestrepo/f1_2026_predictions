@@ -1,0 +1,20 @@
+### 1. Stint Dynamics & Tire Management
+
+* **Thermal Degradation Profile:** Interlagos’ anti-clockwise layout and high thermal load mode heavily stressed the right-rear tires, particularly through the sustained lateral loads of Sector 2 (Turns 6 through 11). Race winner Lando Norris (NOR) maintained bulk tire temperatures within the optimal 105–110°C window on the C3 Medium compound during the opening stint, preventing surface micro-blistering that plagued the Ferraris of Charles Leclerc (LEC, P8) and Lewis Hamilton (HAM, P9).
+* **Strategy Execution & Pit Loss Optimization:** With a relatively short pit lane loss of 20.0 seconds and a high 65% Safety Car probability, race strategists held out for virtual or full neutralizations. Norris and Max Verstappen (VER, P2) extended their Medium-compound opening stints to lap 28, transitioning to the C2 Hard compound. The low 30% overtake difficulty allowed drivers on fresher rubber to clear traffic rapidly without excessive thermal degradation during out-laps.
+* **Stint Management & Podium Mechanics:** Isack Hadjar (HAD, P3) delivered an exceptional stint execution for Racing Bulls, leveraging lower initial wear rates during his Medium stint. By protecting his rear tires through Turn 12 (Junção), Hadjar preserved traction for the uphill straight, successfully resisting late-stint undercut pressure from George Russell (RUS, P4) and Kimi Antonelli (ANT, P5).
+
+### 2. Aerodynamic Efficiency & Car Performance
+
+* **Aero Balance & Efficiency Trade-offs:** Interlagos demands an aerodynamic compromise between low-drag efficiency in Sector 1/3 and high downforce in Sector 2. McLaren's high L/D (lift-to-drag) aero package provided Norris with superior mid-corner stability in Turns 8 and 10 without sacrificing straight-line speed along the Reta Oposta.
+* **Atmospheric Altitude & Cooling Constraints:** Operating at approximately 800 meters above sea level with reduced ambient air density, internal power unit and brake cooling forced several teams to open up engine bodywork. Ferrari’s aggressive cooling louver configuration increased baseline drag, leaving Leclerc and Hamilton vulnerable to DRS passes into Turn 1 and Turn 4, contributing to their P8 and P9 finishes.
+* **ERS Deployment & Overtaking Dynamics:** With an overtake difficulty rating of just 30%, energy recovery system (ERS) strategy focused on de-rating management down the main straight. Red Bull and McLaren optimized SOC (State of Charge) usage at the exit of Turn 12, allowing Verstappen and Norris to break the DRS tow early in their respective stints.
+
+### 3. Driver Performance Deltas
+
+* **NOR vs. VER (P1 vs. P2):** Norris established his winning margin through superior micro-sector performance in Sector 2. Telemetry showed Norris utilizing a wider line through Turn 9, allowing earlier throttle application with lower peak slip angles, preserving rear-tire integrity over Verstappen across both stints.
+* **Rookie/Young Driver Breakdown (HAD P3, ANT P5, LAW P7):** 
+  * Isack Hadjar (HAD) displayed elite throttle modulation through low-speed traction zones, mitigating power-on oversteer and securing a deserved P3 podium.
+  * Kimi Antonelli (ANT) matched Mercedes teammate George Russell (RUS, P4) in high-speed corner entry speeds, finishing a strong P5 after managing trail-braking pressure into Turn 1 to prevent front-left flat-spotting.
+  * Liam Lawson (LAW) extracted maximum pace from the VCARB chassis, holding off Leclerc and Hamilton via precise defensive placement into Turn 4.
+* **Midfield Dynamics:** Nico Hülkenberg (HUL, P10) secured the final point by managing a long Hard-compound second stint, exploiting high straight-line efficiency to defend against trailing runners in the closing stages. Oscar Piastri (PIA, P6) recovered to sixth following an offset strategy, though compromised by early-stint traffic in the twisty middle sector.
