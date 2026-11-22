@@ -222,6 +222,31 @@ def test_unusable_interval_is_labelled_nan_without_disturbing_the_others() -> No
     assert labelled["VER"]["nearest"] == pytest.approx(5.0, abs=1e-6)
 
 
+def test_unusable_lap_before_usable_ones_does_not_overflow() -> None:
+    """Regression: an unusable lap *first* used to index past the filtered arrays.
+
+    2026 R16 (Bahrain) aborted the Gold stage with
+    ``IndexError: index 632 is out of bounds for axis 0 with size 632`` because
+    the driver groups carried positions from the unfiltered frame while the
+    margin calculation received ``starts[valid]``. A stoppage on lap 1 shifts
+    every later position up by one and triggers it; a stoppage on the last lap
+    (the previous test) does not.
+    """
+    labelled = _labels(
+        _frame(
+            [
+                ("LEC", 1, 2000.0, 2300.0, 300.0),
+                ("VER", 1, 0.0, 100.0, 100.0),
+                ("HAM", 1, 5.0, 105.0, 100.0),
+            ]
+        )
+    )
+
+    assert np.isnan(labelled["LEC"]["ahead"])
+    assert labelled["HAM"]["ahead"] == pytest.approx(5.0, abs=1e-6)
+    assert labelled["VER"]["nearest"] == pytest.approx(5.0, abs=1e-6)
+
+
 def test_single_car_session_reports_unknown_rather_than_clean() -> None:
     """With nobody else on track there is no exposure to measure."""
     labelled = _labels(

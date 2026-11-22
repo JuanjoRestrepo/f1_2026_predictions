@@ -305,12 +305,19 @@ def _lap_traffic_margins(
 def _driver_groups(
     laps: pd.DataFrame, driver_col: str, valid: NDArray[np.bool_]
 ) -> list[NDArray[np.int64]]:
-    """Row positions per driver, restricted to laps with a usable interval."""
-    positions = np.arange(len(laps), dtype=np.int64)[valid]
+    """Row positions per driver, restricted to laps with a usable interval.
+
+    Positions are **compacted**: ``0..valid.sum()-1`` in the order the usable
+    laps appear. ``_lap_traffic_margins`` receives ``starts[valid]`` and friends,
+    so anything larger than that would index past the end of those arrays. The
+    previous implementation returned positions into the unfiltered frame, which
+    only raised when an unusable lap came before a usable one — exactly the case
+    a race with an unclassifiable first lap produces.
+    """
     valid_laps = laps.loc[valid, [driver_col]]
     groups: list[NDArray[np.int64]] = []
     for _, index in valid_laps.groupby(driver_col, sort=False).indices.items():
-        groups.append(positions[np.sort(np.asarray(index, dtype=np.int64))])
+        groups.append(np.sort(np.asarray(index, dtype=np.int64)))
     return groups
 
 
