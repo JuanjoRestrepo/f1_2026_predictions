@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v6.8.4] - 2026-11-22
+
+### Added
+- **Official F1 Broadcast Constructor Logos (`TeamLogo.tsx`)**:
+  - Created standalone SVG component `<TeamLogo />` covering all 11 2026 Formula 1 constructors (McLaren, Ferrari, Mercedes, Red Bull Racing, Aston Martin, Alpine, Williams, Racing Bulls, Haas, Sauber/Audi, and Cadillac).
+  - Designed clean, inline vector marks matching official F1 TV broadcast graphics tower aesthetics.
+- **Finishing Order Table Integration (`PredictionsTable.tsx`)**:
+  - Embedded constructor logos directly into the `Driver` column beside driver abbreviations/names.
+  - Streamlined table presentation by removing redundant status dots in favor of authentic team emblems.
+
+---
+
 ## [v6.8.3] - 2026-11-21
 
 ### Fixed
