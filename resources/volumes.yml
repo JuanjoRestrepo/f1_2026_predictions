@@ -19,3 +19,18 @@ resources:
         Landing zone for raw FastF1 lap telemetry ingested by the
         f1_2026_race_predictions_job ingest_task. Layout:
         season=<year>/round=<NN>/race_laps.parquet
+
+    # dashboard_bundle is the release staging area for the dashboard artifacts.
+    # `--run-mode report` seeds it from the published bundle (or the repository
+    # on first run), regenerates the completed round, and writes the season tree
+    # here; `--run-mode export` publishes it. Keeping it in Unity Catalog means
+    # the site's data no longer depends on a developer machine producing the
+    # artifacts. Layout: season=<year>/<event dir>/results/...
+    dashboard_bundle:
+      name: dashboard_bundle
+      catalog_name: ${var.catalog}
+      schema_name: ${var.schema}
+      volume_type: MANAGED
+      comment: >
+        Release staging area for the dashboard report bundle written by the
+        report task and published by the export task.

@@ -946,13 +946,60 @@ def _trigger_dashboard_rebuild() -> None:
         )
 
 
+def run_report(
+    season: int,
+    catalog: str = CATALOG,
+    schema: str = SCHEMA,
+    round_number: int | None = None,
+    force: bool = False,
+) -> None:
+    """Generate the completed round's report inside Databricks.
+
+    The report producer used to live on a developer machine; this mode moves the
+    post-race artifacts into the scheduled job. It loads the FastF1 credentials
+    from ``f1_secrets`` and writes the season bundle to the ``dashboard_bundle``
+    Volume, which ``run_export`` then publishes.
+
+    Args:
+        season: F1 season year.
+        catalog: Unity Catalog catalog name.
+        schema: Unity Catalog schema name.
+        round_number: Explicit round override; defaults to the last completed race.
+        force: Rebuild even when the bundle already holds the round's results.
+    """
+    logger.info("=" * 60)
+    logger.info("DATABRICKS REPORT MODE — Season %d (%s.%s)", season, catalog, schema)
+    logger.info("=" * 60)
+
+    _load_secrets_from_databricks(_FASTF1_CREDENTIAL_ENV_VARS, "FastF1 credentials")
+
+    from f1_predictions.databricks.report_bundle import generate_report_bundle
+
+    summary = generate_report_bundle(
+        season=season,
+        catalog=catalog,
+        schema=schema,
+        project_root=PROJECT_ROOT,
+        round_number=round_number,
+        force=force,
+    )
+    logger.info("Report bundle summary: %s", summary)
+    logger.info("=" * 60)
+    logger.info("REPORT COMPLETE — Season %d", season)
+    logger.info("=" * 60)
+
+
 def run_export(season: int, catalog: str = CATALOG, schema: str = SCHEMA) -> None:
     """Publish the season's dashboard artifacts to S3-compatible storage.
 
     This is the "serving" half of the Databricks → dashboard channel: the
-    season's report bundle under ``reports/<season>`` is uploaded to object
-    storage, and the dashboard's prebuild step
-    (``dashboard/scripts/fetch-dashboard-data.mjs``) pulls it back down.
+    season's report bundle is uploaded to object storage, and the dashboard's
+    prebuild step (``dashboard/scripts/fetch-dashboard-data.mjs``) pulls it back
+    down.
+
+    The bundle Volume written by ``--run-mode report`` is the production source.
+    The committed ``reports/`` tree is only a fallback for a workspace that has
+    not built a bundle yet.
 
     Publishing is best-effort and non-fatal: a missing bucket, missing
     credentials, or an empty season logs a warning and returns rather than
@@ -967,12 +1014,17 @@ def run_export(season: int, catalog: str = CATALOG, schema: str = SCHEMA) -> Non
     logger.info("DATABRICKS EXPORT MODE — Season %d (%s.%s)", season, catalog, schema)
     logger.info("=" * 60)
 
+    from f1_predictions.databricks.report_bundle import volume_bundle_root
     from f1_predictions.utils.dashboard_publish import publish_dashboard_data
 
     _load_s3_secrets_from_databricks()
 
+    bundle = volume_bundle_root(catalog, schema)
+    source = bundle if (bundle / str(season)).exists() else PROJECT_ROOT / "reports"
+    logger.info("Publishing dashboard bundle from %s", source)
+
     try:
-        summary = publish_dashboard_data(PROJECT_ROOT / "reports", season)
+        summary = publish_dashboard_data(source, season)
     except Exception as exc:
         logger.warning(
             "Dashboard publish skipped for season %d (%s). "
@@ -1022,19 +1074,20 @@ def main() -> None:
         prog="databricks_entrypoint",
         description=(
             "Databricks Lakeflow Job entry point for the F1 2026 Predictions "
-            "Pipeline. Dispatches to ingest, train, predict, notify or export "
-            "mode based on --run-mode."
+            "Pipeline. Dispatches to ingest, train, predict, notify, report or "
+            "export mode based on --run-mode."
         ),
     )
     parser.add_argument(
         "--run-mode",
         required=True,
-        choices=["ingest", "train", "predict", "notify", "export"],
+        choices=["ingest", "train", "predict", "notify", "report", "export"],
         help="Execution mode: 'ingest' lands FastF1 laps in the raw_telemetry "
         "Volume; 'train' trains XGBoost and promotes @champion on improvement; "
         "'predict' scores a Gold table with the schema's @champion; 'notify' "
-        "dispatches the race verdict to Gmail and Discord; 'export' publishes "
-        "the dashboard bundle to object storage.",
+        "dispatches the race verdict to Gmail and Discord; 'report' generates "
+        "the completed round's artifacts into the dashboard_bundle Volume; "
+        "'export' publishes that bundle to object storage.",
     )
     parser.add_argument(
         "--season",
@@ -1064,12 +1117,13 @@ def main() -> None:
         "--round",
         type=int,
         default=None,
-        help="F1 round number override for ingest and notifications.",
+        help="F1 round number override for ingest, notifications and reports.",
     )
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Bypass race weekend gate and force execution.",
+        help="Bypass race weekend gate and force execution (also rebuilds a "
+        "report bundle that already contains the round's actual results).",
     )
     parser.add_argument(
         "--all-completed",
@@ -1124,6 +1178,14 @@ def main() -> None:
             catalog=args.catalog,
             schema=args.schema,
             round_number=args.round,
+        )
+    elif args.run_mode == "report":
+        run_report(
+            season=args.season,
+            catalog=args.catalog,
+            schema=args.schema,
+            round_number=args.round,
+            force=args.force,
         )
     elif args.run_mode == "export":
         run_export(season=args.season, catalog=args.catalog, schema=args.schema)

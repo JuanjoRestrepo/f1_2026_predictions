@@ -194,7 +194,7 @@ Four model paths exist. They do not share a model, a feature set or a target, so
 
 **The dashboard does not read the registry.** The published race order and lap times come from the stacking fit inside `simulate_race.py`. The `@champion` alias is a separate model — four aggregate features after the filter described below, fastest-lap target — and never reaches the dashboard. "Best model by CV RMSE" is therefore a property of the registry lane, not of the numbers a reader sees on the site. What protects the published numbers instead is reproducibility, the dispersion tripwire (`MAX_SPREAD_INFLATION = 1.25`) and the measured ablations recorded in §2.
 
-**The scheduled job exports, it does not predict.** Task 5 (`export_dashboard_data`) publishes `PROJECT_ROOT/reports` — the bundle committed to the repository — to object storage and triggers the Vercel rebuild (§4.4). New prediction CSVs are produced locally and committed; a scheduled run on its own can republish the checkout, but cannot produce a new round's prediction.
+**The scheduled job now generates the post-race report, but still does not predict.** Task 5 (`generate_race_report`, added 2026-11-24) loads the completed round's FastF1 session, writes the actual classification, lap positions, tyre intelligence and narrative, and stages the season bundle in the Unity Catalog Volume `dashboard_bundle`; Task 6 (`export_dashboard_data`) publishes that Volume and triggers the Vercel rebuild (§4.4). This closes the gap that left a finished race without an **Actual** tab until someone generated the artifacts on a developer machine. It does **not** produce the pre-race prediction: `predictions.csv` and `standings.csv` still come from `scripts/simulate_race.py` reading local per-lap Gold, and the report task seeds the bundle with the already-published predictions rather than recomputing them. Moving the 70-feature inference itself into Databricks remains Phase 22 work (PLAN_CLOUD_NATIVE_SERVING.md P22-A3).
 
 **Three Gold schemas, one name.** The DLT aggregate table and the local Gold are different schemas produced by different code, and they are not interchangeable:
 
@@ -231,7 +231,7 @@ The contract lives in `features/contract.py` and stamps `feature_contract_versio
 | Registry model | UC `<catalog>.<schema>.xgb_race_pace_regressor`; opt-in `xgb_lap_pace_regressor`; MLflow experiment `/Users/<user>/f1_2026_race_pace` | — |
 | Serving artifact | GHCR image (§5.4) | `data/outputs/models/xgb_pace_model.joblib` |
 | Predictions | `<table>_predictions` from the manual `--run-mode predict` (not scheduled) | `reports/<season>/<Event>/results/*.csv` |
-| Dashboard bundle | Supabase S3 `f1-cache`, `dashboard/<season>/…`, `manifest.json` written last | `reports/` (also the build fallback, §4.4) |
+| Dashboard bundle | Supabase S3 `f1-cache`, `dashboard/<season>/…`, `manifest.json` written last; staged from the `dashboard_bundle` UC Volume | `reports/` (also the build fallback, §4.4) |
 | Credentials | Databricks secret scope `f1_secrets` | `.env` (untracked) |
 
 **Status of the gaps recorded here (2026-10-18).**

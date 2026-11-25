@@ -137,14 +137,42 @@ resources:
               - "${var.schema}"
               - "--force"
 
-        # ── Task 5: publish the dashboard bundle to object storage ─────────
-        # Runs in parallel with notifications (independent side effect): the
-        # season's reports/<season> artifacts are uploaded so the Next.js
-        # dashboard's prebuild step can pull them. Non-fatal by design.
+        # ── Task 5: generate the completed round's report artifacts ─────────
+        # Runs after ingestion (the session cache is warm and Bronze exists) and
+        # before export. Loads the authoritative FastF1 classification, writes
+        # actual results, lap positions, tyre intelligence and the narrative
+        # into the dashboard_bundle Volume. Skips rounds whose actual results are
+        # already in the bundle, so the daily race-weekend schedule stays
+        # idempotent.
+        - task_key: generate_race_report
+          description: "Generate the completed round's report bundle in the dashboard_bundle Volume"
+          depends_on:
+            - task_key: ingest_race_telemetry
+          environment_key: serverless_py312
+          spark_python_task:
+            python_file: ../databricks_entrypoint.py
+            parameters:
+              - "--season"
+              - "2026"
+              - "--run-mode"
+              - "report"
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.schema}"
+          retry_on_timeout: true
+          max_retries: 1
+          min_retry_interval_millis: 120000   # 2 minutes
+
+        # ── Task 6: publish the dashboard bundle to object storage ─────────
+        # Publishes the dashboard_bundle Volume (the report task's output), not
+        # the repository tree. Non-fatal by design: a storage hiccup must not
+        # fail the run after the data work is done.
         - task_key: export_dashboard_data
-          description: "Publish reports/<season> artifacts for the dashboard"
+          description: "Publish the dashboard bundle for the season"
           depends_on:
             - task_key: train_and_register_champion
+            - task_key: generate_race_report
           environment_key: serverless_py312
           spark_python_task:
             python_file: ../databricks_entrypoint.py

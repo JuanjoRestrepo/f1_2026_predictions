@@ -197,6 +197,83 @@ def _content_type(relative_path: str) -> str:
     return _CONTENT_TYPES.get(suffix, "application/octet-stream")
 
 
+def download_dashboard_bundle(
+    destination: Path,
+    season: int,
+    *,
+    bucket_name: str | None = None,
+    prefix: str = DASHBOARD_OBJECT_PREFIX,
+    client: object | None = None,
+) -> dict[str, Any]:
+    """Mirror a published season bundle into a local directory.
+
+    Used by the Databricks report task as the seed for a new bundle: copying the
+    currently published artifacts first means a rebuild adds the new round
+    instead of replacing the whole season with whatever the repository happens
+    to track.
+
+    Args:
+        destination: Root ``reports`` directory to write into. The season's files
+            land under ``destination/<season>/``.
+        season: F1 season year.
+        bucket_name: Bucket to read from. Falls back to
+            ``SUPABASE_S3_BUCKET_NAME``.
+        prefix: Object-key prefix for the bundle (default ``dashboard``).
+        client: Pre-built S3 client (injected in tests). Built lazily otherwise.
+
+    Returns:
+        Summary dict with ``downloaded`` count, ``season`` and ``source``. The
+        count is 0 when the bucket is unreachable or the season is unpublished.
+
+    Raises:
+        ValueError: If no bucket can be resolved.
+    """
+    resolved_bucket = bucket_name or os.environ.get("SUPABASE_S3_BUCKET_NAME")
+    if not resolved_bucket:
+        msg = "bucket_name must be provided or SUPABASE_S3_BUCKET_NAME must be set."
+        raise ValueError(msg)
+
+    s3: Any = client if client is not None else get_s3_client()
+    season_prefix = posixpath.join(prefix, str(season)) + "/"
+
+    downloaded = 0
+    continuation: str | None = None
+    while True:
+        kwargs: dict[str, Any] = {
+            "Bucket": resolved_bucket,
+            "Prefix": season_prefix,
+        }
+        if continuation:
+            kwargs["ContinuationToken"] = continuation
+        page = s3.list_objects_v2(**kwargs)
+        for obj in page.get("Contents", []):
+            key = str(obj["Key"])
+            relative = key[len(season_prefix) :]
+            if not relative or relative == MANIFEST_FILENAME:
+                continue
+            target = destination / str(season) / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            body = s3.get_object(Bucket=resolved_bucket, Key=key)["Body"].read()
+            target.write_bytes(body)
+            downloaded += 1
+        if not page.get("IsTruncated"):
+            break
+        continuation = page.get("NextContinuationToken")
+
+    logger.info(
+        "Seeded %d dashboard artifact(s) for season %d from s3://%s/%s",
+        downloaded,
+        season,
+        resolved_bucket,
+        season_prefix,
+    )
+    return {
+        "downloaded": downloaded,
+        "season": season,
+        "source": f"s3://{resolved_bucket}/{season_prefix}",
+    }
+
+
 def publish_dashboard_data(
     reports_dir: Path,
     season: int,
