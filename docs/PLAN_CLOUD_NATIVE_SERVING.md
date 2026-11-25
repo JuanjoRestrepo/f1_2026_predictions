@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Proposed — planning only; no implementation is authorized by this document** |
+| Status | **Partially approved** — post-race report generation in Databricks was approved and implemented 2026-11-24 (§2.5). Every other task remains proposed. |
 | Created | 2026-10-25 UTC |
 | Owner | F1 Predictions maintainer |
 | Scope | Production serving path, scheduling, notifications, observability, documentation |

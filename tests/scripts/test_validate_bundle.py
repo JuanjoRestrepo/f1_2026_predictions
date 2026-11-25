@@ -290,5 +290,5 @@ def test_repository_bundle_is_valid() -> None:
     report = validate(REPO_ROOT)
 
     assert report.ok, _messages(report)
-    assert report.resource_counts == {"jobs": 1, "pipelines": 1, "volumes": 1}
-    assert report.tasks == 5
+    assert report.resource_counts == {"jobs": 1, "pipelines": 1, "volumes": 2}
+    assert report.tasks == 6

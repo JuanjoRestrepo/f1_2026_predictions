@@ -11,6 +11,7 @@ from f1_predictions.utils.dashboard_publish import (
     build_dashboard_manifest,
     collect_dashboard_files,
     discover_rounds,
+    download_dashboard_bundle,
     publish_dashboard_data,
 )
 
@@ -230,3 +231,73 @@ def test_publish_falls_back_to_env_bucket(
     publish_dashboard_data(tmp_path, 2026, client=client)
 
     assert all(p["Bucket"] == "env-bucket" for p in client.puts)
+
+
+class _FakeReadS3:
+    """In-memory S3 read stand-in with two pages of results."""
+
+    def __init__(self, objects: dict[str, bytes], page_size: int = 2) -> None:
+        self._objects = objects
+        self._page_size = page_size
+
+    def list_objects_v2(self, **kwargs: object) -> dict[str, object]:
+        prefix = str(kwargs["Prefix"])
+        keys = sorted(k for k in self._objects if k.startswith(prefix))
+        start = int(kwargs.get("ContinuationToken", 0))
+        window = keys[start : start + self._page_size]
+        page: dict[str, object] = {
+            "Contents": [{"Key": key} for key in window],
+            "IsTruncated": start + self._page_size < len(keys),
+        }
+        if page["IsTruncated"]:
+            page["NextContinuationToken"] = str(start + self._page_size)
+        return page
+
+    def get_object(self, **kwargs: object) -> dict[str, object]:
+        key = str(kwargs["Key"])
+        return {"Body": _Body(self._objects[key])}
+
+
+class _Body:
+    """Minimal streaming body with ``read()``."""
+
+    def __init__(self, payload: bytes) -> None:
+        self._payload = payload
+
+    def read(self) -> bytes:
+        return self._payload
+
+
+def test_download_mirrors_published_bundle(tmp_path: Path) -> None:
+    """Every published artifact is written under <destination>/<season>."""
+    client = _FakeReadS3(
+        {
+            "dashboard/2026/calendar.json": b'{"season": 2026}',
+            "dashboard/2026/summaries/actual_results_round_21.json": b'{"results": []}',
+            "dashboard/2026/Las_Vegas_Grand_Prix/results/predictions.csv": (
+                b"Driver\nVER\n"
+            ),
+            "dashboard/2026/manifest.json": b'{"files": []}',
+        }
+    )
+
+    summary = download_dashboard_bundle(tmp_path, 2026, bucket_name="b", client=client)
+
+    assert summary["downloaded"] == 3
+    assert (tmp_path / "2026" / "calendar.json").read_bytes() == b'{"season": 2026}'
+    assert (
+        tmp_path / "2026" / "summaries" / "actual_results_round_21.json"
+    ).exists()
+    # The manifest is a completeness signal, not bundle content.
+    assert not (tmp_path / "2026" / "manifest.json").exists()
+
+
+def test_download_handles_empty_bundle(tmp_path: Path) -> None:
+    """An unpublished season downloads nothing and does not create a tree."""
+    client = _FakeReadS3({})
+
+    summary = download_dashboard_bundle(tmp_path, 2026, bucket_name="b", client=client)
+
+    assert summary["downloaded"] == 0
+    assert not (tmp_path / "2026").exists()
+

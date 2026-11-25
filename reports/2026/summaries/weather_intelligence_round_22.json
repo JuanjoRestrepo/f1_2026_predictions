@@ -1,0 +1,17 @@
+{
+  "provider": "unavailable",
+  "event_name": "Qatar Grand Prix",
+  "generated_at_utc": "2026-11-25T01:39:49.230736+00:00",
+  "latitude": 25.49,
+  "longitude": 51.4542,
+  "target_date": "2026-11-29",
+  "race_day": null,
+  "forecast_days": [],
+  "rain_probability": null,
+  "risk_level": "unknown",
+  "confidence": "unavailable",
+  "summary": "No external weather forecast is available for Qatar Grand Prix; Friday forecast keeps conservative dry-weather assumptions.",
+  "warnings": [
+    "No external weather API key configured."
+  ]
+}

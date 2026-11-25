@@ -1,15 +1,19 @@
+from __future__ import annotations
+
 import argparse
 import asyncio
 import json
 import os
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import fastf1
 import fastf1.core
 import numpy as np
-from google import genai
+
+if TYPE_CHECKING:
+    from google import genai
 
 from f1_predictions.agents.coordinator_agent import coordinator_agent_run
 from f1_predictions.features.external_weather import (
@@ -29,7 +33,9 @@ from f1_predictions.utils.logging_setup import (
 )
 
 # Config
-REPORTS_BASE = Path("reports")
+# The Databricks report task points this at the release bundle staging area via
+# ``F1_REPORTS_DIR``. Local runs keep the historical default.
+REPORTS_BASE = Path(os.environ.get("F1_REPORTS_DIR", "reports"))
 SUMMARY_SUBDIR = "summaries"
 DEFAULT_GEMINI_DELAY_SECONDS = 10
 
@@ -95,6 +101,10 @@ def setup_gemini(settings: Settings) -> genai.Client | None:
             "F1_GEMINI_API_KEY is not configured; AI narratives will use fallback copy."
         )
         return None
+    # Imported lazily: the Databricks serverless environment does not install
+    # google-genai, and the report task must run without it when no key is set.
+    from google import genai
+
     return genai.Client(api_key=api_key)
 
 
@@ -262,14 +272,23 @@ def generate_lap_data(
             lap_row = drv_laps[drv_laps["LapNumber"] == lap]
             if not lap_row.empty and not np.isnan(lap_row["Position"].iloc[0]):
                 pos_dict[str(lap)] = int(lap_row["Position"].iloc[0])
-            else:
-                pos_dict[str(lap)] = 22  # DNF Drop
-
-        # Sync final lap
+        # Do not fabricate the laps a driver did not complete. The previous
+        # version filled every missing lap with 22 ("DNF drop") and then forced
+        # the classified position onto the final lap, which drew a retirement
+        # across the whole race distance — a driver out on lap 18 appeared to
+        # hold P22 for 32 more laps and then jump to their classification. The
+        # chart consumes sparse positions (RaceTimeline.buildChartData skips
+        # undefined laps), so the line now stops where the driver stopped.
+        last_lap = drv_laps["LapNumber"].max()
         res_row = session.results[session.results["Abbreviation"] == drv]
-        if not res_row.empty:
+        if (
+            not res_row.empty
+            and not np.isnan(last_lap)
+            and int(last_lap) >= total_laps
+        ):
             off_pos = res_row["Position"].iloc[0]
-            pos_dict[str(total_laps)] = int(off_pos) if not np.isnan(off_pos) else 22
+            if not np.isnan(off_pos):
+                pos_dict[str(total_laps)] = int(off_pos)
 
         drivers_lap_list.append(
             {

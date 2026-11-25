@@ -477,6 +477,49 @@ def _current_form_stats(df_current: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def _restrict_to_latest_entry_list(
+    driver_stats: pd.DataFrame,
+    latest_round_file: Path | None,
+) -> pd.DataFrame:
+    """Keep only drivers entered in the most recent completed round.
+
+    ``_current_form_stats`` aggregates every lap of the season so far, which
+    includes drivers who have since left the grid. FastF1 has no entry list for
+    a session that has not run yet (``Event`` has no ``get_entry_list``), so the
+    latest completed round is the best available proxy.
+
+    Args:
+        driver_stats: One row per driver, season-to-date form.
+        latest_round_file: Gold parquet for the most recent completed round, or
+            ``None`` when the season has no completed round (first race).
+
+    Returns:
+        ``driver_stats`` filtered to the latest round's participants, with a
+        fresh index. Returned unchanged when there is no reference round or the
+        reference file has no driver column.
+    """
+    if latest_round_file is None:
+        return driver_stats
+
+    latest = pd.read_parquet(latest_round_file)
+    if "Driver" not in latest.columns:
+        return driver_stats
+
+    entered = set(latest["Driver"].dropna().unique())
+    if not entered:
+        return driver_stats
+
+    dropped = sorted(set(driver_stats["Driver"]) - entered)
+    if dropped:
+        logger.info(
+            "Entry-list filter (round %s): dropping %s — not entered in the "
+            "latest completed round.",
+            _round_number(latest_round_file),
+            ", ".join(dropped),
+        )
+    return driver_stats[driver_stats["Driver"].isin(entered)].reset_index(drop=True)
+
+
 def _build_simulation_scenario(
     driver_stats: pd.DataFrame,
     year: int,
@@ -593,6 +636,21 @@ def run_race_simulation(
         round_number,
     )
     driver_stats = _current_form_stats(df_current)
+
+    # Restrict the scenario to the entry list of the round being predicted.
+    # ``_current_form_stats`` groups every lap of the season so far, so it also
+    # returns drivers who have since left the grid: 2026 had mid-season swaps
+    # (OCO, TSU and HIR stopped racing; CAM joined). Predicting them produced a
+    # 25-driver table for an event with 22 entries and omitted drivers who had
+    # joined. FastF1 exposes no entry list before a session runs, so the most
+    # recent completed round is the best available proxy; it is exact whenever
+    # the entry list did not change between consecutive rounds.
+    latest_round_file = max(
+        (f for f in gold_files if _round_number(f) is not None),
+        key=lambda p: _round_number(p) or 0,
+        default=None,
+    )
+    driver_stats = _restrict_to_latest_entry_list(driver_stats, latest_round_file)
 
     # 3. Build simulation scenario (Virtual Lap)
     drivers = driver_stats["Driver"].unique()
