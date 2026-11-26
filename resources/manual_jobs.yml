@@ -1,0 +1,210 @@
+# Manual jobs. None of these have a schedule: the Friday–Monday race-weekend
+# job stays responsible for ingest, training, the report and the export.
+# A historical backfill plus a per-round retrain does not belong on that cron.
+#
+# client: "2" matches the race-weekend job. This workspace rejects client "1"
+# with "Invalid platform channel Client-1".
+
+resources:
+  jobs:
+    f1_2026_backfill_job:
+      name: "[${bundle.target}] F1 2026 Volume Backfill"
+      description: >
+        One-off build of the pipeline data tree (2022 onward) on the f1_data
+        Volume. Existing Gold Parquet is skipped unless force=true.
+      performance_target: STANDARD
+      tags:
+        aidevkit_project: ai-dev-kit
+      max_concurrent_runs: 1
+      queue:
+        enabled: true
+      parameters:
+        - name: season
+          default: "2026"
+        - name: seasons
+          default: "2022,2023,2024,2025,2026"
+        - name: force
+          default: "false"
+      email_notifications:
+        on_failure:
+          - restrepojuanjo@gmail.com
+      environments:
+        - environment_key: serverless_py312
+          spec:
+            client: "2"
+            dependencies:
+              - "pydantic>=2.7.0,<3"
+              - "pydantic-settings>=2.3.0,<3"
+              - "numpy>=1.26.0,<2.0"
+              - "pandas>=2.2.0"
+              - "scikit-learn>=1.5.0"
+              - "fastf1>=3.9.0"
+              - "xgboost>=2.1.0"
+              - "lightgbm>=4.5.0"
+              - "httpx>=0.27.0"
+              - "tenacity>=9.0.0"
+              - "jinja2>=3.1.0"
+              - "pyyaml>=6.0.0"
+              - "pandera>=0.20.0"
+              - "python-dotenv>=1.0.0"
+              - "mlflow>=2.14.0"
+      tasks:
+        - task_key: backfill_volume
+          description: "Ingest completed rounds from FastF1 into the f1_data Volume"
+          environment_key: serverless_py312
+          spark_python_task:
+            python_file: ../databricks_entrypoint.py
+            parameters:
+              - "--season"
+              - "{{job.parameters.season}}"
+              - "--seasons"
+              - "{{job.parameters.seasons}}"
+              - "--run-mode"
+              - "backfill"
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.schema}"
+              - "--force"
+              - "{{job.parameters.force}}"
+
+    f1_2026_report_round_job:
+      name: "[${bundle.target}] F1 2026 Report One Round"
+      description: >
+        Generate one completed round's official classification and report
+        artifacts into the dashboard_bundle Volume. Used to fill rounds the
+        weekend job never wrote, such as Singapore and Austin 2026.
+      performance_target: STANDARD
+      tags:
+        aidevkit_project: ai-dev-kit
+      max_concurrent_runs: 1
+      queue:
+        enabled: true
+      parameters:
+        - name: season
+          default: "2026"
+        - name: round
+          default: "17"
+        - name: force
+          default: "true"
+      email_notifications:
+        on_failure:
+          - restrepojuanjo@gmail.com
+      environments:
+        - environment_key: serverless_py312
+          spec:
+            client: "2"
+            dependencies:
+              - "pydantic>=2.7.0,<3"
+              - "pydantic-settings>=2.3.0,<3"
+              - "numpy>=1.26.0,<2.0"
+              - "pandas>=2.2.0"
+              - "scikit-learn>=1.5.0"
+              - "fastf1>=3.9.0"
+              - "xgboost>=2.1.0"
+              - "lightgbm>=4.5.0"
+              - "httpx>=0.27.0"
+              - "tenacity>=9.0.0"
+              - "jinja2>=3.1.0"
+              - "pyyaml>=6.0.0"
+              - "pandera>=0.20.0"
+              - "python-dotenv>=1.0.0"
+              - "mlflow>=2.14.0"
+      tasks:
+        - task_key: generate_race_report
+          description: "Write the requested round's report into the dashboard_bundle Volume"
+          environment_key: serverless_py312
+          spark_python_task:
+            python_file: ../databricks_entrypoint.py
+            parameters:
+              - "--season"
+              - "{{job.parameters.season}}"
+              - "--round"
+              - "{{job.parameters.round}}"
+              - "--run-mode"
+              - "report"
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.schema}"
+              - "--force"
+              - "{{job.parameters.force}}"
+
+    f1_2026_simulate_job:
+      name: "[${bundle.target}] F1 2026 Simulate And Export"
+      description: >
+        Rebuild one round's predictions.csv from the f1_data Volume and publish
+        the dashboard bundle. Run once per round that needs a corrected roster.
+      performance_target: STANDARD
+      tags:
+        aidevkit_project: ai-dev-kit
+      max_concurrent_runs: 1
+      queue:
+        enabled: true
+      parameters:
+        - name: season
+          default: "2026"
+        - name: round
+          default: "21"
+        - name: force
+          default: "true"
+      email_notifications:
+        on_failure:
+          - restrepojuanjo@gmail.com
+      environments:
+        - environment_key: serverless_py312
+          spec:
+            client: "2"
+            dependencies:
+              - "pydantic>=2.7.0,<3"
+              - "pydantic-settings>=2.3.0,<3"
+              - "numpy>=1.26.0,<2.0"
+              - "pandas>=2.2.0"
+              - "scikit-learn>=1.5.0"
+              - "fastf1>=3.9.0"
+              - "xgboost>=2.1.0"
+              - "lightgbm>=4.5.0"
+              - "httpx>=0.27.0"
+              - "tenacity>=9.0.0"
+              - "jinja2>=3.1.0"
+              - "pyyaml>=6.0.0"
+              - "pandera>=0.20.0"
+              - "python-dotenv>=1.0.0"
+              - "mlflow>=2.14.0"
+      tasks:
+        - task_key: simulate_round
+          description: "Regenerate the round's predictions against the f1_data Volume"
+          environment_key: serverless_py312
+          spark_python_task:
+            python_file: ../databricks_entrypoint.py
+            parameters:
+              - "--season"
+              - "{{job.parameters.season}}"
+              - "--round"
+              - "{{job.parameters.round}}"
+              - "--run-mode"
+              - "simulate"
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.schema}"
+              - "--force"
+              - "{{job.parameters.force}}"
+        - task_key: export_dashboard_data
+          description: "Publish the dashboard bundle for the season"
+          depends_on:
+            - task_key: simulate_round
+          environment_key: serverless_py312
+          spark_python_task:
+            python_file: ../databricks_entrypoint.py
+            parameters:
+              - "--season"
+              - "{{job.parameters.season}}"
+              - "--run-mode"
+              - "export"
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.schema}"
+              - "--force"
+              - "{{job.parameters.force}}"

@@ -106,7 +106,7 @@ export default function RacePage({
   const defaultView = hasActualData ? "actual" : "predicted";
 
   const [headerView, setHeaderView] = useState<"predicted" | "actual">(defaultView);
-  const [tableView, setTableView] = useState<"predicted" | "actual">("predicted");
+  const [tableView, setTableView] = useState<"predicted" | "actual">(defaultView);
   const [chartView, setChartView] = useState<"predicted" | "actual">(defaultView);
   const [tyreView, setTyreView] = useState<"predicted" | "actual">(defaultView);
   const [reportView, setReportView] = useState<"predicted" | "actual">(defaultView);

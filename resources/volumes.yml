@@ -34,3 +34,17 @@ resources:
       comment: >
         Release staging area for the dashboard report bundle written by the
         report task and published by the export task.
+
+    # f1_data holds the pipeline's raw/processed/Gold Parquet tree, mirroring
+    # the repository's data/ layout. `--run-mode backfill` builds it from
+    # FastF1 and `--run-mode simulate` reads it, so the race simulation no
+    # longer depends on a developer machine having run ingest_season.py.
+    # Layout: raw|laps|season=<year>/round=<NN>/, processed/..., outputs/...
+    f1_data:
+      name: f1_data
+      catalog_name: ${var.catalog}
+      schema_name: ${var.schema}
+      volume_type: MANAGED
+      comment: >
+        Pipeline data tree (raw, processed, Gold) used by the cloud backfill and
+        race simulation run-modes.

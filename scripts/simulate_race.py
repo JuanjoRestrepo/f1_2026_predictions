@@ -1,6 +1,7 @@
 """Virtual race simulation script: predict performance hierarchy for a specific GP."""
 
 import argparse
+import json
 from pathlib import Path
 from typing import Any, cast
 
@@ -477,9 +478,176 @@ def _current_form_stats(df_current: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def _load_classification(results_file: Path | None) -> list[dict[str, str]]:
+    """Return the classified drivers and their official team names.
+
+    Args:
+        results_file: ``actual_results_round_<N>.json``, or ``None``.
+
+    Returns:
+        One ``{"driver", "team"}`` entry per classified row, in file order.
+        Empty when the file is absent, unreadable, or has no drivers. A driver
+        who did not start stays in the list: the classification is the entry
+        list, and a DNS was entered.
+    """
+    if results_file is None or not results_file.exists():
+        return []
+    try:
+        payload = json.loads(results_file.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        logger.warning("Could not read classification %s", results_file)
+        return []
+    entries: list[dict[str, str]] = []
+    for row in payload.get("results", []):
+        driver = row.get("driver")
+        if not driver:
+            continue
+        entries.append({"driver": str(driver), "team": str(row.get("team") or "")})
+    return entries
+
+
+def _classified_drivers(results_file: Path | None) -> set[str]:
+    """Return the drivers listed in a round's actual-results artifact.
+
+    Args:
+        results_file: ``actual_results_round_<N>.json``, or ``None``.
+
+    Returns:
+        Driver abbreviations from the classification, or an empty set when the
+        file is absent or unreadable.
+    """
+    return {entry["driver"] for entry in _load_classification(results_file)}
+
+
+def _gold_team_for_official(
+    driver_stats: pd.DataFrame,
+    entries: list[dict[str, str]],
+    official_team: str,
+) -> str | None:
+    """Map an official team name onto the team string Gold already uses.
+
+    The classification says ``Haas F1 Team``; the lap table says ``Haas``. A
+    debutant's one-hot team feature only matches training rows when it uses the
+    Gold spelling, which a teammate who already has laps carries.
+
+    Args:
+        driver_stats: Season-to-date form, one row per driver.
+        entries: Classification rows for the round being rostered.
+        official_team: Team name as published in the classification.
+
+    Returns:
+        The Gold ``Team`` of a classified teammate, or ``None`` when nobody
+        from that official team has a form row yet.
+    """
+    if not official_team or driver_stats.empty:
+        return None
+    gold_team = dict(
+        zip(
+            driver_stats["Driver"].astype(str),
+            driver_stats["Team"].astype(str),
+            strict=True,
+        )
+    )
+    for entry in entries:
+        if entry["team"] == official_team and entry["driver"] in gold_team:
+            return gold_team[entry["driver"]]
+    return None
+
+
+def _synthetic_form_row(
+    driver_stats: pd.DataFrame, driver: str, team: str
+) -> dict[str, Any]:
+    """Build a form row for a driver who has no laps before this round.
+
+    Numeric features are the median of teammates already in ``driver_stats``.
+    With no teammate to copy, they are the median of the whole grid. The model
+    is unchanged: the row only gives the scenario someone to score.
+
+    Args:
+        driver_stats: Season-to-date form. Must contain at least one row.
+        driver: Abbreviation of the driver being added.
+        team: Gold team string to store on the row.
+
+    Returns:
+        A dict with the same columns as ``driver_stats``.
+    """
+    teammates = driver_stats[driver_stats["Team"] == team]
+    pool = teammates if not teammates.empty else driver_stats
+    numeric = pool.select_dtypes(include="number").median(numeric_only=True)
+    row: dict[str, Any] = {}
+    for column in driver_stats.columns:
+        if column in numeric.index:
+            row[column] = numeric[column]
+        else:
+            row[column] = pool.iloc[0][column]
+    row["Driver"] = driver
+    row["Team"] = team
+    return row
+
+
+def _roster_from_classification(
+    driver_stats: pd.DataFrame,
+    results_file: Path | None,
+) -> pd.DataFrame | None:
+    """Restrict the scenario to one round's official classification.
+
+    Drivers in the classification who have no season-to-date laps (a debut, or
+    a substitute's first race) get a synthetic form row. Drivers who have laps
+    but are absent from the classification are dropped: they did not start.
+
+    Args:
+        driver_stats: One row per driver, season-to-date form.
+        results_file: ``actual_results_round_<N>.json`` for the round being
+            simulated.
+
+    Returns:
+        The roster, or ``None`` when the classification cannot be read, so the
+        caller can fall back to the previous-round proxy.
+    """
+    entries = _load_classification(results_file)
+    if not entries:
+        return None
+
+    entered = {entry["driver"] for entry in entries}
+    kept = driver_stats[driver_stats["Driver"].isin(entered)].copy()
+    present = set(kept["Driver"].astype(str))
+    dropped = sorted(set(driver_stats["Driver"].astype(str)) - entered)
+    if dropped:
+        logger.info(
+            "Entry-list filter (%s): dropping %s — not in the official classification.",
+            results_file.name if results_file is not None else "classification",
+            ", ".join(dropped),
+        )
+
+    added: list[dict[str, Any]] = []
+    for entry in entries:
+        if entry["driver"] in present:
+            continue
+        team = _gold_team_for_official(driver_stats, entries, entry["team"])
+        if team is None:
+            team = entry["team"] or (
+                str(driver_stats["Team"].iloc[0]) if not driver_stats.empty else ""
+            )
+        if driver_stats.empty:
+            added.append({"Driver": entry["driver"], "Team": team})
+        else:
+            added.append(_synthetic_form_row(driver_stats, entry["driver"], team))
+        logger.info(
+            "Entry-list filter: %s has no laps before this round; using the "
+            "%s median as form.",
+            entry["driver"],
+            team or "grid",
+        )
+
+    if added:
+        kept = pd.concat([kept, pd.DataFrame(added)], ignore_index=True)
+    return kept.reset_index(drop=True)
+
+
 def _restrict_to_latest_entry_list(
     driver_stats: pd.DataFrame,
     latest_round_file: Path | None,
+    previous_results_file: Path | None = None,
 ) -> pd.DataFrame:
     """Keep only drivers entered in the most recent completed round.
 
@@ -488,10 +656,18 @@ def _restrict_to_latest_entry_list(
     a session that has not run yet (``Event`` has no ``get_entry_list``), so the
     latest completed round is the best available proxy.
 
+    The Gold parquet only contains drivers who completed at least one timed lap,
+    so it drops anyone who was entered but retired before setting a lap (for
+    example Bottas at São Paulo 2026). The previous round's classification is
+    unioned in to restore those entries.
+
     Args:
         driver_stats: One row per driver, season-to-date form.
         latest_round_file: Gold parquet for the most recent completed round, or
             ``None`` when the season has no completed round (first race).
+        previous_results_file: ``actual_results_round_<N>.json`` for that same
+            round, when it has already been reported. Adds drivers who were
+            classified without a timed lap (DNS / lap-1 retirement).
 
     Returns:
         ``driver_stats`` filtered to the latest round's participants, with a
@@ -506,6 +682,7 @@ def _restrict_to_latest_entry_list(
         return driver_stats
 
     entered = set(latest["Driver"].dropna().unique())
+    entered |= _classified_drivers(previous_results_file)
     if not entered:
         return driver_stats
 
@@ -518,6 +695,39 @@ def _restrict_to_latest_entry_list(
             ", ".join(dropped),
         )
     return driver_stats[driver_stats["Driver"].isin(entered)].reset_index(drop=True)
+
+
+def select_scenario_roster(
+    driver_stats: pd.DataFrame,
+    *,
+    target_results_file: Path | None,
+    latest_round_file: Path | None,
+    previous_results_file: Path | None = None,
+) -> pd.DataFrame:
+    """Choose who is predicted for a round.
+
+    A round that already has an official classification is rostered from that
+    file, so regenerating it cannot keep a driver who had left or drop one who
+    debuted in it. A round that has not been run yet has no classification, and
+    the previous completed round remains the entry-list proxy.
+
+    Args:
+        driver_stats: One row per driver, season-to-date form.
+        target_results_file: ``actual_results_round_<N>.json`` for the round
+            being simulated, when it has already been reported.
+        latest_round_file: Gold parquet for the most recent completed round
+            before the one being simulated.
+        previous_results_file: Classification of that previous round.
+
+    Returns:
+        The drivers to build the scenario for.
+    """
+    classified = _roster_from_classification(driver_stats, target_results_file)
+    if classified is not None:
+        return classified
+    return _restrict_to_latest_entry_list(
+        driver_stats, latest_round_file, previous_results_file
+    )
 
 
 def _build_simulation_scenario(
@@ -637,20 +847,32 @@ def run_race_simulation(
     )
     driver_stats = _current_form_stats(df_current)
 
-    # Restrict the scenario to the entry list of the round being predicted.
     # ``_current_form_stats`` groups every lap of the season so far, so it also
-    # returns drivers who have since left the grid: 2026 had mid-season swaps
-    # (OCO, TSU and HIR stopped racing; CAM joined). Predicting them produced a
-    # 25-driver table for an event with 22 entries and omitted drivers who had
-    # joined. FastF1 exposes no entry list before a session runs, so the most
-    # recent completed round is the best available proxy; it is exact whenever
-    # the entry list did not change between consecutive rounds.
+    # returns drivers who have since left the grid and omits a debutant who has
+    # no laps yet. When this round already has an official classification, that
+    # file is the roster (it is who actually started, including a DNS). A round
+    # that has not been run has no classification; the previous completed round
+    # is the entry-list proxy.
     latest_round_file = max(
         (f for f in gold_files if _round_number(f) is not None),
         key=lambda p: _round_number(p) or 0,
         default=None,
     )
-    driver_stats = _restrict_to_latest_entry_list(driver_stats, latest_round_file)
+    summaries = Path(settings.reports_dir) / str(year) / "summaries"
+    target_results_file = summaries / f"actual_results_round_{round_number}.json"
+    previous_results_file = None
+    if latest_round_file is not None:
+        candidate = summaries / (
+            f"actual_results_round_{_round_number(latest_round_file)}.json"
+        )
+        if candidate.exists():
+            previous_results_file = candidate
+    driver_stats = select_scenario_roster(
+        driver_stats,
+        target_results_file=target_results_file,
+        latest_round_file=latest_round_file,
+        previous_results_file=previous_results_file,
+    )
 
     # 3. Build simulation scenario (Virtual Lap)
     drivers = driver_stats["Driver"].unique()
