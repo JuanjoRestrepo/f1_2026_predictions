@@ -25,6 +25,10 @@ export function getAvailableRaces(year: number): RaceInfo[] {
   const summariesDir = path.join(yearDir, "summaries");
   if (fs.existsSync(summariesDir)) {
     fs.readdirSync(summariesDir).forEach((f) => {
+      // Weather-only artifacts are written for the *next* round before it has
+      // been raced. Counting them made an unraced round (e.g. Qatar before its
+      // lights-out) appear in the race list and produce an empty race page.
+      if (f.startsWith("weather_intelligence_round_")) return;
       const match = f.match(/round_(\d+)/);
       if (match?.[1]) {
         const roundNum = parseInt(match[1]);

@@ -142,6 +142,53 @@ def _seed_reports(
     return target
 
 
+def stage_season_bundle(
+    season: int,
+    catalog: str,
+    schema: str,
+    project_root: Path,
+) -> tuple[Path, Path]:
+    """Seed a writable staging copy of the season bundle.
+
+    Shared by the report and simulation run-modes: both need the accumulated
+    season tree (previous rounds, ``calendar.json``, summaries) plus a scratch
+    directory the pipeline can write to before the Volume is replaced.
+
+    Args:
+        season: F1 season year.
+        catalog: Unity Catalog catalog that holds the bundle Volume.
+        schema: Unity Catalog schema that holds the bundle Volume.
+        project_root: Bundle workspace root, used as the last-resort seed.
+
+    Returns:
+        ``(bundle_root, season_dir)``: the Volume root and the staging copy of
+        the season tree.
+    """
+    bundle = volume_bundle_root(catalog, schema)
+    staging = _staging_root()
+    reports_dir = staging / "reports"
+    season_dir = _seed_reports(season, bundle, project_root, reports_dir)
+    return bundle, season_dir
+
+
+def publish_season_bundle(bundle: Path, season_dir: Path) -> int:
+    """Replace the Volume's season tree with a staged one.
+
+    Args:
+        bundle: Bundle Volume root.
+        season_dir: Staged ``.../reports/<season>`` directory.
+
+    Returns:
+        Number of files copied to the Volume.
+    """
+    bundle.mkdir(parents=True, exist_ok=True)
+    destination = bundle / season_dir.name
+    if destination.exists():
+        shutil.rmtree(destination)
+    shutil.copytree(season_dir, destination)
+    return sum(1 for path in destination.rglob("*") if path.is_file())
+
+
 def generate_report_bundle(
     season: int,
     catalog: str,
@@ -149,6 +196,7 @@ def generate_report_bundle(
     project_root: Path,
     round_number: int | None = None,
     force: bool = False,
+    preserve_narratives: bool = False,
 ) -> dict[str, Any]:
     """Generate the completed round's report and sync it to the bundle Volume.
 
@@ -162,6 +210,10 @@ def generate_report_bundle(
             is used.
         force: Rebuild even when the bundle already contains the round's actual
             results.
+        preserve_narratives: Keep the existing ``report_round_N.md`` and
+            ``predicted_report_round_N.md`` files. Used when only the derived
+            charts need refreshing after a prediction regeneration, so a run
+            without a Gemini key does not replace good copy with fallback text.
 
     Returns:
         Summary with ``generated``, ``season``, ``round``, ``files`` and
@@ -177,10 +229,10 @@ def generate_report_bundle(
         logger.info("No completed race found for season %d; nothing to report.", season)
         return {"generated": False, "season": season, "round": None}
 
-    bundle = volume_bundle_root(catalog, schema)
-    staging = _staging_root()
-    reports_dir = staging / "reports"
-    season_dir = _seed_reports(season, bundle, project_root, reports_dir)
+    bundle, season_dir = stage_season_bundle(
+        season, catalog, schema, project_root
+    )
+    reports_dir = season_dir.parent
 
     actual_results = (
         season_dir / "summaries" / f"actual_results_round_{target_round}.json"
@@ -205,6 +257,16 @@ def generate_report_bundle(
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
 
+    preserved_narratives: dict[Path, str] = {}
+    if preserve_narratives:
+        for path in season_dir.rglob(f"*report_round_{target_round}.md"):
+            preserved_narratives[path] = path.read_text(encoding="utf-8")
+        logger.info(
+            "Preserving %d narrative file(s) for round %d",
+            len(preserved_narratives),
+            target_round,
+        )
+
     from scripts import master_pipeline
 
     # ``REPORTS_BASE`` is read at import time, so point it at staging explicitly
@@ -226,6 +288,10 @@ def generate_report_bundle(
     finally:
         sys.argv = previous_argv
 
+    for path, text in preserved_narratives.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+
     if not actual_results.exists():
         msg = (
             f"Report generation finished without {actual_results}. "
@@ -233,13 +299,8 @@ def generate_report_bundle(
         )
         raise RuntimeError(msg)
 
-    bundle.mkdir(parents=True, exist_ok=True)
+    files = publish_season_bundle(bundle, season_dir)
     destination = bundle / str(season)
-    if destination.exists():
-        shutil.rmtree(destination)
-    shutil.copytree(season_dir, destination)
-
-    files = sum(1 for path in destination.rglob("*") if path.is_file())
     logger.info(
         "Report bundle for %d R%02d synced to %s (%d files)",
         season,

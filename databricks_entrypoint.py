@@ -952,6 +952,7 @@ def run_report(
     schema: str = SCHEMA,
     round_number: int | None = None,
     force: bool = False,
+    preserve_narratives: bool = False,
 ) -> None:
     """Generate the completed round's report inside Databricks.
 
@@ -966,6 +967,7 @@ def run_report(
         schema: Unity Catalog schema name.
         round_number: Explicit round override; defaults to the last completed race.
         force: Rebuild even when the bundle already holds the round's results.
+        preserve_narratives: Keep the existing narrative markdown files.
     """
     logger.info("=" * 60)
     logger.info("DATABRICKS REPORT MODE — Season %d (%s.%s)", season, catalog, schema)
@@ -982,6 +984,7 @@ def run_report(
         project_root=PROJECT_ROOT,
         round_number=round_number,
         force=force,
+        preserve_narratives=preserve_narratives,
     )
     logger.info("Report bundle summary: %s", summary)
     logger.info("=" * 60)
@@ -1041,6 +1044,109 @@ def run_export(season: int, catalog: str = CATALOG, schema: str = SCHEMA) -> Non
     logger.info("=" * 60)
 
 
+def run_backfill(
+    seasons: list[int],
+    catalog: str = CATALOG,
+    schema: str = SCHEMA,
+    round_number: int | None = None,
+    overwrite: bool = False,
+) -> None:
+    """Build the pipeline's raw/processed/Gold tree on the Volume from FastF1.
+
+    This is the cloud replacement for running ``scripts/ingest_season.py`` on a
+    developer machine. It runs the same ingestion, cleaning and feature code,
+    with the data roots pointed at the ``f1_data`` Volume. The simulator needs
+    every season it trains on (2022 onward), so a full backfill is required
+    before the first cloud simulation.
+
+    Args:
+        seasons: Season years to backfill.
+        catalog: Unity Catalog catalog name.
+        schema: Unity Catalog schema name.
+        round_number: Restrict to one round in every season.
+        overwrite: Recompute rounds whose Gold Parquet already exists.
+    """
+    logger.info("=" * 60)
+    logger.info(
+        "DATABRICKS BACKFILL MODE — seasons=%s (%s.%s)",
+        seasons,
+        catalog,
+        schema,
+    )
+    logger.info("=" * 60)
+
+    _load_secrets_from_databricks(_FASTF1_CREDENTIAL_ENV_VARS, "FastF1 credentials")
+
+    from f1_predictions.databricks.cloud_data import backfill_seasons
+
+    summary = backfill_seasons(
+        seasons=seasons,
+        catalog=catalog,
+        schema=schema,
+        project_root=PROJECT_ROOT,
+        round_number=round_number,
+        overwrite=overwrite,
+    )
+    logger.info("Backfill summary: %s", summary)
+    logger.info("=" * 60)
+    logger.info("BACKFILL COMPLETE — seasons=%s", seasons)
+    logger.info("=" * 60)
+
+
+def run_simulate(
+    season: int,
+    catalog: str = CATALOG,
+    schema: str = SCHEMA,
+    round_number: int | None = None,
+    event_name: str | None = None,
+    force: bool = False,
+) -> None:
+    """Run the race simulation inside Databricks against the Volume data tree.
+
+    Reads the Gold features backfilled by ``--run-mode backfill`` and writes the
+    round's ``predictions.csv`` into the ``dashboard_bundle`` Volume. The report
+    task then regenerates the derived summaries and the export task publishes.
+
+    Args:
+        season: F1 season year.
+        catalog: Unity Catalog catalog name.
+        schema: Unity Catalog schema name.
+        round_number: Round to simulate; defaults to the last completed race.
+        event_name: Event name override; resolved from the schedule when None.
+        force: Rebuild even when the round's predictions already exist.
+    """
+    logger.info("=" * 60)
+    logger.info("DATABRICKS SIMULATE MODE — Season %d (%s.%s)", season, catalog, schema)
+    logger.info("=" * 60)
+
+    _load_secrets_from_databricks(_FASTF1_CREDENTIAL_ENV_VARS, "FastF1 credentials")
+
+    from f1_predictions.databricks.cloud_data import simulate_round
+    from f1_predictions.databricks.report_bundle import _resolve_round
+
+    target_round = _resolve_round(season, round_number)
+    if target_round is None:
+        logger.info(
+            "No completed race found for season %d; nothing to simulate.",
+            season,
+        )
+        return
+
+    summary = simulate_round(
+        season=season,
+        round_number=target_round,
+        catalog=catalog,
+        schema=schema,
+        project_root=PROJECT_ROOT,
+        event_name=event_name,
+        force=force,
+    )
+    logger.info("Simulation summary: %s", summary)
+    logger.info("=" * 60)
+    logger.info("SIMULATE COMPLETE — Season %d R%02d", season, target_round)
+    logger.info("=" * 60)
+
+
 def is_race_window_active(season: int) -> bool:
     """Determine if today is within a Race Weekend (Fri-Sun) or post-race Monday."""
     try:
@@ -1066,6 +1172,39 @@ def is_race_window_active(season: int) -> bool:
 # ---------------------------------------------------------------------------
 
 
+def _parse_force(value: str | bool) -> bool:
+    """Accept ``--force`` alone or ``--force true|false`` from a job parameter.
+
+    Args:
+        value: ``True`` when the flag is passed with no value, otherwise the
+            following token.
+
+    Returns:
+        Whether the run should bypass the race-weekend gate and rebuild.
+    """
+    if isinstance(value, bool):
+        return value
+    return value.strip().lower() in {"1", "true", "yes", "y"}
+
+
+def _parse_seasons(value: str) -> list[int]:
+    """Parse a comma-separated season list for ``--seasons``.
+
+    Args:
+        value: Raw CLI value such as ``"2022,2023,2024"``.
+
+    Returns:
+        Season years as integers.
+
+    Raises:
+        argparse.ArgumentTypeError: When a token is not an integer.
+    """
+    try:
+        return [int(part) for part in value.split(",") if part.strip()]
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"Invalid season list: {value}") from exc
+
+
 def main() -> None:
     """Parse CLI arguments and dispatch to the appropriate run mode."""
     configure_root_pipeline_logger(level="INFO")
@@ -1081,13 +1220,24 @@ def main() -> None:
     parser.add_argument(
         "--run-mode",
         required=True,
-        choices=["ingest", "train", "predict", "notify", "report", "export"],
+        choices=[
+            "ingest",
+            "train",
+            "predict",
+            "notify",
+            "report",
+            "export",
+            "backfill",
+            "simulate",
+        ],
         help="Execution mode: 'ingest' lands FastF1 laps in the raw_telemetry "
         "Volume; 'train' trains XGBoost and promotes @champion on improvement; "
         "'predict' scores a Gold table with the schema's @champion; 'notify' "
         "dispatches the race verdict to Gmail and Discord; 'report' generates "
         "the completed round's artifacts into the dashboard_bundle Volume; "
-        "'export' publishes that bundle to object storage.",
+        "'export' publishes that bundle to object storage; 'backfill' builds the "
+        "pipeline data tree on the f1_data Volume from FastF1; 'simulate' runs "
+        "the race simulation against that tree.",
     )
     parser.add_argument(
         "--season",
@@ -1121,17 +1271,33 @@ def main() -> None:
     )
     parser.add_argument(
         "--force",
-        action="store_true",
+        nargs="?",
+        const="true",
+        default="false",
         help="Bypass race weekend gate and force execution (also rebuilds a "
-        "report bundle that already contains the round's actual results).",
+        "report bundle that already contains the round's actual results). "
+        "Accepts true or false so a job parameter can turn it off.",
     )
     parser.add_argument(
         "--all-completed",
         action="store_true",
         help="For --run-mode ingest: ingest every completed round this season.",
     )
+    parser.add_argument(
+        "--seasons",
+        type=_parse_seasons,
+        default=None,
+        help="Comma-separated seasons for --run-mode backfill, e.g. "
+        "'2022,2023,2024,2025'. Defaults to --season.",
+    )
+    parser.add_argument(
+        "--event",
+        default=None,
+        help="Event name override for --run-mode simulate.",
+    )
 
     args = parser.parse_args()
+    force = _parse_force(args.force)
     logger.info(
         "Databricks entrypoint: mode=%s, season=%d, catalog=%s, schema=%s, "
         "training_schema=%s, force=%s",
@@ -1140,10 +1306,14 @@ def main() -> None:
         args.catalog,
         args.schema,
         args.training_schema,
-        args.force,
+        force,
     )
 
-    if not args.force and not is_race_window_active(args.season):
+    if (
+        not force
+        and args.run_mode not in {"backfill", "simulate"}
+        and not is_race_window_active(args.season)
+    ):
         logger.info(
             "Non-race day detected (season %d). Skipping execution.",
             args.season,
@@ -1185,10 +1355,27 @@ def main() -> None:
             catalog=args.catalog,
             schema=args.schema,
             round_number=args.round,
-            force=args.force,
+            force=force,
         )
     elif args.run_mode == "export":
         run_export(season=args.season, catalog=args.catalog, schema=args.schema)
+    elif args.run_mode == "backfill":
+        run_backfill(
+            seasons=args.seasons or [args.season],
+            catalog=args.catalog,
+            schema=args.schema,
+            round_number=args.round,
+            overwrite=force,
+        )
+    elif args.run_mode == "simulate":
+        run_simulate(
+            season=args.season,
+            catalog=args.catalog,
+            schema=args.schema,
+            round_number=args.round,
+            event_name=args.event,
+            force=force,
+        )
 
 
 if __name__ == "__main__":
