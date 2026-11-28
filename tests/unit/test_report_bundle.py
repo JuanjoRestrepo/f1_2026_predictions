@@ -139,6 +139,56 @@ def test_generate_syncs_the_season_to_the_volume(
     assert (bundle / "2026" / "summaries" / "actual_results_round_21.json").exists()
 
 
+def test_generate_preserves_existing_narratives(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A derived-chart refresh must not replace good Gemini copy with fallback."""
+    bundle = tmp_path / "bundle"
+    season = bundle / "2026"
+    _make_round(season, 21)
+    summaries = season / "summaries"
+    (summaries / "report_round_21.md").write_text("KEEP ACTUAL", encoding="utf-8")
+    (summaries / "predicted_report_round_21.md").write_text(
+        "KEEP PREDICTED", encoding="utf-8"
+    )
+    monkeypatch.setattr(report_bundle, "volume_bundle_root", lambda *_: bundle)
+    monkeypatch.setattr(report_bundle, "_staging_root", lambda: tmp_path / "staging")
+    monkeypatch.setattr(
+        "f1_predictions.utils.dashboard_publish.download_dashboard_bundle",
+        _no_bucket,
+    )
+
+    def fake_main() -> None:
+        from scripts import master_pipeline
+
+        base = Path(master_pipeline.REPORTS_BASE) / "2026"
+        _make_round(base, 21)
+        (base / "summaries" / "report_round_21.md").write_text(
+            "FALLBACK", encoding="utf-8"
+        )
+        (base / "summaries" / "predicted_report_round_21.md").write_text(
+            "FALLBACK", encoding="utf-8"
+        )
+
+    monkeypatch.setattr("scripts.master_pipeline.main", fake_main)
+
+    report_bundle.generate_report_bundle(
+        season=2026,
+        catalog="main",
+        schema="prod",
+        project_root=tmp_path,
+        round_number=21,
+        force=True,
+        preserve_narratives=True,
+    )
+
+    published = bundle / "2026" / "summaries"
+    assert (published / "report_round_21.md").read_text(encoding="utf-8") == "KEEP ACTUAL"
+    assert (
+        published / "predicted_report_round_21.md"
+    ).read_text(encoding="utf-8") == "KEEP PREDICTED"
+
+
 def test_generate_raises_when_no_actual_results_are_written(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -162,3 +212,49 @@ def test_generate_raises_when_no_actual_results_are_written(
         )
 
     assert not (bundle / "2026").exists()
+
+
+def test_generate_prerace_uses_upcoming_round_and_predicted_marker(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Pre-race mode resolves the upcoming round and verifies predicted artifacts."""
+    bundle = tmp_path / "bundle"
+    monkeypatch.setattr(report_bundle, "volume_bundle_root", lambda *_: bundle)
+    monkeypatch.setattr(report_bundle, "_staging_root", lambda: tmp_path / "staging")
+    monkeypatch.setattr(
+        "f1_predictions.utils.dashboard_publish.download_dashboard_bundle",
+        _no_bucket,
+    )
+    monkeypatch.setattr(
+        "f1_predictions.utils.race_detector.detect_upcoming_race",
+        lambda season, days_ahead=4: {"round": 22, "name": "Qatar Grand Prix"},
+    )
+
+    def fake_main() -> None:
+        from scripts import master_pipeline
+
+        summaries = Path(master_pipeline.REPORTS_BASE) / "2026" / "summaries"
+        summaries.mkdir(parents=True, exist_ok=True)
+        (summaries / "predicted_lap_positions_round_22.json").write_text(
+            '{"drivers": []}', encoding="utf-8"
+        )
+        (summaries / "predicted_report_round_22.md").write_text(
+            "# Qatar Preview", encoding="utf-8"
+        )
+
+    monkeypatch.setattr("scripts.master_pipeline.main", fake_main)
+
+    summary = report_bundle.generate_report_bundle(
+        season=2026,
+        catalog="main",
+        schema="prod",
+        project_root=tmp_path,
+        phase="pre-race",
+    )
+
+    assert summary["generated"] is True
+    assert summary["round"] == 22
+    assert summary["phase"] == "pre-race"
+    assert (
+        bundle / "2026" / "summaries" / "predicted_lap_positions_round_22.json"
+    ).exists()
