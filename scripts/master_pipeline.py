@@ -336,14 +336,16 @@ def generate_predicted_lap_data(
                     t = str(drv_laps["Team"].iloc[0])
                     if t and t not in ["Unknown", "TBD", "nan", ""]:
                         driver_team_map[drv] = t
-    except Exception:
+    except Exception:  # noqa: S110 — best-effort team lookup from FastF1 laps
         pass
 
-    # Order drivers according to predicted finish order
+    # Order drivers according to predicted finish order. The prediction table and
+    # this chart must describe the same roster: appending every entry-list driver
+    # fabricated a predicted line for someone the model never scored, which put
+    # DNS entries back on the Predicted tab (R01 HUL/PIA, R02 ALB/BOR/NOR/PIA).
     ordered_drivers = [d for d in predicted_order if d in all_drivers]
-    for d in all_drivers:
-        if d not in ordered_drivers:
-            ordered_drivers.append(d)
+    if not ordered_drivers:
+        ordered_drivers = list(all_drivers)
 
     num_drivers = len(ordered_drivers)
 
@@ -962,6 +964,12 @@ def main() -> None:
     )
 
     # 4. AI Narratives
+    fallback = (
+        f"### [STRATEGIC INTELLIGENCE] {session.event['EventName']} Narrative Synthesis Underway\n\n"
+        f"Technical analysis of the delta between **Actual Race Telemetry** and **Predictive ML Simulations** for the {session.event['EventName']} is currently being synthesized. "
+        "Our engineering team is validating stint-loading data, track-specific degradation curves, and overtake-probability maps. "
+        "The full strategic narrative will be published once the cross-verification between real-world results and AI simulations is complete."
+    )
     if ai_model:
         if args.swarm:
             logger.info("Generating Phase 13 Agentic Swarms Master Intelligence Report")
@@ -990,13 +998,6 @@ def main() -> None:
                     shap_context += (
                         f"- Feature '{feat}': Relative Impact {impact:.4f}\n"
                     )
-
-        fallback = (
-            f"### [STRATEGIC INTELLIGENCE] {session.event['EventName']} Narrative Synthesis Underway\n\n"
-            f"Technical analysis of the delta between **Actual Race Telemetry** and **Predictive ML Simulations** for the {session.event['EventName']} is currently being synthesized. "
-            "Our engineering team is validating stint-loading data, track-specific degradation curves, and overtake-probability maps. "
-            "The full strategic narrative will be published once the cross-verification between real-world results and AI simulations is complete."
-        )
 
         # Build circuit-specific context string for both actual and predicted prompts.
         # This is the key differentiator for Monaco vs. generic circuits.
@@ -1111,6 +1112,29 @@ def main() -> None:
 
         save_artifact(
             pred_report or fallback,
+            f"predicted_report_round_{args.round}.md",
+            args.year,
+            race_info["dir"],
+            False,
+        )
+    else:
+        # Without a Gemini key the narrative block used to be skipped entirely,
+        # leaving the Actual tab with an empty report. Write the documented
+        # fallback copy instead so the page never renders blank prose.
+        logger.warning(
+            "No Gemini client configured; writing fallback narrative copy for round %d.",
+            args.round,
+        )
+        if is_post_race:
+            save_artifact(
+                fallback,
+                f"report_round_{args.round}.md",
+                args.year,
+                race_info["dir"],
+                False,
+            )
+        save_artifact(
+            fallback,
             f"predicted_report_round_{args.round}.md",
             args.year,
             race_info["dir"],
