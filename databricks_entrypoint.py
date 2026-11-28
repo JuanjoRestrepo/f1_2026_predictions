@@ -854,6 +854,7 @@ _S3_CONFIG_ENV_VARS = (
 # driver list resolve fine. Resolved from ``f1_secrets`` like every other
 # runtime credential.
 _FASTF1_CREDENTIAL_ENV_VARS = ("F1_USERNAME", "F1_PASSWORD")
+_GEMINI_SECRET_ENV_VARS = ("F1_GEMINI_API_KEY",)
 
 # Optional Vercel Deploy Hook, resolved from the same scope when set. Publishing
 # new artifacts is not enough on its own: the dashboard pulls reports/ at build
@@ -951,44 +952,61 @@ def run_report(
     catalog: str = CATALOG,
     schema: str = SCHEMA,
     round_number: int | None = None,
+    rounds: list[int] | None = None,
     force: bool = False,
     preserve_narratives: bool = False,
+    phase: str = "post-race",
 ) -> None:
-    """Generate the completed round's report inside Databricks.
+    """Generate a round's report (pre-race or post-race) inside Databricks.
 
     The report producer used to live on a developer machine; this mode moves the
-    post-race artifacts into the scheduled job. It loads the FastF1 credentials
-    from ``f1_secrets`` and writes the season bundle to the ``dashboard_bundle``
-    Volume, which ``run_export`` then publishes.
+    pre-race and post-race artifacts into scheduled jobs. It loads the FastF1
+    and Gemini credentials from ``f1_secrets`` and writes the season bundle to
+    the ``dashboard_bundle`` Volume, which ``run_export`` then publishes.
 
     Args:
         season: F1 season year.
         catalog: Unity Catalog catalog name.
         schema: Unity Catalog schema name.
-        round_number: Explicit round override; defaults to the last completed race.
+        round_number: Explicit round override; defaults to the upcoming race
+            (``phase="pre-race"``) or last completed race (``phase="post-race"``).
+        rounds: Several rounds to rebuild in one run. Takes precedence over
+            ``round_number`` and accumulates in the Volume between iterations.
         force: Rebuild even when the bundle already holds the round's results.
         preserve_narratives: Keep the existing narrative markdown files.
+        phase: ``"post-race"`` (default) or ``"pre-race"``.
     """
     logger.info("=" * 60)
-    logger.info("DATABRICKS REPORT MODE — Season %d (%s.%s)", season, catalog, schema)
+    logger.info(
+        "DATABRICKS REPORT MODE (%s) — Season %d (%s.%s)",
+        phase,
+        season,
+        catalog,
+        schema,
+    )
     logger.info("=" * 60)
 
     _load_secrets_from_databricks(_FASTF1_CREDENTIAL_ENV_VARS, "FastF1 credentials")
+    _load_secrets_from_databricks(_GEMINI_SECRET_ENV_VARS, "Gemini API key")
 
     from f1_predictions.databricks.report_bundle import generate_report_bundle
 
-    summary = generate_report_bundle(
-        season=season,
-        catalog=catalog,
-        schema=schema,
-        project_root=PROJECT_ROOT,
-        round_number=round_number,
-        force=force,
-        preserve_narratives=preserve_narratives,
-    )
-    logger.info("Report bundle summary: %s", summary)
+    targets: list[int | None] = list(rounds) if rounds else [round_number]
+    for target in targets:
+        summary = generate_report_bundle(
+            season=season,
+            catalog=catalog,
+            schema=schema,
+            project_root=PROJECT_ROOT,
+            round_number=target,
+            force=force,
+            preserve_narratives=preserve_narratives,
+            phase=phase,
+        )
+        logger.info("Report bundle summary (round %s): %s", target, summary)
+
     logger.info("=" * 60)
-    logger.info("REPORT COMPLETE — Season %d", season)
+    logger.info("REPORT COMPLETE — Season %d (rounds=%s)", season, targets)
     logger.info("=" * 60)
 
 
@@ -1100,6 +1118,7 @@ def run_simulate(
     round_number: int | None = None,
     event_name: str | None = None,
     force: bool = False,
+    upcoming: bool = False,
 ) -> None:
     """Run the race simulation inside Databricks against the Volume data tree.
 
@@ -1111,9 +1130,12 @@ def run_simulate(
         season: F1 season year.
         catalog: Unity Catalog catalog name.
         schema: Unity Catalog schema name.
-        round_number: Round to simulate; defaults to the last completed race.
+        round_number: Round to simulate; defaults to the upcoming race when
+            ``upcoming=True`` or the last completed race otherwise.
         event_name: Event name override; resolved from the schedule when None.
         force: Rebuild even when the round's predictions already exist.
+        upcoming: Resolve the next upcoming race (within 4 days) when
+            ``round_number`` is omitted.
     """
     logger.info("=" * 60)
     logger.info("DATABRICKS SIMULATE MODE — Season %d (%s.%s)", season, catalog, schema)
@@ -1124,10 +1146,12 @@ def run_simulate(
     from f1_predictions.databricks.cloud_data import simulate_round
     from f1_predictions.databricks.report_bundle import _resolve_round
 
-    target_round = _resolve_round(season, round_number)
+    phase = "pre-race" if upcoming else "post-race"
+    target_round = _resolve_round(season, round_number, phase=phase)
     if target_round is None:
         logger.info(
-            "No completed race found for season %d; nothing to simulate.",
+            "No %s race found for season %d; nothing to simulate.",
+            phase,
             season,
         )
         return
@@ -1205,6 +1229,18 @@ def _parse_seasons(value: str) -> list[int]:
         raise argparse.ArgumentTypeError(f"Invalid season list: {value}") from exc
 
 
+def _parse_rounds(value: str) -> list[int]:
+    """Parse a comma-separated round list for ``--rounds``.
+
+    Args:
+        value: Raw CLI value such as ``"17,18,19"``.
+
+    Returns:
+        Round numbers as integers.
+    """
+    return _parse_seasons(value)
+
+
 def main() -> None:
     """Parse CLI arguments and dispatch to the appropriate run mode."""
     configure_root_pipeline_logger(level="INFO")
@@ -1270,6 +1306,22 @@ def main() -> None:
         help="F1 round number override for ingest, notifications and reports.",
     )
     parser.add_argument(
+        "--rounds",
+        type=_parse_rounds,
+        default=None,
+        help="Comma-separated rounds for --run-mode report, e.g. '1,2,3'. "
+        "Takes precedence over --round and rebuilds each round in one run.",
+    )
+    parser.add_argument(
+        "--preserve-narrative",
+        nargs="?",
+        const="true",
+        default="false",
+        help="For --run-mode report: keep the existing report_round_N.md and "
+        "predicted_report_round_N.md instead of replacing them with fallback "
+        "copy when Gemini is unavailable. Accepts true or false.",
+    )
+    parser.add_argument(
         "--force",
         nargs="?",
         const="true",
@@ -1294,6 +1346,18 @@ def main() -> None:
         "--event",
         default=None,
         help="Event name override for --run-mode simulate.",
+    )
+    parser.add_argument(
+        "--phase",
+        choices=["post-race", "pre-race"],
+        default="post-race",
+        help="For --run-mode report: 'pre-race' predicts/reports the upcoming GP; "
+        "'post-race' reports the last completed GP (default).",
+    )
+    parser.add_argument(
+        "--upcoming",
+        action="store_true",
+        help="For --run-mode simulate: target the next upcoming race (within 4 days).",
     )
 
     args = parser.parse_args()
@@ -1355,7 +1419,10 @@ def main() -> None:
             catalog=args.catalog,
             schema=args.schema,
             round_number=args.round,
+            rounds=args.rounds,
             force=force,
+            preserve_narratives=_parse_force(args.preserve_narrative),
+            phase=args.phase,
         )
     elif args.run_mode == "export":
         run_export(season=args.season, catalog=args.catalog, schema=args.schema)
@@ -1375,6 +1442,7 @@ def main() -> None:
             round_number=args.round,
             event_name=args.event,
             force=force,
+            upcoming=args.upcoming,
         )
 
 

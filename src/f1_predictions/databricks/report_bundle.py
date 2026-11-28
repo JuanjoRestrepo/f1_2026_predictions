@@ -69,10 +69,22 @@ def _configure_fastf1_cache() -> None:
     os.environ["F1_FASTF1_CACHE_DIR"] = str(cache)
 
 
-def _resolve_round(season: int, round_number: int | None) -> int | None:
-    """Resolve the round to report on: explicit override or last completed."""
+def _resolve_round(
+    season: int,
+    round_number: int | None,
+    phase: str = "post-race",
+) -> int | None:
+    """Resolve the round to report: explicit override, upcoming, or last completed."""
     if round_number is not None:
         return int(round_number)
+
+    if phase == "pre-race":
+        from f1_predictions.utils.race_detector import detect_upcoming_race
+
+        upcoming = detect_upcoming_race(season=season, days_ahead=4)
+        if upcoming is None:
+            return None
+        return int(upcoming["round"])
 
     from f1_predictions.utils.race_detector import detect_last_race
 
@@ -197,8 +209,9 @@ def generate_report_bundle(
     round_number: int | None = None,
     force: bool = False,
     preserve_narratives: bool = False,
+    phase: str = "post-race",
 ) -> dict[str, Any]:
-    """Generate the completed round's report and sync it to the bundle Volume.
+    """Generate a round's report (pre-race or post-race) and sync to the Volume.
 
     Args:
         season: F1 season year.
@@ -206,43 +219,56 @@ def generate_report_bundle(
         schema: Unity Catalog schema that holds the bundle Volume.
         project_root: Bundle workspace root, used to import ``scripts`` and to
             seed the first run from the committed reports.
-        round_number: Explicit round override; when None the last completed race
+        round_number: Explicit round override; when None the upcoming race
+            (``phase="pre-race"``) or last completed race (``phase="post-race"``)
             is used.
-        force: Rebuild even when the bundle already contains the round's actual
-            results.
+        force: Rebuild even when the bundle already contains the round's
+            marker artifact.
         preserve_narratives: Keep the existing ``report_round_N.md`` and
             ``predicted_report_round_N.md`` files. Used when only the derived
             charts need refreshing after a prediction regeneration, so a run
             without a Gemini key does not replace good copy with fallback text.
+        phase: ``"post-race"`` (default) or ``"pre-race"``. Controls round
+            auto-detection and which completion marker artifact is verified.
 
     Returns:
         Summary with ``generated``, ``season``, ``round``, ``files`` and
         ``bundle`` keys.
 
     Raises:
-        RuntimeError: When the pipeline finishes without writing the actual
-            results, so a broken run fails the task instead of publishing an
-            incomplete bundle.
+        RuntimeError: When the pipeline finishes without writing the expected
+            marker artifact, so a broken run fails the task instead of
+            publishing an incomplete bundle.
     """
-    target_round = _resolve_round(season, round_number)
+    target_round = _resolve_round(season, round_number, phase=phase)
     if target_round is None:
-        logger.info("No completed race found for season %d; nothing to report.", season)
+        logger.info(
+            "No %s race found for season %d; nothing to report.", phase, season
+        )
         return {"generated": False, "season": season, "round": None}
+
+    # Point FastF1 at instance-local scratch before the pipeline reads settings.
+    # A multi-round rebuild loads many sessions in one task, so the cache matters.
+    _configure_fastf1_cache()
 
     bundle, season_dir = stage_season_bundle(
         season, catalog, schema, project_root
     )
     reports_dir = season_dir.parent
 
-    actual_results = (
-        season_dir / "summaries" / f"actual_results_round_{target_round}.json"
+    marker_name = (
+        f"predicted_lap_positions_round_{target_round}.json"
+        if phase == "pre-race"
+        else f"actual_results_round_{target_round}.json"
     )
-    if actual_results.exists() and not force:
+    marker_path = season_dir / "summaries" / marker_name
+    if marker_path.exists() and not force:
         logger.info(
-            "Round %d already has actual results in the bundle (%s); skipping. "
+            "Round %d already has %s artifacts in the bundle (%s); skipping. "
             "Use force=True to rebuild.",
             target_round,
-            actual_results,
+            phase,
+            marker_path,
         )
         return {
             "generated": False,
@@ -292,9 +318,9 @@ def generate_report_bundle(
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
 
-    if not actual_results.exists():
+    if not marker_path.exists():
         msg = (
-            f"Report generation finished without {actual_results}. "
+            f"Report generation finished without {marker_path}. "
             "The bundle was not published."
         )
         raise RuntimeError(msg)
@@ -302,7 +328,8 @@ def generate_report_bundle(
     files = publish_season_bundle(bundle, season_dir)
     destination = bundle / str(season)
     logger.info(
-        "Report bundle for %d R%02d synced to %s (%d files)",
+        "Report bundle (%s) for %d R%02d synced to %s (%d files)",
+        phase,
         season,
         target_round,
         destination,
@@ -312,6 +339,7 @@ def generate_report_bundle(
         "generated": True,
         "season": season,
         "round": target_round,
+        "phase": phase,
         "files": files,
         "bundle": str(destination),
     }
