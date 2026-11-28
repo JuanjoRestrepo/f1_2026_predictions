@@ -22,6 +22,19 @@ from f1_predictions.features.external_weather import (
     WeatherIntelligence,
     build_weather_intelligence,
 )
+from f1_predictions.ingestion.jolpica_client import (
+    build_championship_standings,
+    fetch_constructor_standings,
+    fetch_driver_standings,
+)
+from f1_predictions.ingestion.openf1_client import (
+    build_gap_to_leader,
+    build_pit_stop_efficiency,
+    fetch_intervals,
+    fetch_pit_stops,
+    fetch_race_control,
+    get_session_key,
+)
 from f1_predictions.ingestion.weather_api import get_forecast
 from f1_predictions.utils.circuit_config import get_circuit_config
 from f1_predictions.utils.cloud_cache import download_cache, upload_cache
@@ -1142,6 +1155,112 @@ def main() -> None:
         )
 
     logger.info("Round %d fully processed with Pro F1 Styles.", args.round)
+
+    # ── Jolpica: championship standings (pre- and post-race) ──────────────────
+    # Championship standings are cumulative season totals and are meaningful
+    # both before a race (standings going into the weekend) and after (updated
+    # after each round).  Non-fatal: a Jolpica outage must never abort the
+    # main pipeline.
+    try:
+        logger.info("Fetching Jolpica championship standings for R%02d", args.round)
+        driver_standings = fetch_driver_standings(args.year, args.round)
+        constructor_standings = fetch_constructor_standings(args.year, args.round)
+        if driver_standings or constructor_standings:
+            championship_data = build_championship_standings(
+                driver_standings=driver_standings,
+                constructor_standings=constructor_standings,
+                event_name=race_info["name"],
+                year=args.year,
+                round_number=args.round,
+            )
+            save_artifact(
+                championship_data,
+                f"championship_standings_round_{args.round}.json",
+                args.year,
+                race_info["dir"],
+            )
+            logger.info("Championship standings artifact written for R%02d", args.round)
+        else:
+            logger.warning(
+                "Jolpica returned no standings for %d R%02d — skipping artifact.",
+                args.year,
+                args.round,
+            )
+    except Exception as exc:
+        logger.warning("Jolpica standings fetch failed (non-fatal): %s", exc)
+
+    # ── OpenF1: gap-to-leader + pit-stop efficiency (post-race only) ──────────
+    # OpenF1 historical data is free but only available after the session
+    # completes.  Pre-race: skip entirely.  Post-race: resolve the session key
+    # once and reuse it for all three endpoint calls.  Non-fatal.
+    if is_post_race:
+        try:
+            logger.info("Fetching OpenF1 session_key for %d R%02d", args.year, args.round)
+            session_key = get_session_key(args.year, args.round)
+            if session_key is not None:
+                # Fetch all three OpenF1 endpoints in sequence; each is
+                # individually non-fatal inside the client functions.
+                intervals_data = fetch_intervals(session_key)
+                pit_data = fetch_pit_stops(session_key)
+                rc_data = fetch_race_control(session_key)
+
+                # Resolve driver abbreviations from OpenF1 /drivers endpoint.
+                # On failure, abbreviations fall back to driver numbers (graceful).
+                from f1_predictions.ingestion.openf1_client import _get
+
+                try:
+                    drivers_meta = _get("/drivers", {"session_key": session_key})
+                except Exception:
+                    drivers_meta = []
+
+                if intervals_data:
+                    gap_data = build_gap_to_leader(
+                        intervals=intervals_data,
+                        race_control=rc_data,
+                        drivers_meta=drivers_meta,
+                        event_name=race_info["name"],
+                        year=args.year,
+                    )
+                    save_artifact(
+                        gap_data,
+                        f"gap_to_leader_round_{args.round}.json",
+                        args.year,
+                        race_info["dir"],
+                    )
+                    logger.info("Gap-to-leader artifact written for R%02d", args.round)
+                else:
+                    logger.warning(
+                        "OpenF1 intervals empty for session_key=%d — skipping gap artifact.",
+                        session_key,
+                    )
+
+                if pit_data:
+                    pit_efficiency = build_pit_stop_efficiency(
+                        pit_stops=pit_data,
+                        drivers_meta=drivers_meta,
+                        event_name=race_info["name"],
+                        year=args.year,
+                    )
+                    save_artifact(
+                        pit_efficiency,
+                        f"pit_stops_round_{args.round}.json",
+                        args.year,
+                        race_info["dir"],
+                    )
+                    logger.info("Pit-stop efficiency artifact written for R%02d", args.round)
+                else:
+                    logger.warning(
+                        "OpenF1 pit data empty for session_key=%d — skipping pit artifact.",
+                        session_key,
+                    )
+            else:
+                logger.warning(
+                    "OpenF1 session_key not found for %d R%02d — skipping OpenF1 artifacts.",
+                    args.year,
+                    args.round,
+                )
+        except Exception as exc:
+            logger.warning("OpenF1 artifact generation failed (non-fatal): %s", exc)
 
     # ── Cloud cache post-run upload ───────────────────────────────────────────
     # Zip and upload the updated FastF1 cache so newly-fetched session data

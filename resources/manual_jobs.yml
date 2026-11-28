@@ -48,6 +48,7 @@ resources:
               - "pandera>=0.20.0"
               - "python-dotenv>=1.0.0"
               - "mlflow>=2.14.0"
+              - "google-genai>=1.0.0"
       tasks:
         - task_key: backfill_volume
           description: "Ingest completed rounds from FastF1 into the f1_data Volume"
@@ -110,6 +111,7 @@ resources:
               - "pandera>=0.20.0"
               - "python-dotenv>=1.0.0"
               - "mlflow>=2.14.0"
+              - "google-genai>=1.0.0"
       tasks:
         - task_key: generate_race_report
           description: "Write the requested round's report into the dashboard_bundle Volume"
@@ -123,6 +125,93 @@ resources:
               - "{{job.parameters.round}}"
               - "--run-mode"
               - "report"
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.schema}"
+              - "--force"
+              - "{{job.parameters.force}}"
+
+    f1_2026_rebuild_actuals_job:
+      name: "[${bundle.target}] F1 2026 Rebuild Actual Section"
+      description: >
+        Rebuild the Actual section for every completed round from the
+        authoritative FastF1 session: official classification, lap positions,
+        tyre intelligence, weather and narrative. Existing Gemini narratives
+        are preserved; rounds without one get the documented fallback copy.
+        Replaces synthetic or stale charts left by older bundles.
+      performance_target: STANDARD
+      tags:
+        aidevkit_project: ai-dev-kit
+      max_concurrent_runs: 1
+      queue:
+        enabled: true
+      parameters:
+        - name: season
+          default: "2026"
+        - name: rounds
+          default: "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21"
+        - name: force
+          default: "true"
+        - name: preserve_narrative
+          default: "true"
+      email_notifications:
+        on_failure:
+          - restrepojuanjo@gmail.com
+      environments:
+        - environment_key: serverless_py312
+          spec:
+            client: "2"
+            dependencies:
+              - "pydantic>=2.7.0,<3"
+              - "pydantic-settings>=2.3.0,<3"
+              - "numpy>=1.26.0,<2.0"
+              - "pandas>=2.2.0"
+              - "scikit-learn>=1.5.0"
+              - "fastf1>=3.9.0"
+              - "xgboost>=2.1.0"
+              - "lightgbm>=4.5.0"
+              - "httpx>=0.27.0"
+              - "tenacity>=9.0.0"
+              - "jinja2>=3.1.0"
+              - "pyyaml>=6.0.0"
+              - "pandera>=0.20.0"
+              - "python-dotenv>=1.0.0"
+              - "mlflow>=2.14.0"
+              - "google-genai>=1.0.0"
+      tasks:
+        - task_key: rebuild_actuals
+          description: "Regenerate every listed round's Actual artifacts from FastF1"
+          environment_key: serverless_py312
+          spark_python_task:
+            python_file: ../databricks_entrypoint.py
+            parameters:
+              - "--season"
+              - "{{job.parameters.season}}"
+              - "--rounds"
+              - "{{job.parameters.rounds}}"
+              - "--run-mode"
+              - "report"
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.schema}"
+              - "--force"
+              - "{{job.parameters.force}}"
+              - "--preserve-narrative"
+              - "{{job.parameters.preserve_narrative}}"
+        - task_key: export_dashboard_data
+          description: "Publish the rebuilt dashboard bundle for the season"
+          depends_on:
+            - task_key: rebuild_actuals
+          environment_key: serverless_py312
+          spark_python_task:
+            python_file: ../databricks_entrypoint.py
+            parameters:
+              - "--season"
+              - "{{job.parameters.season}}"
+              - "--run-mode"
+              - "export"
               - "--catalog"
               - "${var.catalog}"
               - "--schema"
@@ -171,6 +260,7 @@ resources:
               - "pandera>=0.20.0"
               - "python-dotenv>=1.0.0"
               - "mlflow>=2.14.0"
+              - "google-genai>=1.0.0"
       tasks:
         - task_key: simulate_round
           description: "Regenerate the round's predictions against the f1_data Volume"

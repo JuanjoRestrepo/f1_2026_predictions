@@ -7,6 +7,9 @@ import { RaceReport } from "../../components/RaceReport";
 import { PredictionsTable } from "../../components/PredictionsTable";
 import { ViewToggle } from "../../components/ViewToggle";
 import { TyreIntelligence } from "../../components/TyreIntelligence";
+import { GapToLeaderChart } from "../../components/GapToLeaderChart";
+import { PitStopEfficiency } from "../../components/PitStopEfficiency";
+import { ChampionshipProgression } from "../../components/ChampionshipProgression";
 import { RaceSelector } from "../../components/RaceSelector";
 import {
   getRaceSummary,
@@ -17,12 +20,18 @@ import {
   getActualResults,
   getTyreIntelligence,
   getPredictedTyreIntelligence,
+  getGapToLeader,
+  getPitStopEfficiency,
+  getChampionshipStandings,
   getAvailableRaces,
   getFullCalendar,
   type PredictionRow,
   type LapPositionData,
   type ActualResult,
   type TyreIntelligenceData,
+  type GapToLeaderData,
+  type PitStopEfficiencyData,
+  type ChampionshipStandingsData,
   type RaceInfo
 } from "../../utils/fileReader";
 
@@ -45,6 +54,9 @@ interface RacePageProps {
   predictedLapPositions: LapPositionData | null;
   tyreData: TyreIntelligenceData | null;
   predictedTyreData: TyreIntelligenceData | null;
+  gapToLeader: GapToLeaderData | null;
+  pitStopEfficiency: PitStopEfficiencyData | null;
+  championshipStandings: ChampionshipStandingsData | null;
 }
 
 export async function getStaticPaths() {
@@ -80,9 +92,12 @@ export async function getStaticProps({ params }: { params: { round: string } }) 
   const predictedLapPositions = getPredictedLapPositions(year, roundNum);
   const tyreData = getTyreIntelligence(year, roundNum);
   const predictedTyreData = getPredictedTyreIntelligence(year, roundNum);
+  const gapToLeader = getGapToLeader(year, roundNum);
+  const pitStopEfficiency = getPitStopEfficiency(year, roundNum);
+  const championshipStandings = getChampionshipStandings(year, roundNum);
 
   return {
-    props: { race, availableRaces, fullCalendar, markdownReport, predictedMarkdownReport, predictions, actualResults, predictedFastest, actualFastest, lapPositions, predictedLapPositions, tyreData, predictedTyreData },
+    props: { race, availableRaces, fullCalendar, markdownReport, predictedMarkdownReport, predictions, actualResults, predictedFastest, actualFastest, lapPositions, predictedLapPositions, tyreData, predictedTyreData, gapToLeader, pitStopEfficiency, championshipStandings },
     revalidate: 3600,
   };
 }
@@ -100,7 +115,10 @@ export default function RacePage({
   lapPositions, 
   predictedLapPositions,
   tyreData,
-  predictedTyreData
+  predictedTyreData,
+  gapToLeader,
+  pitStopEfficiency,
+  championshipStandings
 }: RacePageProps) {
   const hasActualData = actualResults && actualResults.length > 0;
   const defaultView = hasActualData ? "actual" : "predicted";
@@ -275,6 +293,42 @@ export default function RacePage({
               </div>
             </div>
           </div>
+
+          {/* ── Championship Standings (Jolpica · pre- and post-race) ───────── */}
+          {championshipStandings && (
+            <div>
+              <h3 className="text-sm md:text-base font-bold uppercase tracking-widest text-f1red mb-4">
+                Championship Standings
+              </h3>
+              <div className="rounded-xl bg-f1dark border border-white/5 p-6 shadow-xl">
+                <ChampionshipProgression data={championshipStandings} />
+              </div>
+            </div>
+          )}
+
+          {/* ── Gap to Leader (OpenF1 · post-race only) ──────────────────────── */}
+          {gapToLeader && (
+            <div>
+              <h3 className="text-sm md:text-base font-bold uppercase tracking-widest text-f1red mb-4">
+                Gap to Leader
+              </h3>
+              <div className="rounded-xl bg-f1dark border border-white/5 p-6 shadow-xl">
+                <GapToLeaderChart data={gapToLeader} />
+              </div>
+            </div>
+          )}
+
+          {/* ── Pit Stop Efficiency (OpenF1 · post-race only) ─────────────────── */}
+          {pitStopEfficiency && (
+            <div>
+              <h3 className="text-sm md:text-base font-bold uppercase tracking-widest text-f1red mb-4">
+                Pit Stop Efficiency
+              </h3>
+              <div className="rounded-xl bg-f1dark border border-white/5 p-6 shadow-xl">
+                <PitStopEfficiency data={pitStopEfficiency} />
+              </div>
+            </div>
+          )}
 
           <div>
             <div className="flex items-center justify-between mb-4">

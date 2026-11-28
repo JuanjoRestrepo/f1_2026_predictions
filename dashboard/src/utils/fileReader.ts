@@ -505,3 +505,137 @@ export function getPredictedTyreIntelligence(year: number, roundNum: number): Ty
   }
 }
 
+
+// ── Gap to Leader ─────────────────────────────────────────────────────────────
+
+export interface SafetyCarWindow {
+  start_lap: number;
+  end_lap: number;
+  type: "SC" | "VSC" | "RED";
+}
+
+export interface GapToLeaderDriver {
+  driver: string;
+  team: string;
+  color: string;
+  /** Stringified lap number → gap in seconds from leader. */
+  gaps_s: Record<string, number>;
+}
+
+export interface GapToLeaderData {
+  event: string;
+  year: number;
+  total_laps: number;
+  safety_car_laps: SafetyCarWindow[];
+  drivers: GapToLeaderDriver[];
+}
+
+/**
+ * Reads the gap-to-leader JSON artifact for a completed race (actual data).
+ */
+export function getGapToLeader(year: number, roundNum: number): GapToLeaderData | null {
+  try {
+    const filePath = path.join(
+      getReportsDirectory(),
+      year.toString(),
+      "summaries",
+      `gap_to_leader_round_${roundNum}.json`
+    );
+    if (!fs.existsSync(filePath)) return null;
+    const raw = fs.readFileSync(filePath, "utf8");
+    return JSON.parse(raw) as GapToLeaderData;
+  } catch (error) {
+    console.error("Failed to read gap-to-leader:", error);
+    return null;
+  }
+}
+
+// ── Pit Stop Efficiency ───────────────────────────────────────────────────────
+
+export interface PitStopEntry {
+  driver: string;
+  lap: number;
+  pit_duration_s: number;
+  stationary_s: number;
+}
+
+export interface PitStopTeam {
+  team: string;
+  color: string;
+  stops: PitStopEntry[];
+}
+
+export interface PitStopEfficiencyData {
+  event: string;
+  year: number;
+  teams: PitStopTeam[];
+}
+
+/**
+ * Reads the pit-stop efficiency JSON artifact for a completed race.
+ */
+export function getPitStopEfficiency(year: number, roundNum: number): PitStopEfficiencyData | null {
+  try {
+    const filePath = path.join(
+      getReportsDirectory(),
+      year.toString(),
+      "summaries",
+      `pit_stops_round_${roundNum}.json`
+    );
+    if (!fs.existsSync(filePath)) return null;
+    const raw = fs.readFileSync(filePath, "utf8");
+    return JSON.parse(raw) as PitStopEfficiencyData;
+  } catch (error) {
+    console.error("Failed to read pit-stop efficiency:", error);
+    return null;
+  }
+}
+
+// ── Championship Standings ────────────────────────────────────────────────────
+
+export interface ChampionshipDriver {
+  position: number;
+  driver: string;
+  team: string;
+  color: string;
+  points: number;
+}
+
+export interface ChampionshipConstructor {
+  position: number;
+  team: string;
+  color: string;
+  points: number;
+}
+
+export interface ChampionshipStandingsData {
+  event: string;
+  year: number;
+  round: number;
+  drivers: ChampionshipDriver[];
+  constructors: ChampionshipConstructor[];
+}
+
+/**
+ * Reads the championship standings JSON artifact for a given round.
+ * Available for both pre- and post-race (standings before / after the round).
+ */
+export function getChampionshipStandings(
+  year: number,
+  roundNum: number
+): ChampionshipStandingsData | null {
+  try {
+    const filePath = path.join(
+      getReportsDirectory(),
+      year.toString(),
+      "summaries",
+      `championship_standings_round_${roundNum}.json`
+    );
+    if (!fs.existsSync(filePath)) return null;
+    const raw = fs.readFileSync(filePath, "utf8");
+    return JSON.parse(raw) as ChampionshipStandingsData;
+  } catch (error) {
+    console.error("Failed to read championship standings:", error);
+    return null;
+  }
+}
